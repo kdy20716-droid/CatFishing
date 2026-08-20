@@ -14,6 +14,7 @@ import { Rod } from './entities/Rod.js';
 import { Fish } from './entities/Fish.js';
 import { HUD } from './ui/HUD.js';
 import { Modals } from './ui/Modals.js';
+import { CloudSave } from './systems/CloudSave.js';
 
 class Game {
   constructor() {
@@ -42,7 +43,8 @@ class Game {
     this.cat = new Cat(this.economy);
     this.rod = new Rod(this.economy, this.sound);
     this.hud = new HUD(this.economy, this.encyclopedia, this.sound, this.environment);
-    this.modals = new Modals(this.economy, this.encyclopedia, this.aquarium, this.sound, this.hud);
+    this.cloudSave = new CloudSave(this.economy, this.encyclopedia, this.aquarium, this.hud, this.sound);
+    this.modals = new Modals(this.economy, this.encyclopedia, this.aquarium, this.sound, this.hud, this.cloudSave);
 
     // Initial camera placement
     this.camera.pos.set(this.cat.pos.x, this.cat.pos.y);
@@ -311,6 +313,11 @@ class Game {
       this.fishList.splice(idx, 1);
     }
     this.spawnSingleFish();
+
+    // Auto-sync progress to cloud
+    if (this.cloudSave) {
+      this.cloudSave.triggerAutoSave();
+    }
   }
 
   loop(currentTime) {

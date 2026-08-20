@@ -6,22 +6,31 @@ import { FISH_SPECIES } from '../systems/Encyclopedia.js';
 import { getBaitIconSvg } from './BaitIcons.js';
 
 export class Modals {
-  constructor(economy, encyclopedia, aquarium, soundEngine, hud) {
+  constructor(economy, encyclopedia, aquarium, soundEngine, hud, cloudSave = null) {
     this.economy = economy;
     this.encyclopedia = encyclopedia;
     this.aquarium = aquarium;
     this.sound = soundEngine;
     this.hud = hud;
+    this.cloudSave = cloudSave;
 
     this.shopModal = document.getElementById('shop-modal');
     this.encyclopediaModal = document.getElementById('encyclopedia-modal');
     this.aquariumUI = document.getElementById('aquarium-controls-ui');
     this.guideModal = document.getElementById('guide-modal');
+    this.authModal = document.getElementById('auth-modal');
+    this.firebaseConfigModal = document.getElementById('firebase-config-modal');
+    this.userDropdownMenu = document.getElementById('user-dropdown-menu');
 
     this.currentShopTab = 'rods';
     this.currentEncyclopediaFilter = 'all';
+    this.authMode = 'login'; // 'login' or 'signup'
 
     this.initEventListeners();
+  }
+
+  setCloudSave(cloudSave) {
+    this.cloudSave = cloudSave;
   }
 
   initEventListeners() {
@@ -32,6 +41,177 @@ export class Modals {
         this.closeAll();
       });
     });
+
+    // Top-Right Auth Button & User Profile Menu
+    const btnAuthOpen = document.getElementById('btn-auth-open');
+    if (btnAuthOpen) {
+      btnAuthOpen.addEventListener('click', () => {
+        this.sound.playClick();
+        this.openAuthModal();
+      });
+    }
+
+    const btnUserMenu = document.getElementById('btn-user-menu');
+    if (btnUserMenu) {
+      btnUserMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.sound.playClick();
+        if (this.userDropdownMenu) {
+          this.userDropdownMenu.classList.toggle('hidden');
+        }
+      });
+    }
+
+    window.addEventListener('click', (e) => {
+      if (this.userDropdownMenu && !this.userDropdownMenu.contains(e.target) && e.target !== btnUserMenu) {
+        this.userDropdownMenu.classList.add('hidden');
+      }
+    });
+
+    // Cloud Save / Load Manual Buttons
+    const btnCloudSaveNow = document.getElementById('btn-cloud-save-now');
+    if (btnCloudSaveNow) {
+      btnCloudSaveNow.addEventListener('click', async () => {
+        this.sound.playCoin();
+        if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
+        if (this.cloudSave) {
+          const ok = await this.cloudSave.saveToCloud();
+          if (ok) this.hud.showNotification('💾 클라우드에 최신 진행 상태를 안전하게 저장했습니다!', '☁️');
+        }
+      });
+    }
+
+    const btnCloudLoadNow = document.getElementById('btn-cloud-load-now');
+    if (btnCloudLoadNow) {
+      btnCloudLoadNow.addEventListener('click', async () => {
+        this.sound.playClick();
+        if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
+        if (this.cloudSave) {
+          await this.cloudSave.loadFromCloud();
+        }
+      });
+    }
+
+    const btnLogout = document.getElementById('btn-auth-logout');
+    if (btnLogout) {
+      btnLogout.addEventListener('click', () => {
+        this.sound.playClick();
+        if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
+        if (this.cloudSave) this.cloudSave.logout();
+      });
+    }
+
+    // Google Login
+    const btnGoogleLogin = document.getElementById('btn-google-login');
+    if (btnGoogleLogin) {
+      btnGoogleLogin.addEventListener('click', async () => {
+        this.sound.playClick();
+        if (this.cloudSave) {
+          await this.cloudSave.loginWithGoogle();
+          this.closeAll();
+        }
+      });
+    }
+
+    // Guest Anonymous Login
+    const btnGuestLogin = document.getElementById('btn-guest-login');
+    if (btnGuestLogin) {
+      btnGuestLogin.addEventListener('click', async () => {
+        this.sound.playClick();
+        if (this.cloudSave) {
+          await this.cloudSave.loginAsGuest();
+          this.closeAll();
+        }
+      });
+    }
+
+    // Email Auth Tabs
+    const tabLogin = document.getElementById('auth-tab-login');
+    const tabSignup = document.getElementById('auth-tab-signup');
+    const signupNameGroup = document.getElementById('signup-name-group');
+    const btnAuthSubmit = document.getElementById('btn-auth-submit');
+
+    if (tabLogin && tabSignup) {
+      tabLogin.addEventListener('click', () => {
+        this.sound.playClick();
+        this.authMode = 'login';
+        tabLogin.classList.add('active');
+        tabSignup.classList.remove('active');
+        if (signupNameGroup) signupNameGroup.classList.add('hidden');
+        if (btnAuthSubmit) btnAuthSubmit.innerText = '로그인하기';
+      });
+
+      tabSignup.addEventListener('click', () => {
+        this.sound.playClick();
+        this.authMode = 'signup';
+        tabSignup.classList.add('active');
+        tabLogin.classList.remove('active');
+        if (signupNameGroup) signupNameGroup.classList.remove('hidden');
+        if (btnAuthSubmit) btnAuthSubmit.innerText = '회원가입 & 클라우드 연동';
+      });
+    }
+
+    // Email Form Submit
+    const authForm = document.getElementById('auth-form');
+    if (authForm) {
+      authForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('auth-email').value.trim();
+        const pass = document.getElementById('auth-password').value.trim();
+        const name = document.getElementById('auth-name')?.value.trim() || '냥이 집사';
+
+        if (!email || !pass) return;
+
+        if (this.cloudSave) {
+          if (this.authMode === 'signup') {
+            await this.cloudSave.signUpWithEmail(email, pass, name);
+          } else {
+            await this.cloudSave.loginWithEmail(email, pass);
+          }
+          this.closeAll();
+        }
+      });
+    }
+
+    // Firebase Config Modal
+    const btnConfigOpen = document.getElementById('btn-firebase-config-open');
+    if (btnConfigOpen) {
+      btnConfigOpen.addEventListener('click', () => {
+        this.sound.playClick();
+        if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
+        this.openFirebaseConfigModal();
+      });
+    }
+
+    const btnSaveConfig = document.getElementById('btn-save-firebase-config');
+    if (btnSaveConfig) {
+      btnSaveConfig.addEventListener('click', () => {
+        const input = document.getElementById('firebase-config-input');
+        if (!input) return;
+        try {
+          const parsed = JSON.parse(input.value);
+          if (this.cloudSave) {
+            this.cloudSave.saveCustomConfig(parsed);
+            this.hud.showNotification('⚙️ Firebase 프로젝트 구성이 성공적으로 연결되었습니다!', '✨');
+            this.closeAll();
+          }
+        } catch (err) {
+          this.hud.showNotification('올바른 JSON 형식의 구성을 입력해주세요.', '⚠️');
+        }
+      });
+    }
+
+    const btnResetConfig = document.getElementById('btn-reset-firebase-config');
+    if (btnResetConfig) {
+      btnResetConfig.addEventListener('click', () => {
+        localStorage.removeItem('cozy_cat_firebase_config_v1');
+        if (this.cloudSave) {
+          this.cloudSave.initFirebase();
+          this.hud.showNotification('기본 데모 구성으로 리셋되었습니다.', '🔄');
+          this.closeAll();
+        }
+      });
+    }
 
     // Shop Tabs
     document.querySelectorAll('.shop-tab-btn').forEach(btn => {
@@ -97,7 +277,28 @@ export class Modals {
     if (this.shopModal) this.shopModal.classList.remove('visible');
     if (this.encyclopediaModal) this.encyclopediaModal.classList.remove('visible');
     if (this.guideModal) this.guideModal.classList.remove('visible');
+    if (this.authModal) this.authModal.classList.remove('visible');
+    if (this.firebaseConfigModal) this.firebaseConfigModal.classList.remove('visible');
+    if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
     if (this.aquariumUI && !this.aquarium.isOpen) this.aquariumUI.classList.remove('visible');
+  }
+
+  openAuthModal() {
+    this.closeAll();
+    if (this.authModal) {
+      this.authModal.classList.add('visible');
+    }
+  }
+
+  openFirebaseConfigModal() {
+    this.closeAll();
+    if (this.firebaseConfigModal) {
+      const input = document.getElementById('firebase-config-input');
+      if (input && this.cloudSave) {
+        input.value = JSON.stringify(this.cloudSave.getSavedConfig(), null, 2);
+      }
+      this.firebaseConfigModal.classList.add('visible');
+    }
   }
 
   openShop() {
