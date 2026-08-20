@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🐾 냥이의 바다 낚시 힐링 여행 (Cozy Cat Fishing)</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="shortcut icon" href="assets/favicon.svg">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Gothic:wght@400;700;800&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="game-container">
+    <!-- Main Game Canvas -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Top Floating HUD -->
+    <header id="hud-top">
+      <div class="hud-left">
+        <div class="game-logo">
+          <span class="logo-icon">🐾</span>
+          <span class="logo-text">냥이의 낚시 여행</span>
+        </div>
+        <div class="hud-stat-pill" title="보유 골드">
+          <span class="pill-icon">💰</span>
+          <span id="hud-gold" class="pill-val">50 G</span>
+        </div>
+        <div class="hud-stat-pill level-pill" title="현재 레벨과 경험치">
+          <span id="hud-level" class="pill-val">Lv. 1</span>
+          <div class="exp-bar-container">
+            <div id="hud-exp-fill" class="exp-bar-fill"></div>
+          </div>
+        </div>
+        <div id="hud-time-dial" class="hud-stat-pill time-pill" title="평화롭게 흐르는 바다의 시간">
+          <span id="hud-time-icon" class="pill-icon">☀️</span>
+          <span id="hud-time-text" class="pill-val">낮 ☀️</span>
+        </div>
+      </div>
+
+      <div class="hud-right">
+        <button id="btn-sound-toggle" class="hud-btn" title="소리 켜기/끄기 (단축키: M)">🎵 소리 ON</button>
+        <button id="btn-open-shop" class="hud-btn highlight-btn" title="포근한 상점 (단축키: S)">🛒 상점</button>
+        <button id="btn-open-encyclopedia" class="hud-btn encyclo-btn" title="물고기 도감 (단축키: E)">📖 도감</button>
+        <button id="btn-open-aquarium" class="hud-btn aqua-btn" title="냥이의 아쿠아리움 (단축키: Q)">🏠 아쿠아리움</button>
+        <button id="btn-open-guide" class="hud-btn icon-btn" title="조작 가이드 (단축키: H)">❓</button>
+      </div>
+    </header>
+
+    <!-- Center Floating Displays (Depth, Tension, Cast Charge) -->
+    <div id="center-hud">
+      <!-- Depth Indicator -->
+      <div id="hud-depth" class="depth-badge">수심 0.0m</div>
+
+      <!-- Line Tension Meter -->
+      <div id="hud-tension-container" class="tension-container">
+        <div class="tension-label-group">
+          <span class="tension-label">줄 팽팽함 (Tension)</span>
+          <span id="hud-tension-warning" class="tension-warning-text">⚠️ 줄 끊어짐 주의!</span>
+        </div>
+        <div class="tension-track">
+          <div id="hud-tension-fill" class="tension-fill"></div>
+        </div>
+      </div>
+
+      <!-- Cast Power Charge Meter -->
+      <div id="hud-charge-container" class="charge-container">
+        <div class="charge-label">캐스팅 파워 충전 중...</div>
+        <div class="charge-track">
+          <div id="hud-charge-fill" class="charge-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Controls & Expandable Bait Selection Bar -->
+    <footer id="hud-bottom">
+      <!-- Floating Expandable Bait Drawer (Hidden by default, slides up on click) -->
+      <div id="bait-drawer" class="bait-drawer">
+        <div class="bait-drawer-header">
+          <span class="bait-drawer-title">🎒 미끼 & 특수 아이템 (선택하여 장착/사용)</span>
+          <button id="btn-close-bait-drawer" class="drawer-close-btn">&times;</button>
+        </div>
+        <div id="hud-baits" class="bait-button-group">
+          <!-- Injected dynamically via HUD.js -->
+        </div>
+      </div>
+
+      <!-- Bottom Main Bar with Active Bait Trigger -->
+      <div class="bottom-bar-main">
+        <button id="btn-toggle-bait-drawer" class="active-bait-pill" title="미끼 및 아이템 선택창 열기/닫기">
+          <span class="bait-pill-label">장착 장비:</span>
+          <span id="active-bait-icon" class="active-icon">🍞</span>
+          <span id="active-bait-name" class="active-name">식빵 부스러기</span>
+          <span id="active-bait-count" class="active-count">(무제한)</span>
+          <span class="bait-pill-arrow">▲ 미끼/아이템</span>
+        </button>
+        <div class="controls-hint">
+          <span>💡 <strong>[홀드]</strong> 캐스팅</span>
+          <span><strong>[유지]</strong> 릴링</span>
+          <span><strong>[A / D]</strong> 보트 이동</span>
+          <span><strong>[우클릭]</strong> 💣 폭탄</span>
+          <span><strong>[1~9]</strong> 단축키</span>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Floating Notifications / Toasts -->
+    <div id="floating-notifications"></div>
+
+    <!-- Aquarium Control Overlay (Visible during Aquarium Mode) -->
+    <div id="aquarium-controls-ui" class="overlay-panel">
+      <div class="aqua-header">
+        <div class="aqua-title">🏠 냥이의 힐링 아쿠아리움</div>
+        <div class="aqua-actions">
+          <select id="aqua-theme-select" class="aqua-select">
+            <option value="coral">🪸 산호초 파라다이스 테마</option>
+            <option value="night_glow">🌌 심해 야광 오로라 테마</option>
+            <option value="ancient">🏛️ 고대 아틀란티스 신전 테마</option>
+          </select>
+          <button id="btn-aqua-feed" class="btn-aqua">🥐 먹이 뿌리기 (클릭)</button>
+          <button id="btn-aqua-collect" class="btn-aqua-gold">💰 코인 모두 수거</button>
+          <button id="btn-aqua-exit" class="btn-aqua-exit">🌊 낚시터로 돌아가기</button>
+        </div>
+      </div>
+      <div class="aqua-subtext">✨ 화면을 클릭하여 물고기들에게 맛있는 먹이를 주고 힐링 코인을 모아보세요!</div>
+    </div>
+
+    <!-- Catch Ceremony Modal -->
+    <div id="catch-modal" class="modal-backdrop"></div>
+
+    <!-- Shop Modal -->
+    <div id="shop-modal" class="modal-backdrop">
+      <div class="modal-window shop-window">
+        <div class="modal-header">
+          <h2>🛒 포근한 낚시 상점</h2>
+          <button class="modal-close-btn">&times;</button>
+        </div>
+        <div class="shop-tabs">
+          <button class="shop-tab-btn active" data-tab="rods">🎣 낚싯대</button>
+          <button class="shop-tab-btn" data-tab="boats">⛵ 보트 & 탈것</button>
+          <button class="shop-tab-btn" data-tab="baits">🎒 미끼 & 아이템</button>
+          <button class="shop-tab-btn" data-tab="hats">👒 냥이 모자</button>
+          <button class="shop-tab-btn" data-tab="upgrades">⭐ 능력치 강화</button>
+        </div>
+        <div id="shop-items-container" class="shop-grid"></div>
+      </div>
+    </div>
+
+    <!-- Fish Encyclopedia Modal -->
+    <div id="encyclopedia-modal" class="modal-backdrop">
+      <div class="modal-window encyclo-window">
+        <div class="modal-header">
+          <h2>📖 바다 물고기 생태 도감</h2>
+          <button class="modal-close-btn">&times;</button>
+        </div>
+        <div id="encyclopedia-stats" class="encyclo-stats-bar"></div>
+        <div class="encyclo-filters">
+          <button class="filter-btn active" data-zone="all">전체 어종 (36종)</button>
+          <button class="filter-btn" data-zone="shallow">표층 (0~30m)</button>
+          <button class="filter-btn" data-zone="mid">중층 (30~100m)</button>
+          <button class="filter-btn" data-zone="deep">심해 (100~250m)</button>
+          <button class="filter-btn" data-zone="abyss">심연 (250~400m)</button>
+          <button class="filter-btn" data-zone="hadal">초심연 (400~500m+)</button>
+        </div>
+        <div id="encyclopedia-grid" class="encyclo-grid"></div>
+      </div>
+    </div>
+
+    <!-- Guide / Help Modal -->
+    <div id="guide-modal" class="modal-backdrop">
+      <div class="modal-window guide-window">
+        <div class="modal-header">
+          <h2>🐾 초보 집사를 위한 낚시 가이드</h2>
+          <button class="modal-close-btn">&times;</button>
+        </div>
+        <div class="guide-content">
+          <div class="guide-banner-container">
+            <img src="assets/banner.jpg" alt="Cozy Cat Fishing Artwork" class="guide-banner-img">
+          </div>
+          <div class="guide-section">
+            <h3>🎣 1. 낚시하는 방법</h3>
+            <p>• <strong>마우스 클릭 / 스페이스바 홀드</strong>: 게이지를 모아 원하는 거리로 낚싯바늘을 캐스팅합니다.</p>
+            <p>• <strong>바늘 조절</strong>: 물속에서 클릭을 살짝씩 누르면 바늘이 떠올라 원치 않는 작은 물고기를 피할 수 있습니다.</p>
+            <p>• <strong>릴링 (Reeling)</strong>: 물고기가 바늘을 물면 <strong>클릭/스페이스바를 꾹 눌러</strong> 끌어당기세요!</p>
+          </div>
+          <div class="guide-section">
+            <h3>⚡ 2. 텐션(Tension) 줄다리기 & 생미끼</h3>
+            <p>• 대어가 힘을 주어 당길 때는 텐션 게이지가 붉어집니다. <strong>잠시 클릭을 떼어 숨을 고르면</strong> 줄이 끊어지는 것을 막을 수 있습니다.</p>
+            <p>• <strong>생미끼 시스템</strong>: 작은 물고기(멸치, 구피 등)를 낚으면 줄에 매달린 채 살아있는 미끼가 되어 <strong>거대한 심해어를 유인</strong>합니다!</p>
+          </div>
+          <div class="guide-section">
+            <h3>🏠 3. 아쿠아리움 & 업그레이드</h3>
+            <p>• 잡은 물고기는 <strong>아쿠아리움(Q)</strong>에 자동으로 등록되어 평화롭게 헤엄치며 <strong>힐링 골드</strong>를 생산합니다.</p>
+            <p>• 상점(S)에서 상위 등급의 낚싯대, 보트, 귀여운 모자를 구매하여 더 깊고 넓은 바다를 탐험하세요!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Entry Script -->
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "cozy-cat-fishing",
+  "version": "1.0.0",
+  "description": "A relaxing cozy cat fishing simulation game inspired by Cat Goes Fishing",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve -l 3000 ."
+  },
+  "keywords": [
+    "game",
+    "cat-goes-fishing",
+    "html5-canvas",
+    "web-audio-api",
+    "cozy-game",
+    "healing"
+  ],
+  "author": "Antigravity",
+  "license": "MIT"
+}
