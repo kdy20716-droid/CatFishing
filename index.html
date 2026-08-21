@@ -192,7 +192,7 @@
             </div>
           </div>
 
-          <!-- Quick Action Hub Cards -->
+          <!-- Quick Action Hub Cards (3x2 Grid) -->
           <div class="dock-hub-grid">
             <!-- 1. Fish Market (어시장 - 판매 & 수집) -->
             <div class="dock-card highlight-card" id="dock-btn-open-market">
@@ -243,11 +243,97 @@
               </div>
               <button class="btn-secondary dock-card-btn">옷장 열기</button>
             </div>
+
+            <!-- 6. Merchant Guide & Fishing Tips (미유 냥이의 꿀팁) -->
+            <div class="dock-card guide-card" id="dock-btn-open-tips">
+              <div class="dock-card-icon">💡</div>
+              <div class="dock-card-info">
+                <div class="dock-card-title">미유 냥이의 꿀팁! <span class="dock-guide-badge">필독</span></div>
+                <div class="dock-card-desc">부두 상점 200% 활용법 & 바다 낚시 비법 총정리</div>
+              </div>
+              <button class="btn-primary dock-card-btn btn-tips">상점 이용 가이드</button>
+            </div>
           </div>
 
           <!-- Footer Action -->
           <div class="dock-footer-actions">
             <button id="dock-btn-sail-out" class="btn-primary btn-sail-out">🌊 바다로 출항하기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Merchant Guide Modal (미유 냥이의 상점 이용 가이드 & 낚시 꿀팁) -->
+    <div id="merchant-guide-modal" class="modal-backdrop">
+      <div class="modal-window guide-window" style="max-width: 780px;">
+        <div class="modal-header" style="background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);">
+          <h2 style="color: #92400e;">💡 미유 냥이의 상점 & 낚시 꿀팁 가이드</h2>
+          <button class="modal-close-btn">&times;</button>
+        </div>
+        <div class="guide-content" style="max-height: 70vh; overflow-y: auto; padding: 20px;">
+          <div class="tips-hero-box">
+            <span class="tips-cat-icon">🐱🎓</span>
+            <div>
+              <h3 style="font-family: var(--font-cute); font-size: 18px; color: #78350f; margin-bottom: 4px;">냥이 낚시꾼을 위한 부두 상점 완전 정복!</h3>
+              <p style="font-size: 13px; color: #57534e; line-height: 1.5;">바다에서 물고기를 잡고 부두막에 돌아왔을 때 알아두면 골드가 쏟아지는 핵심 꿀팁이다냥!</p>
+            </div>
+          </div>
+
+          <div class="tips-grid">
+            <div class="tip-card">
+              <div class="tip-header">
+                <span class="tip-icon">🧺 ➔ 💰 / 🐠</span>
+                <span class="tip-title">1. 잡은 물고기는 어시장에서 정산!</span>
+              </div>
+              <div class="tip-desc">
+                물고기를 낚으면 어획 바구니에 보관됩니다. 부두 상인에게 돌아와 <strong>[어획물 정산소]</strong>에서 <strong>골드로 판매</strong>하거나 <strong>아쿠아리움에 수집</strong>하세요!
+              </div>
+            </div>
+
+            <div class="tip-card">
+              <div class="tip-header">
+                <span class="tip-icon">🏠 ➔ 🪙</span>
+                <span class="tip-title">2. 아쿠아리움 힐링 골드 자동 생성</span>
+              </div>
+              <div class="tip-desc">
+                아쿠아리움에 등록된 물고기들은 평화롭게 헤엄치며 <strong>자동으로 힐링 코인과 하트</strong>를 생산합니다. 틈틈이 들러 코인을 수령하세요!
+              </div>
+            </div>
+
+            <div class="tip-card">
+              <div class="tip-header">
+                <span class="tip-icon">🚀 ➔ 🌊</span>
+                <span class="tip-title">3. 더 깊은 심해와 원거리 출항</span>
+              </div>
+              <div class="tip-desc">
+                신형 보트(모터보트/잠수함)를 타면 더 먼 바다로 나갈 수 있고, <strong>로켓 부스터(🚀)</strong>와 <strong>심해 유도탄(💣)</strong>으로 순식간에 500m 심해 대어를 노릴 수 있습니다!
+              </div>
+            </div>
+
+            <div class="tip-card">
+              <div class="tip-header">
+                <span class="tip-icon">✨ ➔ 🌟</span>
+                <span class="tip-title">4. ✨ 이로치(Shiny) 특별 물고기</span>
+              </div>
+              <div class="tip-desc">
+                황금빛 오라를 품은 이로치 물고기는 <strong>일반 물고기보다 3배의 골드와 경험치</strong>를 지급하며, 도감에 영롱한 황금 테두리가 채워집니다!
+              </div>
+            </div>
+
+            <div class="tip-card tip-full">
+              <div class="tip-header">
+                <span class="tip-icon">⌨️</span>
+                <span class="tip-title">5. 한눈에 보는 필수 단축키 모음</span>
+              </div>
+              <div class="tip-shortcuts">
+                <span class="shortcut-pill"><strong>[E]</strong> 🎒 내 인벤토리</span>
+                <span class="shortcut-pill"><strong>[U]</strong> 📖 물고기 도감</span>
+                <span class="shortcut-pill"><strong>[I]</strong> 🌐 실시간 멀티플레이</span>
+                <span class="shortcut-pill"><strong>[O]</strong> 🎵 소리 ON/OFF</span>
+                <span class="shortcut-pill"><strong>[R]</strong> 🏪 부두 상점 대화</span>
+                <span class="shortcut-pill"><strong>[Space]</strong> 🎣 낚싯줄 당기기</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -24,6 +24,7 @@ export class Modals {
     this.multiplayerModal = document.getElementById('multiplayer-modal');
     this.wardrobeModal = document.getElementById('wardrobe-modal');
     this.dockMerchantModal = document.getElementById('dock-merchant-modal');
+    this.merchantGuideModal = document.getElementById('merchant-guide-modal');
     this.fishMarketModal = document.getElementById('fish-market-modal');
     this.nicknameModal = document.getElementById('nickname-modal');
     this.inventoryModal = document.getElementById('inventory-modal');
@@ -520,6 +521,7 @@ export class Modals {
     if (this.multiplayerModal) this.multiplayerModal.classList.remove('visible');
     if (this.wardrobeModal) this.wardrobeModal.classList.remove('visible');
     if (this.dockMerchantModal) this.dockMerchantModal.classList.remove('visible');
+    if (this.merchantGuideModal) this.merchantGuideModal.classList.remove('visible');
     if (this.fishMarketModal) this.fishMarketModal.classList.remove('visible');
     if (this.nicknameModal) this.nicknameModal.classList.remove('visible');
     if (this.inventoryModal) this.inventoryModal.classList.remove('visible');
@@ -659,12 +661,28 @@ export class Modals {
       });
     }
 
+    const btnTips = document.getElementById('dock-btn-open-tips');
+    if (btnTips) {
+      btnTips.addEventListener('click', () => {
+        this.sound.playClick();
+        this.openMerchantGuideModal();
+      });
+    }
+
     const btnSailOut = document.getElementById('dock-btn-sail-out');
     if (btnSailOut) {
       btnSailOut.addEventListener('click', () => {
         this.closeAll();
         this.hud.showNotification('🌊 신나는 바다 낚시를 떠납니다! 좋은 어획되세요!', '⛵');
       });
+    }
+  }
+
+  openMerchantGuideModal() {
+    this.closeAll();
+    if (this.merchantGuideModal) {
+      this.sound.playClick();
+      this.merchantGuideModal.classList.add('visible');
     }
   }
 
