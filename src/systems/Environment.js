@@ -16,6 +16,7 @@ export class Environment {
     this.plankton = [];
     this.shootingStars = [];
     this.clouds = [];
+    this.smokeParticles = [];
 
     this.initClouds();
     this.initPlankton();
@@ -132,6 +133,33 @@ export class Environment {
       s.life -= dt;
       if (s.life <= 0) {
         this.shootingStars.splice(i, 1);
+      }
+    }
+
+    // Cabin Chimney Smoke Puff Generation
+    if (Math.random() < 0.18) {
+      this.smokeParticles.push({
+        x: 68 + (Math.random() - 0.5) * 6,
+        y: -190,
+        vx: 12 + Math.random() * 8,
+        vy: -22 - Math.random() * 18,
+        size: 6 + Math.random() * 4,
+        alpha: 0.6,
+        maxLife: 2.2,
+        life: 2.2
+      });
+    }
+
+    // Update Smoke Particles
+    for (let i = this.smokeParticles.length - 1; i >= 0; i--) {
+      const sp = this.smokeParticles[i];
+      sp.x += sp.vx * dt;
+      sp.y += sp.vy * dt;
+      sp.size += dt * 6;
+      sp.life -= dt;
+      sp.alpha = Math.max(0, (sp.life / sp.maxLife) * 0.55);
+      if (sp.life <= 0) {
+        this.smokeParticles.splice(i, 1);
       }
     }
   }
@@ -285,6 +313,355 @@ export class Environment {
     ctx.quadraticCurveTo(2400, -70, bounds.right + 100, this.waterSurfaceY);
     ctx.closePath();
     ctx.fill();
+
+    ctx.restore();
+  }
+
+  drawPierAndCabin(ctx, bounds, playerX = 9999) {
+    ctx.save();
+
+    // 1. Chimney Smoke Particles
+    this.smokeParticles.forEach(sp => {
+      ctx.fillStyle = `rgba(226, 232, 240, ${sp.alpha})`;
+      ctx.beginPath();
+      ctx.arc(sp.x, sp.y, sp.size, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // 2. Wooden Pier Pilings (Stilts extending into water)
+    const pilings = [-160, -100, -40, 20, 80, 140, 200, 235];
+    pilings.forEach(px => {
+      // Main wooden post
+      ctx.fillStyle = '#4a2810';
+      ctx.fillRect(px - 6, -18, 12, 65);
+      // Wood shading
+      ctx.fillStyle = '#2c1810';
+      ctx.fillRect(px + 1, -18, 5, 65);
+      // Barnacles / moss near water line
+      ctx.fillStyle = '#2d6a4f';
+      ctx.fillRect(px - 7, -6, 14, 12);
+    });
+
+    // 3. Pier Wooden Deck (Planks)
+    ctx.fillStyle = '#6f4e37';
+    ctx.beginPath();
+    ctx.roundRect(-260, -22, 510, 18, [4, 4, 0, 0]);
+    ctx.fill();
+    ctx.strokeStyle = '#3e2723';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // Wooden Plank Grooves
+    ctx.strokeStyle = '#4e342e';
+    ctx.lineWidth = 1.5;
+    for (let x = -250; x <= 240; x += 18) {
+      ctx.beginPath();
+      ctx.moveTo(x, -22);
+      ctx.lineTo(x, -4);
+      ctx.stroke();
+    }
+
+    // Mooring Bollards (Bitts) on Pier Edge
+    ctx.fillStyle = '#212529';
+    ctx.beginPath();
+    ctx.roundRect(238, -30, 8, 12, 2);
+    ctx.fill();
+    // Tied Rope
+    ctx.strokeStyle = '#d4a373';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(242, -24, 5, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 4. Cozy Wooden Cabin / Tackle Shop
+    const cabinX = 20;
+    const cabinY = -22;
+
+    // Cabin Wall Body
+    ctx.fillStyle = '#8b5a2b';
+    ctx.fillRect(cabinX - 110, cabinY - 140, 200, 140);
+    ctx.strokeStyle = '#4a2810';
+    ctx.lineWidth = 3.5;
+    ctx.strokeRect(cabinX - 110, cabinY - 140, 200, 140);
+
+    // Horizontal Timber Wall Planks
+    ctx.strokeStyle = '#6f4e37';
+    ctx.lineWidth = 1.5;
+    for (let y = cabinY - 125; y <= cabinY - 10; y += 16) {
+      ctx.beginPath();
+      ctx.moveTo(cabinX - 110, y);
+      ctx.lineTo(cabinX + 90, y);
+      ctx.stroke();
+    }
+
+    // Door
+    ctx.fillStyle = '#5c3a21';
+    ctx.beginPath();
+    ctx.roundRect(cabinX - 95, cabinY - 95, 45, 95, [6, 6, 0, 0]);
+    ctx.fill();
+    ctx.strokeStyle = '#3e2723';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // Brass Door Knob
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath();
+    ctx.arc(cabinX - 58, cabinY - 45, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Warm Cozy Glowing Window
+    const isNightOrSunset = this.timeOfDay === 'night' || this.timeOfDay === 'sunset';
+    ctx.fillStyle = isNightOrSunset ? '#ffbe0b' : '#ffea00';
+    ctx.shadowColor = '#fbbf24';
+    ctx.shadowBlur = isNightOrSunset ? 24 : 8;
+    ctx.beginPath();
+    ctx.roundRect(cabinX - 25, cabinY - 100, 55, 50, 6);
+    ctx.fill();
+    ctx.shadowBlur = 0; // reset shadow
+
+    // Window Frame & Cross
+    ctx.strokeStyle = '#4a2810';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(cabinX - 25, cabinY - 100, 55, 50);
+    ctx.beginPath();
+    ctx.moveTo(cabinX + 2.5, cabinY - 100);
+    ctx.lineTo(cabinX + 2.5, cabinY - 50);
+    ctx.moveTo(cabinX - 25, cabinY - 75);
+    ctx.lineTo(cabinX + 30, cabinY - 75);
+    ctx.stroke();
+
+    // Brick Chimney
+    ctx.fillStyle = '#9d0208';
+    ctx.fillRect(cabinX + 55, cabinY - 190, 26, 65);
+    ctx.strokeStyle = '#6a040f';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cabinX + 55, cabinY - 190, 26, 65);
+    // Chimney Rim
+    ctx.fillStyle = '#6a040f';
+    ctx.fillRect(cabinX + 51, cabinY - 196, 34, 8);
+
+    // Gabled Cozy Roof (Warm Terracotta Slates)
+    ctx.fillStyle = '#c1121f';
+    ctx.beginPath();
+    ctx.moveTo(cabinX - 130, cabinY - 130);
+    ctx.lineTo(cabinX - 10, cabinY - 215);
+    ctx.lineTo(cabinX + 110, cabinY - 130);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#780000';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Roof Trim Slates
+    ctx.strokeStyle = '#9d0208';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cabinX - 130, cabinY - 130);
+    ctx.lineTo(cabinX + 110, cabinY - 130);
+    ctx.stroke();
+
+    // Shop Wooden Hanging Signboard
+    ctx.fillStyle = '#ffeedd';
+    ctx.beginPath();
+    ctx.roundRect(cabinX - 65, cabinY - 138, 120, 25, 6);
+    ctx.fill();
+    ctx.strokeStyle = '#8d5a2b';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // Sign Text
+    ctx.font = 'bold 12px "Pretendard", "Segoe UI", sans-serif';
+    ctx.fillStyle = '#780000';
+    ctx.textAlign = 'center';
+    ctx.fillText('🏪 냥이 부두 상점', cabinX - 5, cabinY - 121);
+
+    // Hanging Lantern
+    const lanternX = cabinX + 75;
+    const lanternY = cabinY - 75;
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(lanternX, cabinY - 100);
+    ctx.lineTo(lanternX, lanternY);
+    ctx.stroke();
+    // Lantern Glow
+    ctx.shadowColor = '#f59e0b';
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath();
+    ctx.arc(lanternX, lanternY + 6, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Fish Drying Rack (대롱대롱 매달린 물고기 소품)
+    ctx.strokeStyle = '#78350f';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(130, -50);
+    ctx.lineTo(165, -50);
+    ctx.lineTo(165, -22);
+    ctx.moveTo(130, -50);
+    ctx.lineTo(130, -22);
+    ctx.stroke();
+    // Hanging Fish 1 & 2
+    ctx.fillStyle = '#93c5fd';
+    ctx.beginPath();
+    ctx.ellipse(142, -40, 4, 8, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fca5a5';
+    ctx.beginPath();
+    ctx.ellipse(155, -38, 4, 7, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 5. 🐱 Merchant Cat NPC ('골골 상인 냥이')
+    const npcX = 195;
+    const npcY = -22;
+    const isPlayerNear = (playerX <= 320);
+    this.drawMerchantCat(ctx, npcX, npcY, isPlayerNear);
+
+    ctx.restore();
+  }
+
+  drawMerchantCat(ctx, x, y, isPlayerNear = false) {
+    ctx.save();
+    ctx.translate(x, y);
+
+    const tailWiggle = Math.sin(this.animTime * 3.5) * 0.25;
+
+    // Tail (Swaying)
+    ctx.strokeStyle = '#e76f51';
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-10, -10);
+    ctx.quadraticCurveTo(-22 + tailWiggle * 8, -20, -24, -30);
+    ctx.stroke();
+
+    // Body (Cheese Tabby Plump Merchant)
+    ctx.fillStyle = '#f4a261';
+    ctx.beginPath();
+    ctx.ellipse(0, -15, 14, 12, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Green Merchant Apron
+    ctx.fillStyle = '#2a9d8f';
+    ctx.beginPath();
+    ctx.roundRect(-8, -20, 16, 16, 3);
+    ctx.fill();
+    ctx.strokeStyle = '#264653';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // Apron Pocket & Coin icon
+    ctx.fillStyle = '#ffd166';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('💰', 0, -8);
+
+    // Head
+    ctx.fillStyle = '#f4a261';
+    ctx.beginPath();
+    ctx.arc(0, -28, 12, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Ears
+    ctx.beginPath();
+    ctx.moveTo(-8, -36);
+    ctx.lineTo(-12, -46);
+    ctx.lineTo(-3, -39);
+    ctx.closePath();
+    ctx.moveTo(3, -39);
+    ctx.lineTo(12, -46);
+    ctx.lineTo(8, -36);
+    ctx.closePath();
+    ctx.fill();
+
+    // Straw Merchant Hat
+    ctx.fillStyle = '#ffeaa7';
+    ctx.strokeStyle = '#d4a373';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(0, -37, 18, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.roundRect(-8, -46, 16, 10, 3);
+    ctx.fill();
+    ctx.stroke();
+    // Red Ribbon on Hat
+    ctx.fillStyle = '#e63946';
+    ctx.fillRect(-8, -39, 16, 3);
+
+    // Happy Eyes `^‿^`
+    ctx.strokeStyle = '#264653';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.arc(-4, -28, 2.5, Math.PI, 0, false);
+    ctx.arc(4, -28, 2.5, Math.PI, 0, false);
+    ctx.stroke();
+
+    // Pink Nose & Cheeks
+    ctx.fillStyle = 'rgba(255, 143, 163, 0.55)';
+    ctx.beginPath();
+    ctx.arc(-6, -24, 2.5, 0, Math.PI * 2);
+    ctx.arc(6, -24, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffafcc';
+    ctx.beginPath();
+    ctx.arc(0, -26, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Waving Right Paw
+    const waveHand = Math.sin(this.animTime * 5) * 4;
+    ctx.fillStyle = '#fefae0';
+    ctx.beginPath();
+    ctx.arc(14, -22 + waveHand, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Floating Overhead NPC Badge
+    const bounce = Math.sin(this.animTime * 4) * 3;
+    const badgeY = -58 + bounce;
+
+    if (isPlayerNear) {
+      // ✨ Glowing Gold [R] Key Interact Prompt Badge
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 10;
+      ctx.fillStyle = '#fbbf24';
+      ctx.strokeStyle = '#78350f';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(-52, badgeY - 14, 104, 26, 13);
+      ctx.fill();
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Key [R] Pill
+      ctx.fillStyle = '#78350f';
+      ctx.beginPath();
+      ctx.roundRect(-46, badgeY - 9, 20, 16, 4);
+      ctx.fill();
+
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.fillText('R', -36, badgeY + 3);
+
+      ctx.font = 'bold 12px "Pretendard", "Segoe UI", sans-serif';
+      ctx.fillStyle = '#78350f';
+      ctx.textAlign = 'center';
+      ctx.fillText('상점 대화', 12, badgeY + 3);
+    } else {
+      // Normal Overhead Badge
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(-42, badgeY - 10, 84, 20, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.font = 'bold 11px "Pretendard", "Segoe UI", sans-serif';
+      ctx.fillStyle = '#fef08a';
+      ctx.textAlign = 'center';
+      ctx.fillText('🏪 냥이 상인', 0, badgeY + 4);
+    }
 
     ctx.restore();
   }

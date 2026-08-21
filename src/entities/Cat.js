@@ -6,7 +6,7 @@ import { Vector2 } from '../engine/Vector.js';
 export class Cat {
   constructor(economy) {
     this.economy = economy;
-    this.pos = new Vector2(200, 0); // World coordinates
+    this.pos = new Vector2(240, 0); // World coordinates at Dock Pier
     this.state = 'IDLE'; // 'IDLE', 'CHARGE', 'CAST', 'WAITING', 'NIBBLE', 'REELING', 'CATCH'
     
     // Animation timers
@@ -40,8 +40,8 @@ export class Cat {
     this.velX += (targetVelX - this.velX) * 0.1;
     this.pos.x += this.velX * dt;
 
-    // Clamp boat position to allowed zone
-    const minX = 60;
+    // Clamp boat position to allowed zone (minX is right beside the wooden dock pier)
+    const minX = 230;
     const maxX = currentBoat.maxTravelX || 2000;
     this.pos.x = Math.max(minX, Math.min(maxX, this.pos.x));
     this.deltaX = this.pos.x - prevX;

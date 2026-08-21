@@ -436,6 +436,10 @@ export class SoundEngine {
     this.playSplash(0.6);
   }
 
+  playMeow(variant = 0) {
+    this.playCatMeow(variant);
+  }
+
   playCatMeow(variant = 0) {
     this.ensureRunning();
     if (!this.ctx) return;

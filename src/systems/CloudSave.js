@@ -56,8 +56,22 @@ export class CloudSave {
 
     // Debounce timer for auto cloud saves
     this.saveDebounceTimer = null;
+    this.autoSaveInterval = null;
 
     this.initFirebase();
+    this.initAutoSaveTimer();
+    this.initConflictModalEvents();
+
+    // Hook economy, encyclopedia, and aquarium save callbacks
+    if (this.economy) {
+      this.economy.onSaveCallback = () => this.triggerAutoSave();
+    }
+    if (this.encyclopedia) {
+      this.encyclopedia.onSaveCallback = () => this.triggerAutoSave();
+    }
+    if (this.aquarium) {
+      this.aquarium.onSaveCallback = () => this.triggerAutoSave();
+    }
   }
 
   getSavedConfig() {
@@ -70,18 +84,6 @@ export class CloudSave {
       console.warn("Failed to parse custom firebase config:", e);
     }
     return DEFAULT_FIREBASE_CONFIG;
-  }
-
-  saveCustomConfig(configObj) {
-    try {
-      localStorage.setItem('cozy_cat_firebase_config_v1', JSON.stringify(configObj));
-      // Re-initialize Firebase with the new config
-      this.initFirebase(configObj);
-      return true;
-    } catch (e) {
-      console.error("Failed to save custom config:", e);
-      return false;
-    }
   }
 
   initFirebase(customConfig = null) {
@@ -106,22 +108,36 @@ export class CloudSave {
 
       // Listen for Auth state changes
       onAuthStateChanged(this.auth, (user) => {
+        const prevUser = this.currentUser;
         this.currentUser = user;
         this.updateAuthUI(user);
+
         if (user) {
           console.log("🐾 Firebase User Logged In:", user.displayName || user.email || user.uid);
-          // Auto load or sync on login
-          this.loadFromCloud(true);
+          // When logging in from guest or new session, perform smart sync / conflict check
+          if (!prevUser || prevUser.uid !== user.uid) {
+            this.syncOnLogin(user);
+          }
         } else {
           console.log("🐾 Firebase User Logged Out");
         }
       });
 
     } catch (e) {
-      console.warn("Firebase initialization warning (Using local storage mode until custom config is provided):", e.message);
+      console.warn("Firebase initialization warning (Using local storage mode):", e.message);
       this.isInitialized = false;
       this.updateAuthUI(null);
     }
+  }
+
+  initAutoSaveTimer() {
+    // Periodic auto-save every 30 seconds if logged in
+    if (this.autoSaveInterval) clearInterval(this.autoSaveInterval);
+    this.autoSaveInterval = setInterval(() => {
+      if (this.currentUser) {
+        this.saveToCloud();
+      }
+    }, 30000);
   }
 
   // --- Authentication Methods ---
@@ -136,7 +152,7 @@ export class CloudSave {
       const result = await signInWithPopup(this.auth, provider);
       this.currentUser = result.user;
       if (this.sound) this.sound.playCoin();
-      if (this.hud) this.hud.showNotification(`🎉 ${this.currentUser.displayName || '집사'}님, 구글 로그인 성공!`, '☁️');
+      if (this.hud) this.hud.showNotification(`🎉 ${this.currentUser.displayName || '집사'}님, 구글 로그인 완료!`, '☁️');
       return true;
     } catch (error) {
       console.warn("Google Auth popup error (falling back to simulation mode):", error.message);
@@ -174,8 +190,6 @@ export class CloudSave {
       this.currentUser = result.user;
       if (this.sound) this.sound.playCoin();
       if (this.hud) this.hud.showNotification(`🎉 환영합니다, ${displayName}님! 계정이 생성되었습니다.`, '✨');
-      // Initial cloud save
-      this.saveToCloud();
       return true;
     } catch (error) {
       console.warn("Sign up error (falling back to simulation mode):", error.message);
@@ -228,8 +242,7 @@ export class CloudSave {
     localStorage.setItem('cozy_cat_simulated_user', JSON.stringify(mockUser));
     this.updateAuthUI(mockUser);
     if (this.sound) this.sound.playCoin();
-    if (this.hud) this.hud.showNotification(`✨ ${mockUser.displayName}님, 클라우드 계정 연결 완료!`, '☁️');
-    this.saveToCloud();
+    this.syncOnLogin(mockUser);
   }
 
   // --- Cloud Data Serialization & Sync ---
@@ -266,6 +279,148 @@ export class CloudSave {
     };
   }
 
+  async fetchCloudData(user) {
+    if (!user) return null;
+    let cloudData = null;
+
+    // 1. Fetch from Firestore if available
+    if (this.db && !user.isSimulated) {
+      try {
+        const userDocRef = doc(this.db, 'users', user.uid, 'saveData', 'slot1');
+        const snap = await getDoc(userDocRef);
+        if (snap.exists()) {
+          cloudData = snap.data();
+        }
+      } catch (e) {
+        console.warn("Firestore fetch fallback to local storage:", e.message);
+      }
+    }
+
+    // 2. Fetch from Local Backup slot
+    if (!cloudData) {
+      const localCloud = localStorage.getItem(`cozy_cat_cloud_save_${user.uid}`);
+      if (localCloud) {
+        try {
+          cloudData = JSON.parse(localCloud);
+        } catch (e) {}
+      }
+    }
+
+    return cloudData;
+  }
+
+  /**
+   * Smart Sync on Login with Conflict Resolution Prompt
+   */
+  async syncOnLogin(user) {
+    this.updateSyncBadge('☁️ 동기화 확인 중...');
+
+    const currentLocalData = this.buildSaveDataPackage();
+    const cloudData = await this.fetchCloudData(user);
+
+    // Evaluate local progress
+    const localCaughtCount = Object.values(currentLocalData.encyclopedia.records || {}).filter(r => r.caughtCount > 0).length;
+    const hasLocalProgress = (
+      currentLocalData.economy.level > 1 || 
+      currentLocalData.economy.gold > 50 || 
+      localCaughtCount > 0 || 
+      currentLocalData.economy.ownedRods.length > 1
+    );
+
+    // Evaluate cloud progress
+    const cloudCaughtCount = cloudData ? Object.values(cloudData.encyclopedia?.records || {}).filter(r => r.caughtCount > 0).length : 0;
+    const hasCloudProgress = cloudData && (
+      (cloudData.economy?.level && cloudData.economy.level > 1) || 
+      (cloudData.economy?.gold && cloudData.economy.gold > 50) || 
+      cloudCaughtCount > 0 || 
+      (cloudData.economy?.ownedRods && cloudData.economy.ownedRods.length > 1)
+    );
+
+    console.log(`🐾 Sync On Login - hasLocalProgress: ${hasLocalProgress}, hasCloudProgress: ${hasCloudProgress}`);
+
+    if (hasLocalProgress && hasCloudProgress) {
+      // ⚠️ Conflict: Both local session and cloud account have progress! Ask the user.
+      this.openConflictModal(currentLocalData, cloudData);
+    } else if (hasCloudProgress) {
+      // Local is brand new, cloud has existing record -> Load cloud data directly
+      this.applySaveData(cloudData);
+      if (this.hud) this.hud.showNotification('📥 클라우드 계정의 기존 낚시 기록을 불러왔습니다!', '☁️');
+      this.updateSyncBadge('☁️ 자동 동기화됨');
+    } else {
+      // Cloud is empty -> Link current local data to cloud account
+      await this.saveToCloud();
+      if (this.hud) this.hud.showNotification('🎉 지금까지의 플레이 기록이 계정에 자동 연동되었습니다!', '☁️');
+      this.updateSyncBadge('☁️ 자동 동기화됨');
+    }
+  }
+
+  openConflictModal(localData, cloudData) {
+    const modal = document.getElementById('cloud-conflict-modal');
+    if (!modal) {
+      // Fallback if modal DOM is missing: prompt confirm
+      const useLocal = confirm('클라우드 계정에 이미 저장된 낚시 기록이 있습니다!\n\n[확인]을 누르면 현재 기기 데이터로 덮어쓰고, [취소]를 누르면 클라우드 데이터를 불러옵니다.');
+      if (useLocal) {
+        this.saveToCloud();
+      } else {
+        this.applySaveData(cloudData);
+      }
+      return;
+    }
+
+    // Populate local stats
+    const localCaught = Object.values(localData.encyclopedia?.records || {}).filter(r => r.caughtCount > 0).length;
+    const elLocalLevel = document.getElementById('conflict-local-level');
+    const elLocalGold = document.getElementById('conflict-local-gold');
+    const elLocalFish = document.getElementById('conflict-local-fish');
+    if (elLocalLevel) elLocalLevel.textContent = `Lv. ${localData.economy.level}`;
+    if (elLocalGold) elLocalGold.textContent = `${localData.economy.gold} G`;
+    if (elLocalFish) elLocalFish.textContent = `${localCaught} 종`;
+
+    // Populate cloud stats
+    const cloudCaught = Object.values(cloudData.encyclopedia?.records || {}).filter(r => r.caughtCount > 0).length;
+    const elCloudLevel = document.getElementById('conflict-cloud-level');
+    const elCloudGold = document.getElementById('conflict-cloud-gold');
+    const elCloudFish = document.getElementById('conflict-cloud-fish');
+    if (elCloudLevel) elCloudLevel.textContent = `Lv. ${cloudData.economy?.level || 1}`;
+    if (elCloudGold) elCloudGold.textContent = `${cloudData.economy?.gold || 0} G`;
+    if (elCloudFish) elCloudFish.textContent = `${cloudCaught} 종`;
+
+    // Store pending conflict data
+    this.pendingConflict = { localData, cloudData };
+
+    modal.classList.add('visible');
+  }
+
+  initConflictModalEvents() {
+    const btnOverwrite = document.getElementById('btn-conflict-overwrite');
+    if (btnOverwrite) {
+      btnOverwrite.addEventListener('click', async () => {
+        if (this.sound) this.sound.playClick();
+        const modal = document.getElementById('cloud-conflict-modal');
+        if (modal) modal.classList.remove('visible');
+
+        await this.saveToCloud();
+        if (this.hud) this.hud.showNotification('☁️ 현재 기기 기록으로 클라우드에 덮어쓰기 완료!', '✅');
+        this.pendingConflict = null;
+      });
+    }
+
+    const btnLoad = document.getElementById('btn-conflict-load');
+    if (btnLoad) {
+      btnLoad.addEventListener('click', () => {
+        if (this.sound) this.sound.playClick();
+        const modal = document.getElementById('cloud-conflict-modal');
+        if (modal) modal.classList.remove('visible');
+
+        if (this.pendingConflict && this.pendingConflict.cloudData) {
+          this.applySaveData(this.pendingConflict.cloudData);
+          if (this.hud) this.hud.showNotification('📥 클라우드 계정 기록을 성공적으로 불러왔습니다!', '☁️');
+        }
+        this.pendingConflict = null;
+      });
+    }
+  }
+
   async saveToCloud() {
     if (!this.currentUser) return false;
     this.isSyncing = true;
@@ -284,7 +439,7 @@ export class CloudSave {
           ...saveData,
           serverTimestamp: serverTimestamp()
         }, { merge: true });
-        console.log("☁️ Firestore Cloud Save successful!");
+        console.log("☁️ Firestore Cloud Auto-Save successful!");
       } catch (e) {
         console.warn("Firestore save fallback to local cloud slot:", e.message);
       }
@@ -292,7 +447,7 @@ export class CloudSave {
 
     this.isSyncing = false;
     this.lastSavedTime = new Date();
-    this.updateSyncBadge('☁️ 동기화됨');
+    this.updateSyncBadge('☁️ 자동 동기화됨');
     return true;
   }
 
@@ -301,50 +456,7 @@ export class CloudSave {
     if (this.saveDebounceTimer) clearTimeout(this.saveDebounceTimer);
     this.saveDebounceTimer = setTimeout(() => {
       this.saveToCloud();
-    }, 2000);
-  }
-
-  async loadFromCloud(isInitial = false) {
-    if (!this.currentUser) return false;
-    this.isSyncing = true;
-    this.updateSyncBadge('☁️ 불러오는 중...');
-
-    let cloudData = null;
-
-    // 1. Try fetching from Firestore
-    if (this.db && !this.currentUser.isSimulated) {
-      try {
-        const userDocRef = doc(this.db, 'users', this.currentUser.uid, 'saveData', 'slot1');
-        const snap = await getDoc(userDocRef);
-        if (snap.exists()) {
-          cloudData = snap.data();
-        }
-      } catch (e) {
-        console.warn("Firestore load fallback to local cloud backup:", e.message);
-      }
-    }
-
-    // 2. Fallback to local cloud backup slot
-    if (!cloudData) {
-      const localCloud = localStorage.getItem(`cozy_cat_cloud_save_${this.currentUser.uid}`);
-      if (localCloud) {
-        cloudData = JSON.parse(localCloud);
-      }
-    }
-
-    if (cloudData) {
-      this.applySaveData(cloudData);
-      if (!isInitial && this.hud) {
-        this.hud.showNotification('📥 클라우드에서 최신 게임 데이터를 불러왔습니다!', '☁️');
-      }
-    } else {
-      // First time user: save initial state
-      this.saveToCloud();
-    }
-
-    this.isSyncing = false;
-    this.updateSyncBadge('☁️ 동기화됨');
-    return true;
+    }, 1500);
   }
 
   applySaveData(data) {
@@ -391,7 +503,7 @@ export class CloudSave {
       if (userAvatar) {
         userAvatar.src = user.photoURL || 'assets/favicon.svg';
       }
-      this.updateSyncBadge('☁️ 동기화됨');
+      this.updateSyncBadge('☁️ 자동 동기화됨');
     } else {
       if (btnAuthOpen) btnAuthOpen.classList.remove('hidden');
       if (userProfilePill) userProfilePill.classList.add('hidden');

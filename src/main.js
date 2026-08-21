@@ -52,6 +52,8 @@ class Game {
     this.modals.setRod(this.rod);
     this.modals.setMultiplayer(this.multiplayer);
 
+    this.hasTriggeredDockMerchant = false;
+
     // Initial camera placement
     this.camera.pos.set(this.cat.pos.x, this.cat.pos.y);
 
@@ -131,21 +133,14 @@ class Game {
     }
 
     // Top Navigation buttons
-    const btnShop = document.getElementById('btn-open-shop');
-    if (btnShop) btnShop.addEventListener('click', () => this.modals.openShop());
+    const btnInv = document.getElementById('btn-open-inventory');
+    if (btnInv) btnInv.addEventListener('click', () => this.modals.openInventoryModal());
+
+    const btnMulti = document.getElementById('btn-open-multiplayer');
+    if (btnMulti) btnMulti.addEventListener('click', () => this.modals.openMultiplayerModal());
 
     const btnEncyclo = document.getElementById('btn-open-encyclopedia');
     if (btnEncyclo) btnEncyclo.addEventListener('click', () => this.modals.openEncyclopedia());
-
-    const btnAqua = document.getElementById('btn-open-aquarium');
-    if (btnAqua) {
-      btnAqua.addEventListener('click', () => {
-        this.sound.playClick();
-        this.aquarium.open();
-        const aquaUI = document.getElementById('aquarium-controls-ui');
-        if (aquaUI) aquaUI.classList.add('visible');
-      });
-    }
 
     const btnGuide = document.getElementById('btn-open-guide');
     if (btnGuide) btnGuide.addEventListener('click', () => this.modals.openGuide());
@@ -234,7 +229,7 @@ class Game {
       }
     });
 
-    // Keyboard Shortcuts
+    // Keyboard Shortcuts (지정된 단축키로 정돈)
     this.input.on('keydown', (code) => {
       // Double safety check: If user is typing in any input, do not trigger shortcuts
       const active = document.activeElement;
@@ -243,7 +238,7 @@ class Game {
       }
 
       if (this.aquarium.isOpen) {
-        if (code === 'Escape') {
+        if (code === 'Escape' || code === 'KeyE' || code === 'KeyU' || code === 'KeyI' || code === 'KeyR') {
           this.aquarium.close();
           const aquaUI = document.getElementById('aquarium-controls-ui');
           if (aquaUI) aquaUI.classList.remove('visible');
@@ -251,43 +246,42 @@ class Game {
         return;
       }
 
-      if (code === 'KeyS') this.modals.openShop();
-      if (code === 'KeyE') this.modals.openEncyclopedia();
-      if (code === 'KeyQ') {
-        this.aquarium.open();
-        const aquaUI = document.getElementById('aquarium-controls-ui');
-        if (aquaUI) aquaUI.classList.add('visible');
+      // 🎒 [E] 키: 내 인벤토리 (가방) 열기 / 닫기 토글
+      if (code === 'KeyE') {
+        this.modals.toggleInventory();
       }
-      if (code === 'KeyH') this.modals.openGuide();
-      if (code === 'KeyM') {
-        this.sound.setMute(!this.sound.isMuted);
+
+      // 📖 [U] 키: 도감 열기 / 닫기 토글
+      if (code === 'KeyU') {
+        this.modals.toggleEncyclopedia();
       }
-      if (code === 'Digit1') this.hud.selectBait('bread');
-      if (code === 'Digit2') this.hud.selectBait('worm');
-      if (code === 'Digit3') this.hud.selectBait('shrimp');
-      if (code === 'Digit4') this.hud.selectBait('lure');
-      if (code === 'Digit5') this.hud.selectBait('golden');
-      if (code === 'Digit6' || code === 'KeyR') this.hud.toggleRocketItem();
-      if (code === 'Digit7' || code === 'KeyB') {
-        // Trigger Bomb
-        if (this.rod.state === 'FISHING' && this.rod.isSubmerged) {
-          const success = this.rod.triggerBomb(this.fishList, (eliminatedFish) => {
-            const idx = this.fishList.indexOf(eliminatedFish);
-            if (idx !== -1) {
-              this.fishList.splice(idx, 1);
-              setTimeout(() => this.spawnSingleFish(), 3000);
-            }
-          });
-          if (success) {
-            this.camera.shake(12, 0.55);
-            this.hud.showNotification('💣 콰앙-! 주변 방해 물고기 퇴치 완료!', '💥');
-          } else {
-            this.hud.showNotification('💣 어군 폭탄이 없습니다! 상점(S)에서 구매하세요.', '⚠️');
-          }
+
+      // 🌐 [I] 키: 멀티플레이어 창 열기 / 닫기 토글
+      if (code === 'KeyI') {
+        this.modals.toggleMultiplayer();
+      }
+
+      // 🎵 [O] 키: 소리 ON/OFF 음소거 토글
+      if (code === 'KeyO') {
+        const isMuted = !this.sound.isMuted;
+        this.sound.setMute(isMuted);
+        const btnSound = document.getElementById('btn-sound-toggle');
+        if (btnSound) btnSound.innerHTML = isMuted ? '🔇 뮤트' : '🎵 소리 ON';
+        if (!isMuted && !this.sound.isBgmPlaying) {
+          this.sound.startBgm();
+        }
+        this.hud.showNotification(isMuted ? '🔇 배경음 & 효과음 음소거' : '🎵 소리 켜짐', isMuted ? '🔇' : '🎵');
+      }
+
+      // 🏪 [R] 키: 고양이 상인 범위 안(x <= 320) 또는 이미 열린 상태일 때만 상인 창 열기 / 닫기 토글
+      if (code === 'KeyR') {
+        const isNearMerchant = (this.cat.pos.x <= 320);
+        if (isNearMerchant || this.modals.isDockMerchantOpen()) {
+          this.modals.toggleDockMerchant();
         }
       }
-      if (code === 'Digit8') this.hud.selectHookCount(2);
-      if (code === 'Digit9') this.hud.selectHookCount(3);
+
+      if (code === 'KeyH') this.modals.openGuide();
       if (code === 'Escape') this.modals.closeAll();
     });
   }
@@ -429,10 +423,13 @@ class Game {
     // 2. Draw Ocean & Depth Layers & Seabed
     this.environment.drawOcean(this.ctx, bounds);
 
-    // 3. Draw Ocean Fish
+    // 3. 🏡 Draw Far Left Wooden Pier, Cabin Shack, & Merchant Cat NPC (with [R] interact badge)
+    this.environment.drawPierAndCabin(this.ctx, bounds, this.cat.pos.x);
+
+    // 4. Draw Ocean Fish
     this.fishList.forEach(fish => fish.draw(this.ctx));
 
-    // 4. Draw Other Remote Players & Chat Bubbles
+    // 5. Draw Other Remote Players & Chat Bubbles
     if (this.multiplayer) {
       this.multiplayer.draw(this.ctx, this.cat, this.rod);
     }

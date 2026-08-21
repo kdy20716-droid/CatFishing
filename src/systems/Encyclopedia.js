@@ -729,6 +729,7 @@ export class Encyclopedia {
   saveToStorage() {
     try {
       localStorage.setItem('cozy_cat_encyclopedia_v1', JSON.stringify(this.records));
+      if (this.onSaveCallback) this.onSaveCallback();
     } catch (e) {
       console.warn("Failed to save encyclopedia:", e);
     }
@@ -781,8 +782,10 @@ export class Encyclopedia {
   getCompletionStats() {
     const total = FISH_SPECIES.length;
     const caught = Object.keys(this.records).filter(id => this.records[id].caughtCount > 0).length;
+    const shinyCaught = Object.keys(this.records).filter(id => (this.records[id].shinyCount || 0) > 0).length;
     const percent = Math.round((caught / total) * 100);
-    return { caught, total, percent };
+    const shinyPercent = Math.round((shinyCaught / total) * 100);
+    return { caught, total, percent, shinyCaught, shinyPercent };
   }
 
   getUnlockedFish() {

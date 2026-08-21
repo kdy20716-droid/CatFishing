@@ -7,7 +7,9 @@ import { Vector2 } from '../engine/Vector.js';
 export class Fish {
   constructor(speciesData, startPos, isShiny = false) {
     this.data = speciesData;
-    this.pos = startPos.clone();
+    this.pos = (startPos && typeof startPos.clone === 'function') 
+      ? startPos.clone() 
+      : new Vector2(startPos?.x || 0, startPos?.y || 0);
     this.vel = new Vector2(0, 0);
     
     // Facing direction: 1 (right) or -1 (left)
@@ -779,9 +781,40 @@ export class Fish {
         break;
 
       case 'coelacanth':
+        // Living Fossil Coelacanth with armored scales and lobed fins
         ctx.fillStyle = c.body || '#14213d';
         ctx.beginPath();
         ctx.ellipse(0, 0, 36, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Armored white scale spots
+        ctx.fillStyle = '#e5e5e5';
+        [[-15, -4], [-6, 3], [8, -3], [18, 2], [2, -6], [-22, 1]].forEach(([sx, sy]) => {
+          ctx.beginPath();
+          ctx.arc(sx, sy, 2, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        // 3-lobed ancient tail fin
+        ctx.fillStyle = c.fin || '#000000';
+        ctx.beginPath();
+        ctx.moveTo(-32, 0);
+        ctx.lineTo(-46, -10 + tailWag * 10);
+        ctx.lineTo(-40, 0);
+        ctx.lineTo(-46, 10 + tailWag * 10);
+        ctx.closePath();
+        ctx.fill();
+        // Lobed pectoral & pelvic fins
+        ctx.beginPath();
+        ctx.ellipse(-10, 10, 8, 4, 0.4, 0, Math.PI * 2);
+        ctx.ellipse(8, 10, 7, 3, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        // Eye & Gills
+        ctx.fillStyle = '#fca311';
+        ctx.beginPath();
+        ctx.arc(24, -3, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(25, -3, 1.5, 0, Math.PI * 2);
         ctx.fill();
         break;
 
@@ -807,37 +840,243 @@ export class Fish {
         ctx.beginPath();
         ctx.ellipse(0, 0, 65, 26, 0, 0, Math.PI * 2);
         ctx.fill();
+        // Belly ridges
+        ctx.fillStyle = '#1b263b';
+        ctx.beginPath();
+        ctx.ellipse(10, 12, 45, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Golden Constellation Stars
         ctx.fillStyle = c.star || '#ffd166';
-        [[-25, -6], [-5, -12], [18, -8], [35, -4], [-40, -4]].forEach(([sx, sy]) => {
+        [[-25, -6], [-5, -12], [18, -8], [35, -4], [-40, -4], [5, 2], [-14, 4]].forEach(([sx, sy]) => {
           ctx.beginPath();
           ctx.arc(sx, sy, 2.5, 0, Math.PI * 2);
           ctx.fill();
         });
+        // Tail
+        ctx.fillStyle = c.body || '#0d1b2a';
+        ctx.beginPath();
+        ctx.moveTo(-60, 0);
+        ctx.lineTo(-82, -18 + tailWag * 12);
+        ctx.lineTo(-72, 0);
+        ctx.lineTo(-82, 18 + tailWag * 12);
+        ctx.closePath();
+        ctx.fill();
         break;
 
       case 'leviathan':
+        // Legendary Mythic Leviathan (Abyssal Sea Dragon)
+        ctx.save();
+        // Body segments & spines
         ctx.fillStyle = c.body || '#0b090a';
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 85, 28, 0, 0, Math.PI * 2);
-        ctx.fill();
         ctx.strokeStyle = c.scale || '#00f5d4';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 75, 22, 0, 0, Math.PI * 2);
+        ctx.fill();
         ctx.stroke();
+
+        // Abyssal Glowing Belly Plate
+        ctx.fillStyle = c.belly || '#161a1d';
+        ctx.beginPath();
+        ctx.ellipse(6, 8, 55, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Bioluminescent Dorsal Spines & Horns
+        ctx.fillStyle = c.scale || '#00f5d4';
+        [-40, -22, -4, 14, 32, 50].forEach((hx, idx) => {
+          const spineH = 14 + (idx % 3) * 6;
+          ctx.beginPath();
+          ctx.moveTo(hx - 5, -16);
+          ctx.lineTo(hx, -16 - spineH);
+          ctx.lineTo(hx + 5, -16);
+          ctx.closePath();
+          ctx.fill();
+        });
+
+        // Dragon Head Horn & Menacing Jaw
+        ctx.beginPath();
+        ctx.moveTo(60, -12);
+        ctx.lineTo(76, -26);
+        ctx.lineTo(68, -8);
+        ctx.closePath();
+        ctx.fill();
+
+        // Glowing Dragon Eye
+        ctx.fillStyle = '#ff0054';
+        ctx.beginPath();
+        ctx.arc(58, -4, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffd166';
+        ctx.beginPath();
+        ctx.arc(59, -4, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Massive Dragon Fin Tail
+        ctx.fillStyle = c.scale || '#00f5d4';
+        ctx.beginPath();
+        ctx.moveTo(-70, 0);
+        ctx.lineTo(-98, -26 + tailWag * 14);
+        ctx.lineTo(-84, 0);
+        ctx.lineTo(-98, 26 + tailWag * 14);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
         break;
 
       case 'seahorse':
+        // Starlight Constellation Seahorse
+        ctx.save();
+        ctx.fillStyle = c.body || '#7209b7';
+        ctx.strokeStyle = c.glow || '#f72585';
+        ctx.lineWidth = 1.5;
+
+        // Head & Snout
+        ctx.beginPath();
+        ctx.arc(4, -20, 8, 0, Math.PI * 2);
+        ctx.fill();
+        // Snout
+        ctx.beginPath();
+        ctx.moveTo(8, -22);
+        ctx.lineTo(18, -20);
+        ctx.lineTo(18, -16);
+        ctx.lineTo(8, -16);
+        ctx.closePath();
+        ctx.fill();
+        // Crown Horn
+        ctx.fillStyle = c.glow || '#f72585';
+        ctx.beginPath();
+        ctx.moveTo(0, -26);
+        ctx.lineTo(2, -34);
+        ctx.lineTo(6, -26);
+        ctx.closePath();
+        ctx.fill();
+
+        // S-shaped Curved Plump Body
         ctx.fillStyle = c.body || '#7209b7';
         ctx.beginPath();
-        ctx.ellipse(0, -10, 10, 16, 0, 0, Math.PI * 2);
+        ctx.ellipse(2, -6, 9, 13, 0.2, 0, Math.PI * 2);
         ctx.fill();
+
+        // Curved Spiral Tail
+        ctx.strokeStyle = c.body || '#7209b7';
+        ctx.lineWidth = 4.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(0, 5);
+        ctx.quadraticCurveTo(-10, 16, -4, 24);
+        ctx.quadraticCurveTo(4, 28, 8, 22);
+        ctx.stroke();
+
+        // Dorsal Star Wing
+        ctx.fillStyle = c.glow || '#f72585';
+        ctx.beginPath();
+        ctx.moveTo(-6, -14);
+        ctx.lineTo(-18, -8 + tailWag * 8);
+        ctx.lineTo(-6, 2);
+        ctx.closePath();
+        ctx.fill();
+
+        // Starlight Gem Dots
+        ctx.fillStyle = c.star || '#4cc9f0';
+        [[-1, -12], [2, -6], [0, 0], [10, -19]].forEach(([gx, gy]) => {
+          ctx.beginPath();
+          ctx.arc(gx, gy, 1.8, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.restore();
+        break;
+
+      case 'cosmic_turtle':
+        // Cosmic Shell Nebula Turtle
+        ctx.save();
+        // Flipper Legs
+        ctx.fillStyle = c.body || '#4cc9f0';
+        // Front Flippers
+        ctx.beginPath();
+        ctx.ellipse(18, -18, 16, 6, -0.6, 0, Math.PI * 2);
+        ctx.ellipse(18, 18, 16, 6, 0.6, 0, Math.PI * 2);
+        // Back Flippers
+        ctx.ellipse(-18, -14, 10, 4, 0.5, 0, Math.PI * 2);
+        ctx.ellipse(-18, 14, 10, 4, -0.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Turtle Head & Cute Beak
+        ctx.beginPath();
+        ctx.arc(28, 0, 9, 0, Math.PI * 2);
+        ctx.fill();
+        // Eye
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(31, -3, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Massive Nebula Shell
+        ctx.fillStyle = c.shell || '#3a0ca3';
+        ctx.strokeStyle = c.nebula || '#f72585';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 24, 20, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Cosmic Nebula Hex Pattern & Stars
+        ctx.fillStyle = c.nebula || '#f72585';
+        ctx.beginPath();
+        ctx.arc(0, 0, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffd166';
+        [[-10, -6], [10, -6], [-8, 8], [8, 8]].forEach(([sx, sy]) => {
+          ctx.beginPath();
+          ctx.arc(sx, sy, 1.8, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.restore();
         break;
 
       case 'chest':
       case 'relic':
+        // Atlantis Sunken Relic & Sacred Gold Temple Artifact
+        ctx.save();
+        // Golden Base Pedestal
         ctx.fillStyle = c.gold || '#ffd166';
-        ctx.fillRect(-16, -10, 32, 20);
-        ctx.fillStyle = '#d90429';
-        ctx.fillRect(-4, -4, 8, 8);
+        ctx.strokeStyle = '#b7791f';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(-22, 6, 44, 10, 3);
+        ctx.fill();
+        ctx.stroke();
+
+        // Main Shrine Pillar
+        ctx.beginPath();
+        ctx.moveTo(-16, 6);
+        ctx.lineTo(-12, -18);
+        ctx.lineTo(12, -18);
+        ctx.lineTo(16, 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Glowing Ancient Crystal Core
+        ctx.fillStyle = c.crystal || '#06d6a0';
+        ctx.strokeStyle = '#a7f3d0';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(0, -28);
+        ctx.lineTo(10, -14);
+        ctx.lineTo(0, 0);
+        ctx.lineTo(-10, -14);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Atlantis Ancient Runes
+        ctx.fillStyle = c.rune || '#00b4d8';
+        [[-5, -4], [5, -4], [0, 2]].forEach(([rx, ry]) => {
+          ctx.beginPath();
+          ctx.arc(rx, ry, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.restore();
         break;
 
       case 'bottle':
@@ -859,7 +1098,7 @@ export class Fish {
   /**
    * Static renderer for Fish Encyclopedia previews
    */
-  static drawPreview(canvas, species, isDiscovered = true) {
+  static drawPreview(canvas, species, isDiscovered = true, isShiny = false) {
     if (!canvas || !species) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -884,15 +1123,32 @@ export class Fish {
     ctx.scale(scale, scale);
 
     if (!isDiscovered) {
-      // Silhouette shadow for undiscovered species
-      ctx.filter = 'brightness(0) opacity(0.35)';
+      // Elegant mystery silhouette for undiscovered species
+      ctx.filter = 'grayscale(100%) brightness(40%) opacity(0.45)';
+    } else if (isShiny) {
+      // ✨ Golden Shiny Aura & Stardust
+      ctx.shadowColor = '#ffd166';
+      ctx.shadowBlur = 12;
     }
 
-    // Mock fish instance for renderSpecies
-    const mockFish = new Fish(species, 0, 0);
-    mockFish.animTime = 0.8;
-    mockFish.tailSpeed = 0.5;
-    mockFish.renderSpecies(ctx, species.drawType || 'anchovy');
+    try {
+      // Mock fish instance for renderSpecies
+      const mockFish = new Fish(species, new Vector2(0, 0), isShiny);
+      mockFish.animTime = 0.8;
+      mockFish.tailSpeed = 0.5;
+      mockFish.renderSpecies(ctx, species.drawType || 'anchovy');
+
+      if (isShiny) {
+        // Draw tiny sparkle stars around fish
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillStyle = '#ffd166';
+        ctx.fillText('✦', -24, -14);
+        ctx.fillText('✦', 20, -12);
+        ctx.fillText('✦', -10, 16);
+      }
+    } catch (err) {
+      console.warn("Fish preview render error:", err);
+    }
 
     ctx.restore();
   }

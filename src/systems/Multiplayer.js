@@ -182,13 +182,14 @@ export class Multiplayer {
     const db = this.getDb();
     if (!db) return;
 
+    const spawnX = 240 + Math.floor(Math.random() * 35);
     const playerRef = doc(db, 'cozy_fishing_rooms', roomId, 'players', this.playerId);
     await setDoc(playerRef, {
       id: this.playerId,
       name: this.playerName,
       joinedAt: serverTimestamp(),
       lastSeen: Date.now(),
-      x: 200,
+      x: spawnX,
       y: 0,
       facing: 1,
       state: 'IDLE',

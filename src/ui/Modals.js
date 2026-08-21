@@ -20,14 +20,17 @@ export class Modals {
     this.aquariumUI = document.getElementById('aquarium-controls-ui');
     this.guideModal = document.getElementById('guide-modal');
     this.authModal = document.getElementById('auth-modal');
-    this.firebaseConfigModal = document.getElementById('firebase-config-modal');
+    this.conflictModal = document.getElementById('cloud-conflict-modal');
     this.multiplayerModal = document.getElementById('multiplayer-modal');
     this.wardrobeModal = document.getElementById('wardrobe-modal');
+    this.dockMerchantModal = document.getElementById('dock-merchant-modal');
+    this.inventoryModal = document.getElementById('inventory-modal');
     this.userDropdownMenu = document.getElementById('user-dropdown-menu');
 
     this.currentShopTab = 'rods';
     this.currentEncyclopediaFilter = 'all';
     this.currentWardrobeTab = 'skins';
+    this.currentInventoryTab = 'baits';
     this.authMode = 'login'; // 'login' or 'signup'
     this.multiTab = 'create'; // 'create' or 'join'
     this.rod = null;
@@ -36,6 +39,8 @@ export class Modals {
     this.initEventListeners();
     this.initMultiplayerEvents();
     this.initWardrobeEvents();
+    this.initDockMerchantEvents();
+    this.initInventoryEvents();
   }
 
   setRod(rod) {
@@ -66,6 +71,14 @@ export class Modals {
         this.closeAll();
       });
     });
+
+    const btnInvOpen = document.getElementById('btn-open-inventory');
+    if (btnInvOpen) {
+      btnInvOpen.addEventListener('click', () => {
+        this.sound.playClick();
+        this.openInventoryModal();
+      });
+    }
 
     // Top-Right Auth Button & User Profile Menu
     const btnAuthOpen = document.getElementById('btn-auth-open');
@@ -443,11 +456,358 @@ export class Modals {
     if (this.encyclopediaModal) this.encyclopediaModal.classList.remove('visible');
     if (this.guideModal) this.guideModal.classList.remove('visible');
     if (this.authModal) this.authModal.classList.remove('visible');
-    if (this.firebaseConfigModal) this.firebaseConfigModal.classList.remove('visible');
+    if (this.conflictModal) this.conflictModal.classList.remove('visible');
     if (this.multiplayerModal) this.multiplayerModal.classList.remove('visible');
     if (this.wardrobeModal) this.wardrobeModal.classList.remove('visible');
+    if (this.dockMerchantModal) this.dockMerchantModal.classList.remove('visible');
+    if (this.inventoryModal) this.inventoryModal.classList.remove('visible');
     if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
     if (this.aquariumUI && !this.aquarium.isOpen) this.aquariumUI.classList.remove('visible');
+  }
+
+  isEncyclopediaOpen() {
+    return this.encyclopediaModal && this.encyclopediaModal.classList.contains('visible');
+  }
+
+  isDockMerchantOpen() {
+    return this.dockMerchantModal && this.dockMerchantModal.classList.contains('visible');
+  }
+
+  isInventoryOpen() {
+    return this.inventoryModal && this.inventoryModal.classList.contains('visible');
+  }
+
+  isMultiplayerOpen() {
+    return this.multiplayerModal && this.multiplayerModal.classList.contains('visible');
+  }
+
+  toggleEncyclopedia() {
+    if (this.isEncyclopediaOpen()) {
+      this.closeAll();
+    } else {
+      this.openEncyclopedia();
+    }
+  }
+
+  toggleDockMerchant() {
+    if (this.isDockMerchantOpen()) {
+      this.closeAll();
+    } else {
+      this.openDockMerchantModal();
+    }
+  }
+
+  toggleInventory() {
+    if (this.isInventoryOpen()) {
+      this.closeAll();
+    } else {
+      this.openInventoryModal();
+    }
+  }
+
+  toggleMultiplayer() {
+    if (this.isMultiplayerOpen()) {
+      this.closeAll();
+    } else {
+      this.openMultiplayerModal();
+    }
+  }
+
+  openInventoryModal() {
+    this.closeAll();
+    if (this.inventoryModal) {
+      this.sound.playClick();
+      this.inventoryModal.classList.add('visible');
+      this.renderInventoryContent();
+    }
+  }
+
+  openDockMerchantModal() {
+    this.closeAll();
+    if (this.dockMerchantModal) {
+      if (this.sound) {
+        if (typeof this.sound.playCatMeow === 'function') this.sound.playCatMeow();
+        else if (typeof this.sound.playMeow === 'function') this.sound.playMeow();
+      }
+      const quotes = [
+        "어서오라냥, 집사! 오늘 바다 낚시 수확은 좀 어떠냥? 잡은 물고기를 구경시켜주거나 필요한 미끼와 장비를 골라보라냥!",
+        "심해 깊은 곳에는 전설의 대어들이 살고 있다냥! 황금 미끼나 야광 루어를 든든히 챙겨가라냥! 🐟✨",
+        "아쿠아리움에 물고기들이 모아둔 힐링 골드가 있는지 확인해보고, 더 빠른 보트도 구경해보라냥! ⛵",
+        "특별한 빛을 품은 ✨ 이로치 물고기를 잡으면 도감에 영롱한 황금빛 테두리가 생긴다냥! 행운을 빈다냥! 🌟"
+      ];
+      const quoteEl = document.getElementById('dock-merchant-quote');
+      if (quoteEl) {
+        quoteEl.textContent = `"${quotes[Math.floor(Math.random() * quotes.length)]}"`;
+      }
+      this.dockMerchantModal.classList.add('visible');
+    }
+  }
+
+  initDockMerchantEvents() {
+    const btnShop = document.getElementById('dock-btn-open-shop');
+    if (btnShop) {
+      btnShop.addEventListener('click', () => {
+        this.sound.playClick();
+        this.openShop();
+      });
+    }
+
+    const btnEncyclo = document.getElementById('dock-btn-open-encyclo');
+    if (btnEncyclo) {
+      btnEncyclo.addEventListener('click', () => {
+        this.sound.playClick();
+        this.openEncyclopedia();
+      });
+    }
+
+    const btnAqua = document.getElementById('dock-btn-open-aqua');
+    if (btnAqua) {
+      btnAqua.addEventListener('click', () => {
+        this.sound.playClick();
+        this.closeAll();
+        this.aquarium.open();
+        if (this.aquariumUI) this.aquariumUI.classList.add('visible');
+      });
+    }
+
+    const btnWardrobe = document.getElementById('dock-btn-open-wardrobe');
+    if (btnWardrobe) {
+      btnWardrobe.addEventListener('click', () => {
+        this.sound.playClick();
+        this.openWardrobeModal();
+      });
+    }
+
+    const btnSailOut = document.getElementById('dock-btn-sail-out');
+    if (btnSailOut) {
+      btnSailOut.addEventListener('click', () => {
+        this.sound.playCast();
+        this.closeAll();
+        this.hud.showNotification('🌊 신나는 바다 낚시를 떠납니다! 좋은 어획되세요!', '⛵');
+      });
+    }
+  }
+
+  initInventoryEvents() {
+    document.querySelectorAll('.inv-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.sound.playClick();
+        this.currentInventoryTab = btn.dataset.tab;
+        document.querySelectorAll('.inv-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+        this.renderInventoryContent();
+      });
+    });
+  }
+
+  renderInventoryContent() {
+    const container = document.getElementById('inventory-items-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (this.currentInventoryTab === 'baits') {
+      // 1. Baits & Consumables
+      BAITS.forEach(bait => {
+        const count = (bait.id === 'bread') ? '무제한' : (this.economy.baitInventory[bait.id] || 0);
+        const isEquipped = this.economy.currentBaitId === bait.id;
+        const hasStock = (bait.id === 'bread') || (this.economy.baitInventory[bait.id] > 0);
+
+        const card = document.createElement('div');
+        card.className = `shop-card ${isEquipped ? 'equipped' : ''}`;
+        card.innerHTML = `
+          <div class="shop-card-header">
+            <span class="card-icon">${bait.icon}</span>
+            <div class="card-title-group">
+              <div class="card-title">${bait.name}</div>
+              <div class="card-subtitle">보유 수량: <strong>${count}</strong></div>
+            </div>
+          </div>
+          <div class="card-desc">${bait.description}</div>
+          <div class="card-footer">
+            ${isEquipped 
+              ? '<span class="badge-equipped">장착 중</span>' 
+              : hasStock 
+              ? `<button class="btn-secondary btn-equip-bait" data-id="${bait.id}">장착하기</button>` 
+              : `<span class="badge-locked">수량 없음 (상점에서 구매)</span>`}
+          </div>
+        `;
+
+        const btnEquip = card.querySelector('.btn-equip-bait');
+        if (btnEquip) {
+          btnEquip.addEventListener('click', () => {
+            if (!this.canChangeEquipment()) return;
+            this.sound.playClick();
+            this.economy.currentBaitId = bait.id;
+            this.economy.saveToStorage();
+            this.hud.showNotification(`${bait.name} 장착 완료!`, bait.icon);
+            this.renderInventoryContent();
+          });
+        }
+
+        container.appendChild(card);
+      });
+
+    } else if (this.currentInventoryTab === 'equipment') {
+      // 2. Equipped & Owned Gear (Rods, Boats, Hats)
+      
+      // Rods
+      RODS.forEach(rod => {
+        const isOwned = this.economy.ownedRods.includes(rod.id);
+        if (!isOwned) return;
+        const isEquipped = this.economy.currentRodId === rod.id;
+
+        const card = document.createElement('div');
+        card.className = `shop-card ${isEquipped ? 'equipped' : ''}`;
+        card.innerHTML = `
+          <div class="shop-card-header">
+            <span class="card-icon" style="color: ${rod.color}">🎣</span>
+            <div class="card-title-group">
+              <div class="card-title">${rod.name}</div>
+              <div class="card-subtitle">Tier ${rod.tier} 낚싯대</div>
+            </div>
+          </div>
+          <div class="card-stats">
+            <div>최대 수심: ${(rod.maxLineLength / 20).toFixed(0)}m</div>
+            <div>릴링 속도: ${rod.reelSpeed}</div>
+          </div>
+          <div class="card-desc">${rod.description}</div>
+          <div class="card-footer">
+            ${isEquipped 
+              ? '<span class="badge-equipped">장착 중</span>' 
+              : `<button class="btn-secondary btn-equip-rod" data-id="${rod.id}">장착하기</button>`}
+          </div>
+        `;
+
+        const btnEquip = card.querySelector('.btn-equip-rod');
+        if (btnEquip) {
+          btnEquip.addEventListener('click', () => {
+            if (!this.canChangeEquipment()) return;
+            this.sound.playClick();
+            this.economy.equipRod(rod.id);
+            this.hud.showNotification(`${rod.name} 장착 완료!`, '🎣');
+            this.renderInventoryContent();
+          });
+        }
+        container.appendChild(card);
+      });
+
+      // Boats
+      BOATS.forEach(boat => {
+        const isOwned = this.economy.ownedBoats.includes(boat.id);
+        if (!isOwned) return;
+        const isEquipped = this.economy.currentBoatId === boat.id;
+
+        const card = document.createElement('div');
+        card.className = `shop-card ${isEquipped ? 'equipped' : ''}`;
+        card.innerHTML = `
+          <div class="shop-card-header">
+            <span class="card-icon">⛵</span>
+            <div class="card-title-group">
+              <div class="card-title">${boat.name}</div>
+              <div class="card-subtitle">속도: ${boat.speed}</div>
+            </div>
+          </div>
+          <div class="card-desc">${boat.description}</div>
+          <div class="card-footer">
+            ${isEquipped 
+              ? '<span class="badge-equipped">탑승 중</span>' 
+              : `<button class="btn-secondary btn-equip-boat" data-id="${boat.id}">탑승하기</button>`}
+          </div>
+        `;
+
+        const btnEquip = card.querySelector('.btn-equip-boat');
+        if (btnEquip) {
+          btnEquip.addEventListener('click', () => {
+            if (!this.canChangeEquipment()) return;
+            this.sound.playClick();
+            this.economy.equipBoat(boat.id);
+            this.hud.showNotification(`${boat.name} 탑승 완료!`, '⛵');
+            this.renderInventoryContent();
+          });
+        }
+        container.appendChild(card);
+      });
+
+      // Hats
+      HATS.forEach(hat => {
+        const isOwned = this.economy.ownedHats.includes(hat.id);
+        if (!isOwned) return;
+        const isEquipped = this.economy.currentHatId === hat.id;
+
+        const card = document.createElement('div');
+        card.className = `shop-card ${isEquipped ? 'equipped' : ''}`;
+        card.innerHTML = `
+          <div class="shop-card-header">
+            <span class="card-icon">${hat.icon}</span>
+            <div class="card-title-group">
+              <div class="card-title">${hat.name}</div>
+              <div class="card-subtitle perk-text">${hat.perk}</div>
+            </div>
+          </div>
+          <div class="card-footer">
+            ${isEquipped 
+              ? '<span class="badge-equipped">착용 중</span>' 
+              : `<button class="btn-secondary btn-equip-hat" data-id="${hat.id}">착용하기</button>`}
+          </div>
+        `;
+
+        const btnEquip = card.querySelector('.btn-equip-hat');
+        if (btnEquip) {
+          btnEquip.addEventListener('click', () => {
+            if (!this.canChangeEquipment()) return;
+            this.sound.playClick();
+            this.economy.equipHat(hat.id);
+            this.hud.showNotification(`${hat.name} 착용 완료!`, hat.icon);
+            this.renderInventoryContent();
+          });
+        }
+        container.appendChild(card);
+      });
+
+    } else if (this.currentInventoryTab === 'catches') {
+      // 3. Caught Fish Records with Visuals
+      const caughtSpecies = FISH_SPECIES.filter(f => {
+        const rec = this.encyclopedia.getRecord(f.id);
+        return rec.caughtCount > 0;
+      });
+
+      if (caughtSpecies.length === 0) {
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #8d99ae; font-family: var(--font-cute); font-size: 20px;">
+            아직 잡은 물고기가 없습니다냥! 바다로 나가서 낚시를 시작해보라냥! 🎣
+          </div>
+        `;
+      } else {
+        caughtSpecies.forEach(species => {
+          const rec = this.encyclopedia.getRecord(species.id);
+          const hasShiny = (rec.shinyCount || 0) > 0;
+
+          const card = document.createElement('div');
+          card.className = `encyclo-card unlocked ${hasShiny ? 'has-shiny' : ''} rarity-${species.rarity}`;
+          card.innerHTML = `
+            <div class="encyclo-badge-row">
+              <span class="encyclo-badge">${species.zone.toUpperCase()}</span>
+              ${hasShiny ? '<span class="shiny-star-badge">✨</span>' : ''}
+            </div>
+            <div class="encyclo-preview-wrapper ${hasShiny ? 'shiny-preview' : ''}">
+              <canvas class="inv-fish-canvas" width="140" height="80"></canvas>
+            </div>
+            <div class="encyclo-title">${species.name}</div>
+            <div class="encyclo-details">
+              <div>총 어획: <strong>${rec.caughtCount} 회</strong></div>
+              <div>최대 크기: <strong>${rec.maxSize} cm</strong></div>
+              <div>누적 수익: <strong>${rec.totalEarned || (rec.caughtCount * species.basePrice)} G</strong></div>
+            </div>
+          `;
+
+          const canvas = card.querySelector('.inv-fish-canvas');
+          if (canvas) {
+            Fish.drawPreview(canvas, species, true, hasShiny);
+          }
+
+          container.appendChild(card);
+        });
+      }
+    }
   }
 
   openWardrobeModal() {
@@ -896,11 +1256,24 @@ export class Modals {
 
     const stats = this.encyclopedia.getCompletionStats();
     if (statsContainer) {
+      const showShinyBar = stats.shinyCaught > 0;
       statsContainer.innerHTML = `
-        <div class="encyclopedia-progress-bar">
-          <div class="progress-fill" style="width: ${stats.percent}%"></div>
+        <div class="encyclopedia-stats-flex">
+          <div class="encyclopedia-stat-box">
+            <div class="encyclopedia-progress-bar">
+              <div class="progress-fill" style="width: ${stats.percent}%"></div>
+            </div>
+            <div class="progress-label">일반 도감 수집율: <strong>${stats.caught} / ${stats.total} (${stats.percent}%)</strong></div>
+          </div>
+          ${showShinyBar ? `
+          <div class="encyclopedia-stat-box shiny-stat-box">
+            <div class="encyclopedia-progress-bar shiny-progress-bar">
+              <div class="progress-fill shiny-fill" style="width: ${stats.shinyPercent}%"></div>
+            </div>
+            <div class="progress-label shiny-progress-label">✨ 특별 물고기 수집율: <strong>${stats.shinyCaught} / ${stats.total} (${stats.shinyPercent}%)</strong></div>
+          </div>
+          ` : ''}
         </div>
-        <div class="progress-label">도감 수집율: <strong>${stats.caught} / ${stats.total} (${stats.percent}%)</strong></div>
       `;
     }
 
@@ -912,15 +1285,18 @@ export class Modals {
     filtered.forEach(species => {
       const record = this.encyclopedia.getRecord(species.id);
       const isDiscovered = record.caughtCount > 0;
+      const hasShiny = (record.shinyCount || 0) > 0;
 
       const card = document.createElement('div');
-      card.className = `encyclo-card ${isDiscovered ? 'unlocked' : 'locked'} rarity-${species.rarity}`;
+      card.className = `encyclo-card ${isDiscovered ? 'unlocked' : 'locked'} ${hasShiny ? 'has-shiny' : ''} rarity-${species.rarity}`;
 
       if (isDiscovered) {
-        const shinyTag = record.shinyCount > 0 ? `<div class="shiny-discovery-tag">✨ 이로치 발견: ${record.shinyCount}회</div>` : '';
         card.innerHTML = `
-          <div class="encyclo-badge">${species.zone.toUpperCase()}</div>
-          <div class="encyclo-preview-wrapper">
+          <div class="encyclo-badge-row">
+            <span class="encyclo-badge">${species.zone.toUpperCase()}</span>
+            ${hasShiny ? '<span class="shiny-star-badge" title="특별한 빛을 품은 물고기 해금!">✨</span>' : ''}
+          </div>
+          <div class="encyclo-preview-wrapper ${hasShiny ? 'shiny-preview' : ''}">
             <canvas class="encyclo-fish-canvas" width="140" height="80"></canvas>
           </div>
           <div class="encyclo-title">${species.name}</div>
@@ -930,7 +1306,6 @@ export class Modals {
             <div>최대 크기: <strong>${record.maxSize} cm</strong></div>
             <div>잡은 횟수: <strong>${record.caughtCount} 회</strong></div>
             <div>기본 가격: <strong>${species.basePrice} G</strong></div>
-            ${shinyTag}
           </div>
           <div class="encyclo-desc">${species.description}</div>
         `;
@@ -946,14 +1321,14 @@ export class Modals {
             <div>서식 수심: <strong>${species.minDepth}m ~ ${species.maxDepth}m</strong></div>
             <div>상태: <strong>미발견 🔒</strong></div>
           </div>
-          <div class="encyclo-hint">이 수심대에서 적절한 미끼로 낚아보세요! (✨ 이로치 출현 가능)</div>
+          <div class="encyclo-hint">이 수심대에서 적절한 미끼로 낚아보세요!</div>
         `;
       }
 
       // Draw dynamic fish preview
       const canvas = card.querySelector('.encyclo-fish-canvas');
       if (canvas) {
-        Fish.drawPreview(canvas, species, isDiscovered);
+        Fish.drawPreview(canvas, species, isDiscovered, hasShiny);
       }
 
       container.appendChild(card);

@@ -485,6 +485,7 @@ export class Economy {
         upgradeLevels: this.upgradeLevels
       };
       localStorage.setItem('cozy_cat_economy_v1', JSON.stringify(data));
+      if (this.onSaveCallback) this.onSaveCallback();
     } catch (e) {
       console.warn("Failed to save economy:", e);
     }
