@@ -279,15 +279,15 @@ export class CloudSave {
         useRocket: this.economy.useRocket,
         hookCount: this.economy.hookCount,
         baitInventory: this.economy.baitInventory,
-        upgradeLevels: this.economy.upgradeLevels
+        upgradeLevels: this.economy.upgradeLevels,
+        caughtFishBasket: this.economy.caughtFishBasket || []
       },
       encyclopedia: {
         records: this.encyclopedia.records
       },
       aquarium: {
         placedFish: this.aquarium ? this.aquarium.placedFish : [],
-        theme: this.aquarium ? this.aquarium.theme : 'coral',
-        uncollectedGold: this.aquarium ? this.aquarium.uncollectedGold : 0
+        theme: this.aquarium ? this.aquarium.theme : 'coral'
       }
     };
   }
@@ -484,7 +484,7 @@ export class CloudSave {
       }
       if (data.aquarium && this.aquarium) {
         if (data.aquarium.theme) this.aquarium.theme = data.aquarium.theme;
-        if (data.aquarium.uncollectedGold) this.aquarium.uncollectedGold = data.aquarium.uncollectedGold;
+        if (Array.isArray(data.aquarium.placedFish)) this.aquarium.placedFish = data.aquarium.placedFish;
         this.aquarium.saveToStorage();
       }
 

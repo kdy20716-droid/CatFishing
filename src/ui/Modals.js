@@ -24,6 +24,7 @@ export class Modals {
     this.multiplayerModal = document.getElementById('multiplayer-modal');
     this.wardrobeModal = document.getElementById('wardrobe-modal');
     this.dockMerchantModal = document.getElementById('dock-merchant-modal');
+    this.fishMarketModal = document.getElementById('fish-market-modal');
     this.inventoryModal = document.getElementById('inventory-modal');
     this.userDropdownMenu = document.getElementById('user-dropdown-menu');
 
@@ -41,6 +42,7 @@ export class Modals {
     this.initWardrobeEvents();
     this.initDockMerchantEvents();
     this.initInventoryEvents();
+    this.initFishMarketEvents();
   }
 
   setRod(rod) {
@@ -361,44 +363,74 @@ export class Modals {
 
     // Create Room Submit
     const btnCreateSubmit = document.getElementById('btn-multi-create-submit');
-    if (btnCreateSubmit) {
-      btnCreateSubmit.addEventListener('click', async () => {
-        this.sound.playClick();
-        const nameInput = document.getElementById('multi-create-name');
-        const codeInput = document.getElementById('multi-create-code');
-        const name = nameInput ? nameInput.value.trim() : '';
-        const code = codeInput ? codeInput.value.trim() : '';
+    const inputCreateCode = document.getElementById('multi-create-code');
+    const inputCreateName = document.getElementById('multi-create-name');
 
-        if (this.multiplayer) {
-          const res = await this.multiplayer.createRoom(code, name);
-          if (res && res.success) {
-            this.closeAll();
-          }
+    const handleCreateRoom = async () => {
+      this.sound.playClick();
+      const name = inputCreateName ? inputCreateName.value.trim() : '';
+      const code = inputCreateCode ? inputCreateCode.value.trim() : '';
+
+      if (this.multiplayer && btnCreateSubmit) {
+        btnCreateSubmit.disabled = true;
+        const origText = btnCreateSubmit.textContent;
+        btnCreateSubmit.textContent = '방 개설 중... ⏳';
+
+        const res = await this.multiplayer.createRoom(code, name);
+        btnCreateSubmit.disabled = false;
+        btnCreateSubmit.textContent = origText;
+
+        if (res && res.success) {
+          this.closeAll();
         }
+      }
+    };
+
+    if (btnCreateSubmit) {
+      btnCreateSubmit.addEventListener('click', handleCreateRoom);
+    }
+    if (inputCreateCode) {
+      inputCreateCode.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handleCreateRoom();
       });
     }
 
     // Join Room Submit
     const btnJoinSubmit = document.getElementById('btn-multi-join-submit');
+    const inputJoinCode = document.getElementById('multi-join-code');
+    const inputJoinName = document.getElementById('multi-join-name');
+
+    const handleJoinRoom = async () => {
+      this.sound.playClick();
+      const name = inputJoinName ? inputJoinName.value.trim() : '';
+      const code = inputJoinCode ? inputJoinCode.value.trim() : '';
+
+      if (!code) {
+        this.hud.showNotification('방 번호를 입력해주세요.', '⚠️');
+        return;
+      }
+
+      if (this.multiplayer && btnJoinSubmit) {
+        btnJoinSubmit.disabled = true;
+        const origText = btnJoinSubmit.textContent;
+        btnJoinSubmit.textContent = '방 입장 중... ⏳';
+
+        const res = await this.multiplayer.joinRoom(code, name);
+        btnJoinSubmit.disabled = false;
+        btnJoinSubmit.textContent = origText;
+
+        if (res && res.success) {
+          this.closeAll();
+        }
+      }
+    };
+
     if (btnJoinSubmit) {
-      btnJoinSubmit.addEventListener('click', async () => {
-        this.sound.playClick();
-        const nameInput = document.getElementById('multi-join-name');
-        const codeInput = document.getElementById('multi-join-code');
-        const name = nameInput ? nameInput.value.trim() : '';
-        const code = codeInput ? codeInput.value.trim() : '';
-
-        if (!code) {
-          this.hud.showNotification('방 번호를 입력해주세요.', '⚠️');
-          return;
-        }
-
-        if (this.multiplayer) {
-          const res = await this.multiplayer.joinRoom(code, name);
-          if (res && res.success) {
-            this.closeAll();
-          }
-        }
+      btnJoinSubmit.addEventListener('click', handleJoinRoom);
+    }
+    if (inputJoinCode) {
+      inputJoinCode.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handleJoinRoom();
       });
     }
 
@@ -460,6 +492,7 @@ export class Modals {
     if (this.multiplayerModal) this.multiplayerModal.classList.remove('visible');
     if (this.wardrobeModal) this.wardrobeModal.classList.remove('visible');
     if (this.dockMerchantModal) this.dockMerchantModal.classList.remove('visible');
+    if (this.fishMarketModal) this.fishMarketModal.classList.remove('visible');
     if (this.inventoryModal) this.inventoryModal.classList.remove('visible');
     if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
     if (this.aquariumUI && !this.aquarium.isOpen) this.aquariumUI.classList.remove('visible');
@@ -471,6 +504,10 @@ export class Modals {
 
   isDockMerchantOpen() {
     return this.dockMerchantModal && this.dockMerchantModal.classList.contains('visible');
+  }
+
+  isFishMarketOpen() {
+    return this.fishMarketModal && this.fishMarketModal.classList.contains('visible');
   }
 
   isInventoryOpen() {
@@ -490,7 +527,7 @@ export class Modals {
   }
 
   toggleDockMerchant() {
-    if (this.isDockMerchantOpen()) {
+    if (this.isDockMerchantOpen() || this.isFishMarketOpen()) {
       this.closeAll();
     } else {
       this.openDockMerchantModal();
@@ -529,11 +566,18 @@ export class Modals {
         if (typeof this.sound.playCatMeow === 'function') this.sound.playCatMeow();
         else if (typeof this.sound.playMeow === 'function') this.sound.playMeow();
       }
+
+      // Update basket count pill on dock hub
+      const basketCountEl = document.getElementById('dock-basket-count');
+      if (basketCountEl && this.economy) {
+        basketCountEl.textContent = (this.economy.caughtFishBasket || []).length;
+      }
+
       const quotes = [
-        "어서오라냥, 집사! 오늘 바다 낚시 수확은 좀 어떠냥? 잡은 물고기를 구경시켜주거나 필요한 미끼와 장비를 골라보라냥!",
-        "심해 깊은 곳에는 전설의 대어들이 살고 있다냥! 황금 미끼나 야광 루어를 든든히 챙겨가라냥! 🐟✨",
-        "아쿠아리움에 물고기들이 모아둔 힐링 골드가 있는지 확인해보고, 더 빠른 보트도 구경해보라냥! ⛵",
-        "특별한 빛을 품은 ✨ 이로치 물고기를 잡으면 도감에 영롱한 황금빛 테두리가 생긴다냥! 행운을 빈다냥! 🌟"
+        "어서오라냥, 집사! 오늘 바다 낚시 수확은 좀 어떠냥? 잡은 물고기를 어시장에서 판매하거나 아쿠아리움에 데려가라냥! 🐟✨",
+        "심해 깊은 곳에는 전설의 대어들이 살고 있다냥! 황금 미끼나 야광 루어를 든든히 챙겨가라냥! 🌟",
+        "아쿠아리움에 물고기들을 수집해두면 매 순간마다 힐링 골드를 모아준다냥! ⛵🐠",
+        "특별한 빛을 품은 ✨ 이로치 물고기를 잡으면 3배의 골드를 받을 수 있다냥! 행운을 빈다냥! 👑"
       ];
       const quoteEl = document.getElementById('dock-merchant-quote');
       if (quoteEl) {
@@ -544,6 +588,14 @@ export class Modals {
   }
 
   initDockMerchantEvents() {
+    const btnMarket = document.getElementById('dock-btn-open-market');
+    if (btnMarket) {
+      btnMarket.addEventListener('click', () => {
+        this.sound.playClick();
+        this.openFishMarketModal();
+      });
+    }
+
     const btnShop = document.getElementById('dock-btn-open-shop');
     if (btnShop) {
       btnShop.addEventListener('click', () => {
@@ -581,11 +633,114 @@ export class Modals {
     const btnSailOut = document.getElementById('dock-btn-sail-out');
     if (btnSailOut) {
       btnSailOut.addEventListener('click', () => {
-        this.sound.playCast();
         this.closeAll();
         this.hud.showNotification('🌊 신나는 바다 낚시를 떠납니다! 좋은 어획되세요!', '⛵');
       });
     }
+  }
+
+  openFishMarketModal() {
+    this.closeAll();
+    if (this.fishMarketModal) {
+      this.sound.playClick();
+      this.fishMarketModal.classList.add('visible');
+      this.renderFishMarketContent();
+    }
+  }
+
+  initFishMarketEvents() {
+    const btnSellAll = document.getElementById('btn-market-sell-all');
+    if (btnSellAll) {
+      btnSellAll.addEventListener('click', () => {
+        if (!this.economy) return;
+        const basket = this.economy.caughtFishBasket || [];
+        if (basket.length === 0) {
+          this.hud.showNotification('판매할 어획물이 없습니다!', 'ℹ️');
+          return;
+        }
+
+        this.sound.playCoin();
+        const result = this.economy.sellAllFish();
+        this.hud.showNotification(`🎉 물고기 ${result.count}마리 모두 판매 완료! (+${result.totalGold} G)`, '💰');
+        this.renderFishMarketContent();
+      });
+    }
+  }
+
+  renderFishMarketContent() {
+    const container = document.getElementById('market-fish-list');
+    const totalCountEl = document.getElementById('market-total-count');
+    const totalPriceEl = document.getElementById('market-total-price');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const basket = this.economy ? (this.economy.caughtFishBasket || []) : [];
+    let totalPrice = 0;
+    basket.forEach(f => { totalPrice += f.price; });
+
+    if (totalCountEl) totalCountEl.textContent = basket.length;
+    if (totalPriceEl) totalPriceEl.textContent = totalPrice.toLocaleString();
+
+    if (basket.length === 0) {
+      container.innerHTML = `
+        <div class="market-empty-msg">
+          🧺 현재 어획 바구니가 비어있습니다냥!<br>
+          바다로 나가서 물고기를 낚아오면 여기서 골드로 판매하거나 아쿠아리움에 전시할 수 있다냥! 🎣✨
+        </div>
+      `;
+      return;
+    }
+
+    basket.forEach(item => {
+      const species = this.encyclopedia.getFishData(item.speciesId);
+      const card = document.createElement('div');
+      card.className = `market-card ${item.isShiny ? 'is-shiny' : ''}`;
+      card.innerHTML = `
+        <canvas class="market-card-preview" width="90" height="60"></canvas>
+        <div class="market-card-title">${item.isShiny ? '✨ ' : ''}${item.name}</div>
+        <div class="market-card-sub">${item.sizeCm} cm | ${species ? species.zone.toUpperCase() : '바다'}</div>
+        <div class="market-card-price">💰 ${item.price.toLocaleString()} G</div>
+        <div class="market-card-actions">
+          <button class="market-btn-sell" data-basket-id="${item.basketId}">💰 판매</button>
+          <button class="market-btn-aqua" data-basket-id="${item.basketId}">🏠 수집</button>
+        </div>
+      `;
+
+      // Render fish preview canvas
+      const canvas = card.querySelector('.market-card-preview');
+      if (canvas && species) {
+        Fish.drawPreview(canvas, species, true, item.isShiny);
+      }
+
+      // Sell Button
+      const btnSell = card.querySelector('.market-btn-sell');
+      if (btnSell) {
+        btnSell.addEventListener('click', () => {
+          this.sound.playCoin();
+          const sold = this.economy.sellFish(item.basketId);
+          if (sold) {
+            this.hud.showNotification(`💰 ${sold.name} 판매 완료! (+${sold.price} G)`, '🪙');
+            this.renderFishMarketContent();
+          }
+        });
+      }
+
+      // Aquarium Collect Button
+      const btnAqua = card.querySelector('.market-btn-aqua');
+      if (btnAqua) {
+        btnAqua.addEventListener('click', () => {
+          if (this.sound && typeof this.sound.playBubble === 'function') this.sound.playBubble();
+          const collected = this.economy.removeFishFromBasket(item.basketId);
+          if (collected) {
+            this.aquarium.addFishToAquarium(collected);
+            this.hud.showNotification(`🐠 ${collected.name}을(를) 아쿠아리움에 수집했습니다!`, '🏠');
+            this.renderFishMarketContent();
+          }
+        });
+      }
+
+      container.appendChild(card);
+    });
   }
 
   initInventoryEvents() {
@@ -763,8 +918,39 @@ export class Modals {
         container.appendChild(card);
       });
 
+    } else if (this.currentInventoryTab === 'basket') {
+      // 3. Caught Fish Basket (현재 보관 중인 어획물)
+      const basket = this.economy ? (this.economy.caughtFishBasket || []) : [];
+      if (basket.length === 0) {
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #8d99ae; font-family: var(--font-cute); font-size: 20px;">
+            🧺 현재 바구니에 보관 중인 물고기가 없습니다냥!<br>
+            바다로 나가서 물고기를 낚아보라냥! (부두 상인에게 가면 판매/수집 가능) 🎣
+          </div>
+        `;
+      } else {
+        basket.forEach(item => {
+          const species = this.encyclopedia.getFishData(item.speciesId);
+          const card = document.createElement('div');
+          card.className = `market-card ${item.isShiny ? 'is-shiny' : ''}`;
+          card.innerHTML = `
+            <canvas class="market-card-preview" width="90" height="60"></canvas>
+            <div class="market-card-title">${item.isShiny ? '✨ ' : ''}${item.name}</div>
+            <div class="market-card-sub">${item.sizeCm} cm | ${species ? species.zone.toUpperCase() : '바다'}</div>
+            <div class="market-card-price">예상 가치: 💰 ${item.price.toLocaleString()} G</div>
+            <div class="card-hint-text" style="font-size: 11px; color: #64748b; margin-top: 4px;">부두 상인에게 판매/수집 가능</div>
+          `;
+
+          const canvas = card.querySelector('.market-card-preview');
+          if (canvas && species) {
+            Fish.drawPreview(canvas, species, true, item.isShiny);
+          }
+          container.appendChild(card);
+        });
+      }
+
     } else if (this.currentInventoryTab === 'catches') {
-      // 3. Caught Fish Records with Visuals
+      // 4. Caught Fish Cumulative Records with Visuals
       const caughtSpecies = FISH_SPECIES.filter(f => {
         const rec = this.encyclopedia.getRecord(f.id);
         return rec.caughtCount > 0;

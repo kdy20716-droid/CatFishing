@@ -434,6 +434,9 @@ export class Economy {
       lucky_charm: 0
     };
 
+    // 🧺 Caught Fish Basket (잡은 물고기 보관 바구니: 상인에게 판매하거나 아쿠아리움에 수집)
+    this.caughtFishBasket = [];
+
     this.loadFromStorage();
   }
 
@@ -458,6 +461,7 @@ export class Economy {
         this.hookCount = data.hookCount || 1;
         this.baitInventory = Object.assign(this.baitInventory, data.baitInventory || {});
         this.upgradeLevels = Object.assign(this.upgradeLevels, data.upgradeLevels || {});
+        this.caughtFishBasket = Array.isArray(data.caughtFishBasket) ? data.caughtFishBasket : [];
       }
     } catch (e) {
       console.warn("Failed to load economy:", e);
@@ -482,13 +486,68 @@ export class Economy {
         useRocket: this.useRocket,
         hookCount: this.hookCount,
         baitInventory: this.baitInventory,
-        upgradeLevels: this.upgradeLevels
+        upgradeLevels: this.upgradeLevels,
+        caughtFishBasket: this.caughtFishBasket
       };
       localStorage.setItem('cozy_cat_economy_v1', JSON.stringify(data));
       if (this.onSaveCallback) this.onSaveCallback();
     } catch (e) {
       console.warn("Failed to save economy:", e);
     }
+  }
+
+  addFishToBasket(fish, price, exp) {
+    const item = {
+      basketId: 'f_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+      speciesId: fish.data.id,
+      name: fish.data.name,
+      engName: fish.data.engName,
+      zone: fish.data.zone,
+      rarity: fish.data.rarity,
+      isShiny: !!fish.isShiny,
+      sizeCm: fish.sizeCm,
+      price: price,
+      exp: exp,
+      caughtAt: Date.now()
+    };
+    this.caughtFishBasket.unshift(item);
+    this.saveToStorage();
+    return item;
+  }
+
+  sellFish(basketId) {
+    const idx = this.caughtFishBasket.findIndex(f => f.basketId === basketId);
+    if (idx !== -1) {
+      const item = this.caughtFishBasket[idx];
+      this.addGold(item.price);
+      this.caughtFishBasket.splice(idx, 1);
+      this.saveToStorage();
+      return item;
+    }
+    return null;
+  }
+
+  sellAllFish() {
+    if (this.caughtFishBasket.length === 0) return { count: 0, totalGold: 0 };
+    let totalGold = 0;
+    const count = this.caughtFishBasket.length;
+    this.caughtFishBasket.forEach(f => {
+      totalGold += f.price;
+    });
+    this.addGold(totalGold);
+    this.caughtFishBasket = [];
+    this.saveToStorage();
+    return { count, totalGold };
+  }
+
+  removeFishFromBasket(basketId) {
+    const idx = this.caughtFishBasket.findIndex(f => f.basketId === basketId);
+    if (idx !== -1) {
+      const item = this.caughtFishBasket.splice(idx, 1)[0];
+      this.saveToStorage();
+      return item;
+    }
+    return null;
   }
 
   equipCatSkin(skinId) {

@@ -385,16 +385,17 @@ export class HUD {
             <span class="val">${size} cm ${catchResult.isNewRecord ? '<span class="new-tag">최대 기록!</span>' : ''}</span>
           </div>
           <div class="stat-box">
-            <span class="label">획득 골드 ${isShiny ? '(3배!)' : ''}</span>
-            <span class="val gold-text">+${price} G</span>
+            <span class="label">예상 판매가 ${isShiny ? '(3배!)' : ''}</span>
+            <span class="val gold-text">${price} G</span>
           </div>
           <div class="stat-box">
-            <span class="label">경험치 ${isShiny ? '(3배!)' : ''}</span>
+            <span class="label">획득 경험치 ${isShiny ? '(3배!)' : ''}</span>
             <span class="val exp-text">+${expGain} EXP</span>
           </div>
         </div>
 
         <p class="catch-desc">${data.description}</p>
+        <div class="basket-stored-banner">🧺 어획 바구니에 보관되었습니다. (부두 상인에게 판매/수집 가능)</div>
         ${catchResult.isFirstTime ? '<div class="first-caught-banner">🎉 새로운 어종 도감 등록 완료!</div>' : ''}
 
         <div class="catch-actions">

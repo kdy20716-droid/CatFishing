@@ -193,24 +193,24 @@
 
           <!-- Quick Action Hub Cards -->
           <div class="dock-hub-grid">
-            <!-- 1. Shop (미끼 & 장비) -->
+            <!-- 1. Fish Market (어시장 - 판매 & 수집) -->
+            <div class="dock-card highlight-card" id="dock-btn-open-market">
+              <div class="dock-card-icon">🐟</div>
+              <div class="dock-card-info">
+                <div class="dock-card-title">어획물 정산 & 수집소</div>
+                <div class="dock-card-desc">잡은 물고기를 골드로 판매하거나 아쿠아리움에 전시</div>
+              </div>
+              <button class="btn-primary dock-card-btn">어시장 열기 (<span id="dock-basket-count">0</span>마리)</button>
+            </div>
+
+            <!-- 2. Shop (미끼 & 장비) -->
             <div class="dock-card" id="dock-btn-open-shop">
               <div class="dock-card-icon">🛒</div>
               <div class="dock-card-info">
                 <div class="dock-card-title">미끼 & 장비 상점</div>
                 <div class="dock-card-desc">식빵, 지렁이, 루어, 신형 낚싯대와 보트 구매</div>
               </div>
-              <button class="btn-primary dock-card-btn">상점 입장</button>
-            </div>
-
-            <!-- 2. Fish Market / Encyclopedia (도감 & 판매) -->
-            <div class="dock-card" id="dock-btn-open-encyclo">
-              <div class="dock-card-icon">📖</div>
-              <div class="dock-card-info">
-                <div class="dock-card-title">물고기 생태 도감</div>
-                <div class="dock-card-desc">잡은 물고기 수집 기록과 특별 어종 도감 확인</div>
-              </div>
-              <button class="btn-secondary dock-card-btn">도감 열기</button>
+              <button class="btn-secondary dock-card-btn">상점 입장</button>
             </div>
 
             <!-- 3. Aquarium (아쿠아리움) -->
@@ -223,7 +223,17 @@
               <button class="btn-secondary dock-card-btn">수족관 가기</button>
             </div>
 
-            <!-- 4. Wardrobe (옷장) -->
+            <!-- 4. Fish Encyclopedia (도감) -->
+            <div class="dock-card" id="dock-btn-open-encyclo">
+              <div class="dock-card-icon">📖</div>
+              <div class="dock-card-info">
+                <div class="dock-card-title">물고기 생태 도감</div>
+                <div class="dock-card-desc">잡은 물고기 수집 기록과 특별 어종 도감 확인</div>
+              </div>
+              <button class="btn-secondary dock-card-btn">도감 열기</button>
+            </div>
+
+            <!-- 5. Wardrobe (옷장) -->
             <div class="dock-card" id="dock-btn-open-wardrobe">
               <div class="dock-card-icon">👗</div>
               <div class="dock-card-info">
@@ -242,6 +252,25 @@
       </div>
     </div>
 
+    <!-- Fish Market Modal (어시장 / 잡은 물고기 판매 & 아쿠아리움 수집소) -->
+    <div id="fish-market-modal" class="modal-backdrop">
+      <div class="modal-window market-window">
+        <div class="modal-header">
+          <h2>🐟 냥이 부두 어시장 (어획물 정산 & 수집소)</h2>
+          <button class="modal-close-btn">&times;</button>
+        </div>
+        <div class="market-sub-header">
+          <div class="market-summary-pill">
+            <span>🧺 보관 중인 어획물: <strong id="market-total-count">0</strong>마리</span>
+            <span class="pill-divider">|</span>
+            <span>💰 예상 총 판매액: <strong id="market-total-price">0</strong> G</span>
+          </div>
+          <button id="btn-market-sell-all" class="btn-primary btn-sell-all">✨ 모두 판매하기</button>
+        </div>
+        <div id="market-fish-list" class="market-grid"></div>
+      </div>
+    </div>
+
     <!-- Inventory Modal (내 가방 / 인벤토리) -->
     <div id="inventory-modal" class="modal-backdrop">
       <div class="modal-window inventory-window">
@@ -252,7 +281,8 @@
         <div class="inventory-tabs">
           <button class="inv-tab-btn active" data-tab="baits">🍞 미끼 & 아이템</button>
           <button class="inv-tab-btn" data-tab="equipment">🎣 보유 장비</button>
-          <button class="inv-tab-btn" data-tab="catches">🐟 잡은 물고기 기록</button>
+          <button class="inv-tab-btn" data-tab="basket">🧺 어획 바구니</button>
+          <button class="inv-tab-btn" data-tab="catches">📖 누적 어획 기록</button>
         </div>
         <div id="inventory-items-container" class="inventory-grid"></div>
       </div>

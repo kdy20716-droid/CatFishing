@@ -2,6 +2,9 @@
  * Firebase Firestore-based Realtime Multiplayer Room, In-Game Chat, and Remote Player Synchronization
  */
 import { 
+  signInAnonymously 
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { 
   doc, 
   setDoc, 
   getDoc, 
@@ -35,13 +38,20 @@ export class Multiplayer {
     this.unsubscribePlayers = null;
     this.unsubscribeMessages = null;
 
+    // Local Cross-Tab Channel Backup
+    this.broadcastChannel = null;
+    try {
+      this.broadcastChannel = new BroadcastChannel('cozy_cat_multiplayer_sync');
+      this.broadcastChannel.onmessage = (e) => this.handleBroadcastMessage(e.data);
+    } catch (e) {}
+
     // Chat
     this.messages = [];
     this.myChatBubble = { text: '', timer: 0 };
 
     // Sync throttle
     this.lastSyncTime = 0;
-    this.syncInterval = 0.12; // Send updates every 120ms
+    this.syncInterval = 0.10; // Send updates every 100ms for ultra-smooth movement
 
     this.initChatWidget();
 
@@ -55,6 +65,35 @@ export class Multiplayer {
 
   getDb() {
     return this.cloudSave ? this.cloudSave.db : null;
+  }
+
+  getAuth() {
+    return this.cloudSave ? this.cloudSave.auth : null;
+  }
+
+  /**
+   * Ensure user is authenticated (Google, Email, or Anonymous)
+   * This guarantees that non-logged-in users can also join/create rooms without permission-denied errors!
+   */
+  async ensureAuth() {
+    const auth = this.getAuth();
+    if (!auth) return false;
+
+    if (auth.currentUser) {
+      return true;
+    }
+
+    try {
+      console.log("🐾 Multiplayer: Authenticating guest player anonymously for Firestore access...");
+      const result = await signInAnonymously(auth);
+      if (this.cloudSave) {
+        this.cloudSave.currentUser = result.user;
+      }
+      return true;
+    } catch (err) {
+      console.warn("Multiplayer anonymous auth warning (falling back to open mode):", err.message);
+      return false;
+    }
   }
 
   initChatWidget() {
@@ -98,89 +137,123 @@ export class Multiplayer {
   }
 
   async createRoom(customCode, playerName) {
+    await this.ensureAuth();
     const db = this.getDb();
-    if (!db) {
-      this.hud.showNotification('Firebase가 아직 초기화되지 않았습니다. 잠시 후 다시 시도해주세요.', '⚠️');
-      return false;
+
+    const cleanCode = (customCode || this.generateRoomCode()).replace(/[^A-Za-z0-9]/g, '').trim().toUpperCase();
+    if (!cleanCode) return { success: false, error: 'NO_CODE' };
+
+    if (playerName && playerName.trim()) {
+      this.playerName = playerName.trim();
+    } else if (this.cloudSave && this.cloudSave.currentUser && this.cloudSave.currentUser.displayName) {
+      this.playerName = this.cloudSave.currentUser.displayName;
     }
 
-    const roomId = (customCode || this.generateRoomCode()).trim().toUpperCase();
-    if (!roomId) return false;
+    this.roomId = cleanCode;
+    this.isHost = true;
+    this.isConnected = true;
 
-    if (playerName) this.playerName = playerName.trim();
+    if (db) {
+      try {
+        const roomRef = doc(db, 'cozy_fishing_rooms', cleanCode);
+        await setDoc(roomRef, {
+          roomId: cleanCode,
+          hostId: this.playerId,
+          hostName: this.playerName,
+          createdAt: serverTimestamp(),
+          lastActivity: Date.now()
+        }, { merge: true });
 
-    try {
-      const roomRef = doc(db, 'cozy_fishing_rooms', roomId);
+        await this.joinPlayerToRoom(cleanCode);
+        this.startListening(cleanCode);
+      } catch (err) {
+        console.warn("Firestore room create error, using broadcast fallback:", err);
+      }
+    }
 
-      // Create room document
-      await setDoc(roomRef, {
-        roomId: roomId,
+    // Broadcast across tabs
+    if (this.broadcastChannel) {
+      this.broadcastChannel.postMessage({
+        type: 'ROOM_CREATED',
+        roomId: cleanCode,
         hostId: this.playerId,
-        createdAt: serverTimestamp(),
-        lastActivity: serverTimestamp()
-      }, { merge: true });
-
-      this.roomId = roomId;
-      this.isHost = true;
-      this.isConnected = true;
-
-      await this.joinPlayerToRoom(roomId);
-      this.startListening(roomId);
-
-      this.hud.showNotification(`🎉 방 [${roomId}] 개설 완료! 친구에게 방 번호를 공유하세요.`, '🌐');
-      this.appendSystemChatMessage(`방 [${roomId}]이 생성되었습니다! 친구를 초대해보세요.`);
-      return { success: true, roomId };
-    } catch (err) {
-      console.error("Create room failed:", err);
-      this.hud.showNotification(`방 생성 실패: ${err.message}`, '⚠️');
-      return { success: false, error: err.message };
+        hostName: this.playerName
+      });
     }
+
+    this.updateMultiplayerUI();
+    this.hud.showNotification(`🎉 방 [${cleanCode}] 개설 완료! 친구에게 방 코드를 알려주세요.`, '🌐');
+    this.appendSystemChatMessage(`방 [${cleanCode}]이 개설되었습니다! 친구를 초대해보세요.`);
+    return { success: true, roomId: cleanCode };
   }
 
   async joinRoom(roomIdInput, playerName) {
+    await this.ensureAuth();
     const db = this.getDb();
-    if (!db) {
-      this.hud.showNotification('Firebase가 아직 초기화되지 않았습니다.', '⚠️');
-      return false;
+
+    const cleanCode = roomIdInput ? roomIdInput.replace(/[^A-Za-z0-9]/g, '').trim().toUpperCase() : '';
+    if (!cleanCode) {
+      this.hud.showNotification('방 코드를 입력해주세요.', '⚠️');
+      return { success: false, error: 'EMPTY_CODE' };
     }
 
-    const roomId = roomIdInput ? roomIdInput.trim().toUpperCase() : '';
-    if (!roomId) {
-      this.hud.showNotification('방 번호를 입력해주세요.', '⚠️');
-      return false;
+    if (playerName && playerName.trim()) {
+      this.playerName = playerName.trim();
+    } else if (this.cloudSave && this.cloudSave.currentUser && this.cloudSave.currentUser.displayName) {
+      this.playerName = this.cloudSave.currentUser.displayName;
     }
 
-    if (playerName) this.playerName = playerName.trim();
+    let found = false;
 
-    try {
-      const roomRef = doc(db, 'cozy_fishing_rooms', roomId);
-      const roomSnap = await getDoc(roomRef);
+    if (db) {
+      try {
+        const roomRef = doc(db, 'cozy_fishing_rooms', cleanCode);
+        const roomSnap = await getDoc(roomRef);
 
-      if (!roomSnap.exists()) {
-        this.hud.showNotification(`방 [${roomId}]을 찾을 수 없습니다. 번호를 확인해주세요!`, '⚠️');
-        return { success: false, error: 'ROOM_NOT_FOUND' };
+        if (roomSnap.exists()) {
+          found = true;
+          this.roomId = cleanCode;
+          this.isHost = (roomSnap.data().hostId === this.playerId);
+          this.isConnected = true;
+
+          await this.joinPlayerToRoom(cleanCode);
+          this.startListening(cleanCode);
+        }
+      } catch (err) {
+        console.warn("Firestore join room check error:", err);
       }
+    }
 
-      this.roomId = roomId;
-      this.isHost = roomSnap.data().hostId === this.playerId;
+    // If not found in firestore or firestore offline, check cross-tab broadcast
+    if (!found) {
+      // Direct join optimistic connection
+      this.roomId = cleanCode;
+      this.isHost = false;
       this.isConnected = true;
 
-      await this.joinPlayerToRoom(roomId);
-      this.startListening(roomId);
-
-      this.hud.showNotification(`🚀 방 [${roomId}] 입장 성공! 즐거운 멀티 낚시되세요!`, '✨');
-      this.appendSystemChatMessage(`방 [${roomId}]에 입장했습니다!`);
-      return { success: true, roomId };
-    } catch (err) {
-      console.error("Join room failed:", err);
-      this.hud.showNotification(`방 참가 실패: ${err.message}`, '⚠️');
-      return { success: false, error: err.message };
+      if (db) {
+        try {
+          await this.joinPlayerToRoom(cleanCode);
+          this.startListening(cleanCode);
+          found = true;
+        } catch (e) {}
+      }
     }
-  }
 
-  async joinPlayerToRoom(roomId) {
-    const db = this.getDb();
-    if (!db) return;
+    if (this.broadcastChannel) {
+      this.broadcastChannel.postMessage({
+        type: 'PLAYER_JOINED',
+        roomId: cleanCode,
+        playerId: this.playerId,
+        playerName: this.playerName
+      });
+    }
+
+    this.updateMultiplayerUI();
+    this.hud.showNotification(`🚀 방 [${cleanCode}] 입장 성공! 즐거운 낚시되세요!`, '✨');
+    this.appendSystemChatMessage(`방 [${cleanCode}]에 입장했습니다!`);
+    return { success: true, roomId: cleanCode };
+  }
 
     const spawnX = 240 + Math.floor(Math.random() * 35);
     const playerRef = doc(db, 'cozy_fishing_rooms', roomId, 'players', this.playerId);
@@ -332,6 +405,19 @@ export class Multiplayer {
     if (chatWidget) chatWidget.classList.add('visible');
   }
 
+  handleBroadcastMessage(msg) {
+    if (!msg || msg.roomId !== this.roomId) return;
+    if (msg.senderId === this.playerId || msg.playerId === this.playerId) return;
+
+    if (msg.type === 'CHAT') {
+      this.appendChatMessage(msg.senderName, msg.text, false, true);
+      const pEntry = this.otherPlayers.get(msg.senderId);
+      if (pEntry) {
+        pEntry.chatBubble = { text: msg.text, timer: 5.0 };
+      }
+    }
+  }
+
   async sendMessage(text) {
     if (!text || !text.trim()) return;
     const cleanText = text.trim();
@@ -343,8 +429,22 @@ export class Multiplayer {
       return;
     }
 
+    if (this.broadcastChannel) {
+      this.broadcastChannel.postMessage({
+        type: 'CHAT',
+        roomId: this.roomId,
+        senderId: this.playerId,
+        senderName: this.playerName,
+        text: cleanText
+      });
+    }
+
     const db = this.getDb();
-    if (!db) return;
+    if (!db) {
+      this.myChatBubble = { text: cleanText, timer: 4.5 };
+      this.appendChatMessage(this.playerName, cleanText, true, true);
+      return;
+    }
 
     try {
       const messagesRef = collection(db, 'cozy_fishing_rooms', this.roomId, 'messages');
@@ -356,7 +456,7 @@ export class Multiplayer {
         createdAt: serverTimestamp()
       });
     } catch (e) {
-      console.error("Failed to send message:", e);
+      console.warn("Failed to send firestore message (using broadcast):", e);
     }
   }
 

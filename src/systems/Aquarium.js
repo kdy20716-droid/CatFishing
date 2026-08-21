@@ -14,6 +14,7 @@ export class Aquarium {
     this.isOpen = false;
     this.theme = 'coral'; // 'coral', 'night_glow', 'ancient'
     this.tankFish = [];
+    this.placedFish = []; // Array of collected fish instances: [{ speciesId, isShiny, sizeCm, addedAt }]
     this.foodFlakes = [];
     this.coinBubbles = [];
     this.hearts = [];
@@ -22,6 +23,48 @@ export class Aquarium {
     this.tankWidth = 900;
     this.tankHeight = 550;
     this.passiveCoinTimer = 0;
+
+    this.loadFromStorage();
+  }
+
+  loadFromStorage() {
+    try {
+      const saved = localStorage.getItem('cozy_cat_aquarium_v1');
+      if (saved) {
+        const data = JSON.parse(saved);
+        this.theme = data.theme || 'coral';
+        this.placedFish = Array.isArray(data.placedFish) ? data.placedFish : [];
+      }
+    } catch (e) {
+      console.warn("Failed to load aquarium:", e);
+    }
+  }
+
+  saveToStorage() {
+    try {
+      const data = {
+        theme: this.theme,
+        placedFish: this.placedFish
+      };
+      localStorage.setItem('cozy_cat_aquarium_v1', JSON.stringify(data));
+      if (this.onSaveCallback) this.onSaveCallback();
+    } catch (e) {
+      console.warn("Failed to save aquarium:", e);
+    }
+  }
+
+  addFishToAquarium(basketItem) {
+    const item = {
+      instanceId: 'aq_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      speciesId: basketItem.speciesId,
+      name: basketItem.name,
+      isShiny: !!basketItem.isShiny,
+      sizeCm: basketItem.sizeCm,
+      addedAt: Date.now()
+    };
+    this.placedFish.push(item);
+    this.saveToStorage();
+    return item;
   }
 
   open() {
@@ -35,25 +78,39 @@ export class Aquarium {
 
   setTheme(themeName) {
     this.theme = themeName;
+    this.saveToStorage();
   }
 
   populateTank() {
     this.tankFish = [];
-    const unlocked = this.encyclopedia.getUnlockedFish();
 
-    unlocked.forEach(species => {
-      // Spawn 1-2 instances of each caught species
-      const count = Math.min(2, Math.max(1, Math.floor((this.encyclopedia.getRecord(species.id).caughtCount || 1) / 3)));
-      for (let i = 0; i < count; i++) {
+    // 1. If user has placed custom collected fish, spawn them!
+    if (this.placedFish.length > 0) {
+      this.placedFish.forEach(item => {
+        const species = this.encyclopedia.getFishData(item.speciesId);
+        if (species) {
+          const startPos = new Vector2(
+            60 + Math.random() * (this.tankWidth - 120),
+            60 + Math.random() * (this.tankHeight - 120)
+          );
+          const fish = new Fish(species, startPos, item.isShiny);
+          fish.scale = Math.min(1.2, Math.max(0.7, item.sizeCm / 40));
+          this.tankFish.push(fish);
+        }
+      });
+    } else {
+      // Fallback: spawn 1 instance of unlocked species
+      const unlocked = this.encyclopedia.getUnlockedFish();
+      unlocked.slice(0, 8).forEach(species => {
         const startPos = new Vector2(
-          50 + Math.random() * (this.tankWidth - 100),
+          60 + Math.random() * (this.tankWidth - 120),
           60 + Math.random() * (this.tankHeight - 120)
         );
-        const fish = new Fish(species, startPos);
+        const fish = new Fish(species, startPos, false);
         fish.scale = 0.85;
         this.tankFish.push(fish);
-      }
-    });
+      });
+    }
   }
 
   dropFood(x, y) {

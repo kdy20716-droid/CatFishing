@@ -300,13 +300,17 @@ class Game {
     }
 
     const leveledUp = this.economy.addExp(exp);
-    const finalGold = this.economy.addGold(price);
 
-    const result = this.encyclopedia.recordCatch(fish.data.id, fish.sizeCm, finalGold, fish.isShiny);
-    this.hud.showCatchPopup(fish, result);
+    // 🧺 어획 바구니에 물고기 보관 (부두 상인에게 가서 판매하거나 아쿠아리움에 수집!)
+    const basketItem = this.economy.addFishToBasket(fish, price, exp);
+
+    const result = this.encyclopedia.recordCatch(fish.data.id, fish.sizeCm, price, fish.isShiny);
+    this.hud.showCatchPopup(fish, { ...result, basketPrice: price });
 
     if (fish.isShiny) {
-      this.hud.showNotification(`✨ 이로치(Shiny) ${fish.data.name} 낚시 성공! (+${finalGold} G)`, '🌟');
+      this.hud.showNotification(`✨ 이로치 ${fish.data.name} 낚시 성공! 어획 바구니에 보관되었습니다.`, '🌟');
+    } else {
+      this.hud.showNotification(`🐟 ${fish.data.name}(${fish.sizeCm}cm) 어획 바구니에 쏙! 부두 상인에게 판매/수집하세요.`, '🧺');
     }
 
     if (leveledUp) {
