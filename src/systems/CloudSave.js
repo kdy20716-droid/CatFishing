@@ -295,28 +295,28 @@ export class CloudSave {
       timestamp: Date.now(),
       updatedAt: new Date().toISOString(),
       economy: {
-        gold: this.economy.gold,
-        exp: this.economy.exp,
-        level: this.economy.level,
-        currentRodId: this.economy.currentRodId,
-        ownedRods: this.economy.ownedRods,
-        currentBoatId: this.economy.currentBoatId,
-        ownedBoats: this.economy.ownedBoats,
-        currentHatId: this.economy.currentHatId,
-        ownedHats: this.economy.ownedHats,
-        currentBaitId: this.economy.currentBaitId,
-        useRocket: this.economy.useRocket,
-        hookCount: this.economy.hookCount,
-        baitInventory: this.economy.baitInventory,
-        upgradeLevels: this.economy.upgradeLevels,
-        caughtFishBasket: this.economy.caughtFishBasket || []
+        gold: Number(this.economy?.gold ?? 50),
+        exp: Number(this.economy?.exp ?? 0),
+        level: Number(this.economy?.level ?? 1),
+        currentRodId: this.economy?.currentRodId || 'rod_twig',
+        ownedRods: Array.isArray(this.economy?.ownedRods) ? this.economy.ownedRods : ['rod_twig'],
+        currentBoatId: this.economy?.currentBoatId || 'boat_raft',
+        ownedBoats: Array.isArray(this.economy?.ownedBoats) ? this.economy.ownedBoats : ['boat_raft'],
+        currentHatId: this.economy?.currentHatId || 'hat_none',
+        ownedHats: Array.isArray(this.economy?.ownedHats) ? this.economy.ownedHats : ['hat_none'],
+        currentBaitId: this.economy?.currentBaitId || 'bread',
+        useRocket: Boolean(this.economy?.useRocket),
+        hookCount: Number(this.economy?.hookCount || 1),
+        baitInventory: this.economy?.baitInventory ? { ...this.economy.baitInventory } : {},
+        upgradeLevels: this.economy?.upgradeLevels ? { ...this.economy.upgradeLevels } : {},
+        caughtFishBasket: Array.isArray(this.economy?.caughtFishBasket) ? this.economy.caughtFishBasket : []
       },
       encyclopedia: {
-        records: this.encyclopedia.records
+        records: this.encyclopedia?.records ? { ...this.encyclopedia.records } : {}
       },
       aquarium: {
-        placedFish: this.aquarium ? this.aquarium.placedFish : [],
-        theme: this.aquarium ? this.aquarium.theme : 'coral'
+        placedFish: Array.isArray(this.aquarium?.placedFish) ? this.aquarium.placedFish : [],
+        theme: this.aquarium?.theme || 'coral'
       }
     };
   }
@@ -476,9 +476,10 @@ export class CloudSave {
     // 2. Save to Firestore if available
     if (this.db && !this.currentUser.isSimulated) {
       try {
+        const cleanPayload = JSON.parse(JSON.stringify(saveData));
         const userDocRef = doc(this.db, 'users', this.currentUser.uid, 'saveData', 'slot1');
         await setDoc(userDocRef, {
-          ...saveData,
+          ...cleanPayload,
           serverTimestamp: serverTimestamp()
         }, { merge: true });
         console.log("☁️ Firestore Cloud Auto-Save successful!");
