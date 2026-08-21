@@ -392,7 +392,6 @@ export class Modals {
 
     // Create Room Submit
     const btnCreateSubmit = document.getElementById('btn-multi-create-submit');
-    const inputCreateCode = document.getElementById('multi-create-code');
     const inputCreateName = document.getElementById('multi-create-name');
 
     const handleCreateRoom = async () => {
