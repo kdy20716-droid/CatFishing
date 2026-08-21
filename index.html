@@ -6,7 +6,7 @@
   <title>🐾 냥이의 바다 낚시 힐링 여행 (Cozy Cat Fishing)</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="shortcut icon" href="assets/favicon.svg">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2.3.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Gothic:wght@400;700;800&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
@@ -172,7 +172,7 @@
 
     <!-- Dock Merchant Cabin Modal (부두막 고양이 상인 모달) -->
     <div id="dock-merchant-modal" class="modal-backdrop">
-      <div class="modal-window dock-merchant-window">
+      <div class="modal-window dock-merchant-window" style="max-width: 1060px; width: 95%;">
         <div class="modal-header dock-modal-header">
           <h2>🏪 포근한 부두막 쉼터 & 고양이 상점</h2>
           <button class="modal-close-btn">&times;</button>
@@ -192,8 +192,8 @@
             </div>
           </div>
 
-          <!-- Quick Action Hub Cards (3x2 Grid) -->
-          <div class="dock-hub-grid">
+          <!-- Quick Action Hub Cards (3x2 Grid: 위에 3개, 아래에 3개) -->
+          <div class="dock-hub-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
             <!-- 1. Fish Market (어시장 - 판매 & 수집) -->
             <div class="dock-card highlight-card" id="dock-btn-open-market">
               <div class="dock-card-icon">🐟</div>
