@@ -273,10 +273,10 @@ class Game {
         this.hud.showNotification(isMuted ? '🔇 배경음 & 효과음 음소거' : '🎵 소리 켜짐', isMuted ? '🔇' : '🎵');
       }
 
-      // 🏪 [R] 키: 고양이 상인 범위 안(x <= 320) 또는 이미 열린 상태일 때만 상인 창 열기 / 닫기 토글
+      // 🏪 [R] 키: 고양이 상인 범위 안(x <= 320) 또는 이미 상점 관련 창이 열린 상태일 때 토글
       if (code === 'KeyR') {
         const isNearMerchant = (this.cat.pos.x <= 320);
-        if (isNearMerchant || this.modals.isDockMerchantOpen()) {
+        if (isNearMerchant || this.modals.isDockMerchantOpen() || this.modals.isFishMarketOpen() || this.modals.isMerchantGuideOpen()) {
           this.modals.toggleDockMerchant();
         }
       }

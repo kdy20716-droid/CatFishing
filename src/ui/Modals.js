@@ -537,6 +537,10 @@ export class Modals {
     return this.dockMerchantModal && this.dockMerchantModal.classList.contains('visible');
   }
 
+  isMerchantGuideOpen() {
+    return this.merchantGuideModal && this.merchantGuideModal.classList.contains('visible');
+  }
+
   isFishMarketOpen() {
     return this.fishMarketModal && this.fishMarketModal.classList.contains('visible');
   }
@@ -558,7 +562,7 @@ export class Modals {
   }
 
   toggleDockMerchant() {
-    if (this.isDockMerchantOpen() || this.isFishMarketOpen()) {
+    if (this.isDockMerchantOpen() || this.isFishMarketOpen() || this.isMerchantGuideOpen()) {
       this.closeAll();
     } else {
       this.openDockMerchantModal();
@@ -662,8 +666,17 @@ export class Modals {
     }
 
     const btnTips = document.getElementById('dock-btn-open-tips');
+    const btnTipsAction = document.getElementById('btn-tips-action');
     if (btnTips) {
-      btnTips.addEventListener('click', () => {
+      btnTips.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.sound.playClick();
+        this.openMerchantGuideModal();
+      });
+    }
+    if (btnTipsAction) {
+      btnTipsAction.addEventListener('click', (e) => {
+        e.stopPropagation();
         this.sound.playClick();
         this.openMerchantGuideModal();
       });
@@ -680,6 +693,9 @@ export class Modals {
 
   openMerchantGuideModal() {
     this.closeAll();
+    if (!this.merchantGuideModal) {
+      this.merchantGuideModal = document.getElementById('merchant-guide-modal');
+    }
     if (this.merchantGuideModal) {
       this.sound.playClick();
       this.merchantGuideModal.classList.add('visible');
