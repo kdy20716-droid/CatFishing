@@ -1,7 +1,7 @@
 /**
  * Interactive Modals (Shop, Fish Encyclopedia, Aquarium Controls, Settings, Guide)
  */
-import { RODS, BOATS, BAITS, HATS, PASSIVE_UPGRADES } from '../systems/Economy.js';
+import { RODS, BOATS, BAITS, HATS, PASSIVE_UPGRADES, CAT_SKINS } from '../systems/Economy.js';
 import { FISH_SPECIES } from '../systems/Encyclopedia.js';
 import { getBaitIconSvg } from './BaitIcons.js';
 
@@ -20,17 +20,41 @@ export class Modals {
     this.guideModal = document.getElementById('guide-modal');
     this.authModal = document.getElementById('auth-modal');
     this.firebaseConfigModal = document.getElementById('firebase-config-modal');
+    this.multiplayerModal = document.getElementById('multiplayer-modal');
+    this.wardrobeModal = document.getElementById('wardrobe-modal');
     this.userDropdownMenu = document.getElementById('user-dropdown-menu');
 
     this.currentShopTab = 'rods';
     this.currentEncyclopediaFilter = 'all';
+    this.currentWardrobeTab = 'skins';
     this.authMode = 'login'; // 'login' or 'signup'
+    this.multiTab = 'create'; // 'create' or 'join'
+    this.rod = null;
+    this.multiplayer = null;
 
     this.initEventListeners();
+    this.initMultiplayerEvents();
+    this.initWardrobeEvents();
+  }
+
+  setRod(rod) {
+    this.rod = rod;
   }
 
   setCloudSave(cloudSave) {
     this.cloudSave = cloudSave;
+  }
+
+  setMultiplayer(multiplayer) {
+    this.multiplayer = multiplayer;
+  }
+
+  canChangeEquipment() {
+    if (this.rod && this.rod.state !== 'READY') {
+      this.hud.showNotification('찌를 던진 후에는 장비를 변경할 수 없습니다!', '🔒');
+      return false;
+    }
+    return true;
   }
 
   initEventListeners() {
@@ -273,14 +297,271 @@ export class Modals {
     }
   }
 
+  initMultiplayerEvents() {
+    // Top Bar Open Button
+    const btnMultiOpen = document.getElementById('btn-open-multiplayer');
+    if (btnMultiOpen) {
+      btnMultiOpen.addEventListener('click', () => {
+        this.sound.playClick();
+        this.openMultiplayerModal();
+      });
+    }
+
+    // Tabs
+    const tabCreate = document.getElementById('multi-tab-create');
+    const tabJoin = document.getElementById('multi-tab-join');
+    const panelCreate = document.getElementById('multi-panel-create');
+    const panelJoin = document.getElementById('multi-panel-join');
+
+    if (tabCreate && tabJoin) {
+      tabCreate.addEventListener('click', () => {
+        this.sound.playClick();
+        this.multiTab = 'create';
+        tabCreate.classList.add('active');
+        tabJoin.classList.remove('active');
+        if (panelCreate) panelCreate.classList.remove('hidden');
+        if (panelJoin) panelJoin.classList.add('hidden');
+      });
+
+      tabJoin.addEventListener('click', () => {
+        this.sound.playClick();
+        this.multiTab = 'join';
+        tabJoin.classList.add('active');
+        tabCreate.classList.remove('active');
+        if (panelJoin) panelJoin.classList.remove('hidden');
+        if (panelCreate) panelCreate.classList.add('hidden');
+      });
+    }
+
+    // Gen Code button
+    const btnGenCode = document.getElementById('btn-multi-gen-code');
+    const inputCreateCode = document.getElementById('multi-create-code');
+    if (btnGenCode && inputCreateCode) {
+      btnGenCode.addEventListener('click', () => {
+        this.sound.playClick();
+        if (this.multiplayer) {
+          inputCreateCode.value = this.multiplayer.generateRoomCode();
+        }
+      });
+    }
+
+    // Create Room Submit
+    const btnCreateSubmit = document.getElementById('btn-multi-create-submit');
+    if (btnCreateSubmit) {
+      btnCreateSubmit.addEventListener('click', async () => {
+        this.sound.playClick();
+        const nameInput = document.getElementById('multi-create-name');
+        const codeInput = document.getElementById('multi-create-code');
+        const name = nameInput ? nameInput.value.trim() : '';
+        const code = codeInput ? codeInput.value.trim() : '';
+
+        if (this.multiplayer) {
+          const res = await this.multiplayer.createRoom(code, name);
+          if (res && res.success) {
+            this.closeAll();
+          }
+        }
+      });
+    }
+
+    // Join Room Submit
+    const btnJoinSubmit = document.getElementById('btn-multi-join-submit');
+    if (btnJoinSubmit) {
+      btnJoinSubmit.addEventListener('click', async () => {
+        this.sound.playClick();
+        const nameInput = document.getElementById('multi-join-name');
+        const codeInput = document.getElementById('multi-join-code');
+        const name = nameInput ? nameInput.value.trim() : '';
+        const code = codeInput ? codeInput.value.trim() : '';
+
+        if (!code) {
+          this.hud.showNotification('방 번호를 입력해주세요.', '⚠️');
+          return;
+        }
+
+        if (this.multiplayer) {
+          const res = await this.multiplayer.joinRoom(code, name);
+          if (res && res.success) {
+            this.closeAll();
+          }
+        }
+      });
+    }
+
+    // Copy Room Code Button
+    const btnCopyCode = document.getElementById('btn-multi-copy-code');
+    if (btnCopyCode) {
+      btnCopyCode.addEventListener('click', async () => {
+        this.sound.playClick();
+        if (this.multiplayer && this.multiplayer.roomId) {
+          try {
+            await navigator.clipboard.writeText(this.multiplayer.roomId);
+            this.hud.showNotification(`📋 방 번호 [${this.multiplayer.roomId}] 복사 완료!`, '✨');
+          } catch (e) {
+            this.hud.showNotification(`방 번호: ${this.multiplayer.roomId}`, '📋');
+          }
+        }
+      });
+    }
+
+    // Leave Room Button
+    const btnLeaveRoom = document.getElementById('btn-multi-leave');
+    if (btnLeaveRoom) {
+      btnLeaveRoom.addEventListener('click', async () => {
+        this.sound.playClick();
+        if (this.multiplayer) {
+          await this.multiplayer.leaveRoom();
+        }
+      });
+    }
+
+    // Wardrobe Button in Top Bar
+    const btnWardrobeOpen = document.getElementById('btn-open-wardrobe');
+    if (btnWardrobeOpen) {
+      btnWardrobeOpen.addEventListener('click', () => {
+        this.sound.playClick();
+        this.openWardrobeModal();
+      });
+    }
+  }
+
+  initWardrobeEvents() {
+    // Wardrobe Tabs
+    document.querySelectorAll('.wardrobe-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.sound.playClick();
+        this.currentWardrobeTab = btn.dataset.tab;
+        document.querySelectorAll('.wardrobe-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+        this.renderWardrobeContent();
+      });
+    });
+  }
+
   closeAll() {
     if (this.shopModal) this.shopModal.classList.remove('visible');
     if (this.encyclopediaModal) this.encyclopediaModal.classList.remove('visible');
     if (this.guideModal) this.guideModal.classList.remove('visible');
     if (this.authModal) this.authModal.classList.remove('visible');
     if (this.firebaseConfigModal) this.firebaseConfigModal.classList.remove('visible');
+    if (this.multiplayerModal) this.multiplayerModal.classList.remove('visible');
+    if (this.wardrobeModal) this.wardrobeModal.classList.remove('visible');
     if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
     if (this.aquariumUI && !this.aquarium.isOpen) this.aquariumUI.classList.remove('visible');
+  }
+
+  openWardrobeModal() {
+    this.closeAll();
+    if (this.wardrobeModal) {
+      this.wardrobeModal.classList.add('visible');
+      this.renderWardrobeContent();
+    }
+  }
+
+  renderWardrobeContent() {
+    const container = document.getElementById('wardrobe-items-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (this.currentWardrobeTab === 'skins') {
+      CAT_SKINS.forEach(skin => {
+        const isEquipped = this.economy.catSkinId === skin.id;
+        const card = document.createElement('div');
+        card.className = `shop-card wardrobe-card ${isEquipped ? 'equipped' : ''}`;
+        
+        // Swatch previews
+        card.innerHTML = `
+          <div class="shop-card-header">
+            <span class="card-icon skin-swatch" style="background: ${skin.colors.body}; border: 3px solid ${skin.colors.stripe};">
+              ${skin.icon}
+            </span>
+            <div class="card-title-group">
+              <div class="card-title">${skin.name}</div>
+              <div class="card-subtitle color-preview-sub">
+                <span class="color-dot" style="background:${skin.colors.body}"></span>
+                <span class="color-dot" style="background:${skin.colors.stripe}"></span>
+                <span class="color-dot" style="background:${skin.colors.belly}"></span>
+              </div>
+            </div>
+          </div>
+          <div class="card-desc">${skin.desc}</div>
+          <div class="card-footer">
+            ${isEquipped 
+              ? '<span class="badge-equipped">적용 중</span>' 
+              : `<button class="btn-primary btn-equip-skin" data-id="${skin.id}">털 색상 적용하기</button>`}
+          </div>
+        `;
+
+        const btnEquip = card.querySelector('.btn-equip-skin');
+        if (btnEquip) {
+          btnEquip.addEventListener('click', () => {
+            if (!this.canChangeEquipment()) return;
+            this.sound.playClick();
+            this.economy.equipCatSkin(skin.id);
+            this.hud.showNotification(`${skin.name} 털 색상이 적용되었습니다!`, skin.icon);
+            this.renderWardrobeContent();
+          });
+        }
+
+        container.appendChild(card);
+      });
+
+    } else if (this.currentWardrobeTab === 'hats') {
+      HATS.forEach(hat => {
+        const isOwned = this.economy.ownedHats.includes(hat.id);
+        const isEquipped = this.economy.currentHatId === hat.id;
+
+        const card = document.createElement('div');
+        card.className = `shop-card ${isEquipped ? 'equipped' : ''} ${!isOwned ? 'locked-item' : ''}`;
+        card.innerHTML = `
+          <div class="shop-card-header">
+            <span class="card-icon">${hat.icon}</span>
+            <div class="card-title-group">
+              <div class="card-title">${hat.name}</div>
+              <div class="card-subtitle perk-text">${hat.perk}</div>
+            </div>
+          </div>
+          <div class="card-footer">
+            ${isEquipped 
+              ? '<span class="badge-equipped">착용 중</span>' 
+              : isOwned 
+              ? `<button class="btn-secondary btn-equip-hat" data-id="${hat.id}">착용하기</button>` 
+              : `<span class="badge-locked">상점(S)에서 구매 필요</span>`}
+          </div>
+        `;
+
+        const btnEquip = card.querySelector('.btn-equip-hat');
+        if (btnEquip) {
+          btnEquip.addEventListener('click', () => {
+            if (!this.canChangeEquipment()) return;
+            this.sound.playClick();
+            this.economy.equipHat(hat.id);
+            this.hud.showNotification(`${hat.name} 착용 완료!`, hat.icon);
+            this.renderWardrobeContent();
+          });
+        }
+
+        container.appendChild(card);
+      });
+    }
+  }
+
+  openMultiplayerModal() {
+    this.closeAll();
+    if (this.multiplayerModal) {
+      // Pre-fill nickname and default code if empty
+      const nameCreate = document.getElementById('multi-create-name');
+      const nameJoin = document.getElementById('multi-join-name');
+      const codeCreate = document.getElementById('multi-create-code');
+
+      if (this.multiplayer) {
+        if (nameCreate && !nameCreate.value) nameCreate.value = this.multiplayer.playerName;
+        if (nameJoin && !nameJoin.value) nameJoin.value = this.multiplayer.playerName;
+        if (codeCreate && !codeCreate.value) codeCreate.value = this.multiplayer.generateRoomCode();
+        this.multiplayer.updateMultiplayerUI();
+      }
+
+      this.multiplayerModal.classList.add('visible');
+    }
   }
 
   openAuthModal() {
@@ -365,6 +646,7 @@ export class Modals {
         const btnEquip = card.querySelector('.btn-equip');
         if (btnEquip) {
           btnEquip.addEventListener('click', () => {
+            if (!this.canChangeEquipment()) return;
             this.sound.playClick();
             this.economy.equipRod(rod.id);
             this.renderShopContent();
@@ -421,6 +703,7 @@ export class Modals {
         const btnEquip = card.querySelector('.btn-equip-boat');
         if (btnEquip) {
           btnEquip.addEventListener('click', () => {
+            if (!this.canChangeEquipment()) return;
             this.sound.playClick();
             this.economy.equipBoat(boat.id);
             this.renderShopContent();
@@ -481,6 +764,7 @@ export class Modals {
         const btnEquip = card.querySelector('.btn-equip-tackle');
         if (btnEquip) {
           btnEquip.addEventListener('click', () => {
+            if (!this.canChangeEquipment()) return;
             this.sound.playClick();
             if (bait.id === 'multi_hook_2') this.hud.selectHookCount(2);
             if (bait.id === 'multi_hook_3') this.hud.selectHookCount(3);
@@ -535,6 +819,7 @@ export class Modals {
         const btnEquip = card.querySelector('.btn-equip-hat');
         if (btnEquip) {
           btnEquip.addEventListener('click', () => {
+            if (!this.canChangeEquipment()) return;
             this.sound.playClick();
             this.economy.equipHat(hat.id);
             this.renderShopContent();

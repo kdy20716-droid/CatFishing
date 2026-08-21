@@ -370,6 +370,15 @@ export class Rod {
             toCat.y * reelPower * 0.8 + totalFishPull * 0.55
           );
 
+          // 🧲 Magnetic Attraction: Pull hooked fish into boat quickly when close
+          const distToBoat = Math.hypot(this.hookPos.x - cat.pos.x, this.hookPos.y - this.waterY);
+          if (distToBoat < 140) {
+            const magnetPull = Math.min(320, (150 - distToBoat) * 3.2);
+            const toBoatDir = new Vector2(cat.pos.x - this.hookPos.x, (this.waterY + 10) - this.hookPos.y).normalize();
+            this.hookVel.x += toBoatDir.x * magnetPull;
+            this.hookVel.y += toBoatDir.y * magnetPull;
+          }
+
           // Build tension with fish rage multiplier
           const effectiveMaxTension = this.economy.getEffectiveTensionMax();
           let tensionRate = (totalFishPull / effectiveMaxTension) * 52;
@@ -382,9 +391,9 @@ export class Rod {
           this.tension = Math.min(100, this.tension + tensionRate * dt);
           this.sound.playReelClick();
 
-          // Check if reeled all the way in to boat
+          // Check if reeled in close to boat (Smooth magnetic landing)
           const distToCat = this.hookPos.dist(rodTip);
-          if (distToCat < 48) {
+          if (distToCat < 75 || distToBoat < 65) {
             // All caught fish landed!
             const caughtFishes = [...hookedList];
             this.reset(cat);
@@ -426,8 +435,18 @@ export class Rod {
           this.hookVel.set(toCat.x * reelPower, toCat.y * reelPower);
           this.sound.playReelClick();
 
-          // Return to boat
-          if (this.hookPos.dist(rodTip) < 35) {
+          // 🧲 Magnetic Attraction: Snap empty hook to boat when close to water surface
+          const distToBoat = Math.hypot(this.hookPos.x - cat.pos.x, this.hookPos.y - this.waterY);
+          if (distToBoat < 150) {
+            const magnetPull = Math.min(380, (160 - distToBoat) * 3.8);
+            const toBoatDir = new Vector2(cat.pos.x - this.hookPos.x, (this.waterY + 8) - this.hookPos.y).normalize();
+            this.hookVel.x += toBoatDir.x * magnetPull;
+            this.hookVel.y += toBoatDir.y * magnetPull;
+          }
+
+          // Return to boat (Instant & Clean retrieval)
+          const distToCat = this.hookPos.dist(rodTip);
+          if (distToCat < 70 || distToBoat < 60) {
             this.reset(cat);
             return;
           }
@@ -442,8 +461,15 @@ export class Rod {
 
       this.hookPos.add(Vector2.mult(this.hookVel, dt));
 
+      // Clamp hook position so it never rises above the water surface while submerged/fishing
+      const minSubmergedY = this.waterY + 4;
+      if (this.hookPos.y < minSubmergedY) {
+        this.hookPos.y = minSubmergedY;
+        if (this.hookVel.y < 0) this.hookVel.y = 0;
+      }
+
       // Bobber stays floating on water surface directly above hook
-      this.bobberPos.x += (this.hookPos.x - this.bobberPos.x) * 0.1;
+      this.bobberPos.x += (this.hookPos.x - this.bobberPos.x) * 0.15;
       this.bobberPos.y = this.waterY + Math.sin(cat.animTime * 3) * 2;
 
       this.updateHookSlots();

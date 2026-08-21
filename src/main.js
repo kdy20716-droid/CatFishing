@@ -15,6 +15,7 @@ import { Fish } from './entities/Fish.js';
 import { HUD } from './ui/HUD.js';
 import { Modals } from './ui/Modals.js';
 import { CloudSave } from './systems/CloudSave.js';
+import { Multiplayer } from './systems/Multiplayer.js';
 
 class Game {
   constructor() {
@@ -44,7 +45,12 @@ class Game {
     this.rod = new Rod(this.economy, this.sound);
     this.hud = new HUD(this.economy, this.encyclopedia, this.sound, this.environment);
     this.cloudSave = new CloudSave(this.economy, this.encyclopedia, this.aquarium, this.hud, this.sound);
+    this.multiplayer = new Multiplayer(this.economy, this.sound, this.hud, this.cloudSave);
     this.modals = new Modals(this.economy, this.encyclopedia, this.aquarium, this.sound, this.hud, this.cloudSave);
+
+    this.hud.setRod(this.rod);
+    this.modals.setRod(this.rod);
+    this.modals.setMultiplayer(this.multiplayer);
 
     // Initial camera placement
     this.camera.pos.set(this.cat.pos.x, this.cat.pos.y);
@@ -390,6 +396,11 @@ class Game {
 
     // Update HUD elements
     this.hud.update(dt, this.rod, this.cat, this.environment);
+
+    // Update Realtime Multiplayer Sync & Remote Players
+    if (this.multiplayer) {
+      this.multiplayer.update(dt, this.cat, this.rod, this.economy);
+    }
   }
 
   render() {
@@ -415,10 +426,15 @@ class Game {
     // 3. Draw Ocean Fish
     this.fishList.forEach(fish => fish.draw(this.ctx));
 
-    // 4. Draw Cat & Boat
+    // 4. Draw Other Remote Players & Chat Bubbles
+    if (this.multiplayer) {
+      this.multiplayer.draw(this.ctx, this.cat, this.rod);
+    }
+
+    // 5. Draw Local Cat & Boat
     this.cat.draw(this.ctx);
 
-    // 5. Draw Fishing Line, Bobber & Hook
+    // 6. Draw Local Fishing Line, Bobber & Hook
     this.rod.draw(this.ctx, this.cat);
 
     this.camera.restore(this.ctx);

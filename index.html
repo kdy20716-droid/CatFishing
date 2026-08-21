@@ -41,6 +41,8 @@
 
       <div class="hud-right">
         <button id="btn-sound-toggle" class="hud-btn" title="소리 켜기/끄기 (단축키: M)">🎵 소리 ON</button>
+        <button id="btn-open-multiplayer" class="hud-btn multi-btn" title="친구와 함께 낚시하기">🌐 멀티플레이</button>
+        <button id="btn-open-wardrobe" class="hud-btn wardrobe-btn" title="냥이 털 색상 및 모자 꾸미기">👗 옷장</button>
         <button id="btn-open-shop" class="hud-btn highlight-btn" title="포근한 상점 (단축키: S)">🛒 상점</button>
         <button id="btn-open-encyclopedia" class="hud-btn encyclo-btn" title="물고기 도감 (단축키: E)">📖 도감</button>
         <button id="btn-open-aquarium" class="hud-btn aqua-btn" title="냥이의 아쿠아리움 (단축키: Q)">🏠 아쿠아리움</button>
@@ -136,6 +138,17 @@
 
     <!-- Floating Notifications / Toasts -->
     <div id="floating-notifications"></div>
+
+    <!-- In-Game Realtime Chat Overlay (Left-Bottom) -->
+    <div id="ingame-chat-container" class="ingame-chat-container">
+      <div id="chat-messages" class="chat-messages">
+        <div class="chat-msg chat-system"><span>🐾 냥이들의 바다 낚시에 오신 것을 환영합니다! [Enter]키를 눌러 채팅해보세요.</span></div>
+      </div>
+      <form id="chat-form" class="chat-form">
+        <input type="text" id="chat-input" class="chat-input" placeholder="대화를 입력하세요... (Enter)" maxlength="60" autocomplete="off" />
+        <button type="submit" id="btn-chat-send" class="btn-chat-send">전송</button>
+      </form>
+    </div>
 
     <!-- Aquarium Control Overlay (Visible during Aquarium Mode) -->
     <div id="aquarium-controls-ui" class="overlay-panel">
@@ -306,6 +319,105 @@
           <div class="config-actions">
             <button id="btn-save-firebase-config" class="btn-primary">구성 저장 및 재연결</button>
             <button id="btn-reset-firebase-config" class="btn-secondary">기본 데모 구성으로 리셋</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Realtime Multiplayer Modal -->
+    <div id="multiplayer-modal" class="modal-backdrop">
+      <div class="modal-window multi-window">
+        <div class="modal-header">
+          <h2>🌐 친구와 함께하는 실시간 멀티 낚시</h2>
+          <button class="modal-close-btn">&times;</button>
+        </div>
+        <div class="multi-content">
+          <div class="multi-banner">
+            <span class="multi-cat-icon">🐱🤝🐱</span>
+            <div class="multi-banner-title">같은 바다에서 친구 냥이들과 함께 낚시해요!</div>
+            <div class="multi-banner-sub">방 번호를 공유하여 친구를 초대하면 서로의 고양이, 보트, 낚싯줄과 찌가 실시간으로 보입니다.</div>
+          </div>
+
+          <!-- Inactive Room State: Creation & Join Forms -->
+          <div id="multi-room-forms" class="multi-room-forms">
+            <div class="multi-tabs">
+              <button id="multi-tab-create" class="multi-tab-btn active">➕ 방 만들기</button>
+              <button id="multi-tab-join" class="multi-tab-btn">🚀 방 들어가기</button>
+            </div>
+
+            <!-- Create Room Form -->
+            <div id="multi-panel-create" class="multi-tab-panel">
+              <div class="form-group">
+                <label for="multi-create-name">내 닉네임</label>
+                <input type="text" id="multi-create-name" class="auth-input" placeholder="귀여운 낚시꾼 냥이" maxlength="10">
+              </div>
+              <div class="form-group">
+                <label for="multi-create-code">방 번호 (자동 생성 또는 직접 입력)</label>
+                <div class="input-with-action">
+                  <input type="text" id="multi-create-code" class="auth-input uppercase" placeholder="랜덤 6자리 코드" maxlength="8">
+                  <button id="btn-multi-gen-code" class="btn-secondary btn-inline">🔄 새로고침</button>
+                </div>
+              </div>
+              <button id="btn-multi-create-submit" class="btn-primary btn-full-width">🎉 방 개설 및 입장하기</button>
+            </div>
+
+            <!-- Join Room Form -->
+            <div id="multi-panel-join" class="multi-tab-panel hidden">
+              <div class="form-group">
+                <label for="multi-join-name">내 닉네임</label>
+                <input type="text" id="multi-join-name" class="auth-input" placeholder="참가할 냥이 이름" maxlength="10">
+              </div>
+              <div class="form-group">
+                <label for="multi-join-code">참여할 방 번호 입력</label>
+                <input type="text" id="multi-join-code" class="auth-input uppercase" placeholder="예: ABCD12" maxlength="8">
+              </div>
+              <button id="btn-multi-join-submit" class="btn-primary btn-full-width">🚀 방 참가하기</button>
+            </div>
+          </div>
+
+          <!-- Active Room State: Room Dashboard & Connected Players -->
+          <div id="multi-room-active-info" class="multi-room-active-info hidden">
+            <div class="active-room-card">
+              <div class="room-code-group">
+                <span class="room-code-label">현재 접속 중인 방 번호:</span>
+                <span id="multi-current-room-code" class="room-code-badge">ABCD12</span>
+                <button id="btn-multi-copy-code" class="btn-secondary btn-copy" title="방 번호 복사">📋 번호 복사</button>
+              </div>
+              <div class="room-status-sub">친구에게 방 번호를 알려주어 같은 바다로 초대해보세요!</div>
+            </div>
+
+            <div class="multi-members-section">
+              <div class="members-header">
+                <span>접속 중인 냥이 목록</span>
+                <span id="multi-member-count" class="members-badge">1명</span>
+              </div>
+              <div id="multi-member-list" class="multi-member-list">
+                <!-- Injected via Multiplayer.js -->
+              </div>
+            </div>
+
+            <div class="active-room-actions">
+              <button id="btn-multi-leave" class="btn-danger btn-full-width">🚪 방 나가기 (싱글 플레이로 복귀)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wardrobe (Cat Skin & Hat Customization) Modal -->
+    <div id="wardrobe-modal" class="modal-backdrop">
+      <div class="modal-window wardrobe-window">
+        <div class="modal-header">
+          <h2>👗 냥이의 옷장 & 털 색상 꾸미기</h2>
+          <button class="modal-close-btn">&times;</button>
+        </div>
+        <div class="wardrobe-content">
+          <div class="wardrobe-tabs">
+            <button class="wardrobe-tab-btn active" data-tab="skins">🐾 냥이 털 색상</button>
+            <button class="wardrobe-tab-btn" data-tab="hats">👒 모자 컬렉션</button>
+          </div>
+          <div id="wardrobe-items-container" class="wardrobe-grid">
+            <!-- Dynamically populated via Modals.js -->
           </div>
         </div>
       </div>

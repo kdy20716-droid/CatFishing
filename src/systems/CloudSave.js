@@ -23,16 +23,18 @@ import {
   getDoc, 
   serverTimestamp 
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getAnalytics, isSupported } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js';
 
-// Default Demo / Fallback Firebase Configuration
-// Users can easily customize or paste their own config via the in-game Firebase Config Modal
-const DEFAULT_FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDemoCatFishingAppKey_Demo2026",
-  authDomain: "cozy-cat-fishing.firebaseapp.com",
-  projectId: "cozy-cat-fishing",
-  storageBucket: "cozy-cat-fishing.appspot.com",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:demoabcdef123456"
+// Production Firebase Configuration
+export const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAnD_1XvSHkOfDU_u5XKBL8g4Y9GFtTOFk",
+  authDomain: "catfishing-6bc10.firebaseapp.com",
+  databaseURL: "https://catfishing-6bc10-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "catfishing-6bc10",
+  storageBucket: "catfishing-6bc10.firebasestorage.app",
+  messagingSenderId: "727318371793",
+  appId: "1:727318371793:web:cbc4059c9fbbe3572254f0",
+  measurementId: "G-64NEDC3EY0"
 };
 
 export class CloudSave {
@@ -46,6 +48,7 @@ export class CloudSave {
     this.app = null;
     this.auth = null;
     this.db = null;
+    this.analytics = null;
     this.currentUser = null;
     this.isInitialized = false;
     this.isSyncing = false;
@@ -93,6 +96,13 @@ export class CloudSave {
       this.auth = getAuth(this.app);
       this.db = getFirestore(this.app);
       this.isInitialized = true;
+
+      // Safe Analytics init
+      isSupported().then(supported => {
+        if (supported) {
+          this.analytics = getAnalytics(this.app);
+        }
+      }).catch(() => {});
 
       // Listen for Auth state changes
       onAuthStateChanged(this.auth, (user) => {

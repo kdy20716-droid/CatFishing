@@ -285,23 +285,28 @@ export class Cat {
     ctx.save();
     ctx.scale(this.facing, 1);
 
-    // Fluffy Ginger Tabby Cat Colors
-    const orange = '#f4a261';
-    const darkOrange = '#e76f51';
-    const white = '#fefae0';
+    // Dynamic Skin Palette from Economy
+    const skin = (this.economy && this.economy.getCurrentCatSkin) 
+      ? this.economy.getCurrentCatSkin() 
+      : { colors: { body: '#f4a261', stripe: '#e76f51', belly: '#fefae0', innerEar: '#ffafcc', paw: '#ffafcc' } };
+    
+    const bodyColor = skin.colors.body;
+    const stripeColor = skin.colors.stripe;
+    const bellyColor = skin.colors.belly;
+    const innerEarColor = skin.colors.innerEar;
     const pink = '#ffafcc';
 
     // 1. Tail (swaying animatedly)
     const tailWiggle = Math.sin(this.animTime * 3) * 0.25;
-    ctx.strokeStyle = orange;
+    ctx.strokeStyle = bodyColor;
     ctx.lineWidth = 6;
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(-12, -12);
     ctx.quadraticCurveTo(-26 + tailWiggle * 10, -22 + tailWiggle * 8, -28, -34);
     ctx.stroke();
-    // Tail tip white
-    ctx.strokeStyle = white;
+    // Tail tip accent
+    ctx.strokeStyle = bellyColor;
     ctx.lineWidth = 5;
     ctx.beginPath();
     ctx.moveTo(-24, -28);
@@ -309,26 +314,62 @@ export class Cat {
     ctx.stroke();
 
     // 2. Body (plump round kitty)
-    ctx.fillStyle = orange;
+    ctx.fillStyle = bodyColor;
     ctx.beginPath();
     ctx.ellipse(0, -18, 16, 14, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // White belly
-    ctx.fillStyle = white;
+    // Special body markings (e.g. Calico spots, Tuxedo vest)
+    if (skin.id === 'skin_calico') {
+      // Black & Orange Calico patches
+      ctx.fillStyle = '#2b2d42';
+      ctx.beginPath();
+      ctx.ellipse(-8, -22, 6, 5, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#e76f51';
+      ctx.beginPath();
+      ctx.ellipse(-4, -12, 7, 6, 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Belly (White/Cream)
+    ctx.fillStyle = bellyColor;
     ctx.beginPath();
-    ctx.ellipse(4, -16, 9, 10, 0, 0, Math.PI * 2);
+    if (skin.id === 'skin_tuxedo') {
+      // Tuxedo white shirt chest patch
+      ctx.ellipse(3, -16, 8, 11, 0, 0, Math.PI * 2);
+    } else {
+      ctx.ellipse(4, -16, 9, 10, 0, 0, Math.PI * 2);
+    }
     ctx.fill();
 
     // 3. Head
-    ctx.fillStyle = orange;
+    ctx.fillStyle = bodyColor;
     ctx.beginPath();
     ctx.arc(8, -32, 14, 0, Math.PI * 2);
     ctx.fill();
 
+    // Siamese Dark Mask or Calico Head Spot
+    if (skin.id === 'skin_siamese') {
+      // Chocolate face mask around nose and eyes
+      ctx.fillStyle = stripeColor; // dark chocolate
+      ctx.beginPath();
+      ctx.ellipse(9, -30, 8, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (skin.id === 'skin_calico') {
+      ctx.fillStyle = '#e76f51';
+      ctx.beginPath();
+      ctx.arc(3, -37, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#2b2d42';
+      ctx.beginPath();
+      ctx.arc(15, -36, 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     // Ears
     // Left Ear
-    ctx.fillStyle = orange;
+    ctx.fillStyle = (skin.id === 'skin_siamese') ? stripeColor : bodyColor;
     ctx.beginPath();
     ctx.moveTo(0, -42);
     ctx.lineTo(-4, -54);
@@ -336,7 +377,7 @@ export class Cat {
     ctx.closePath();
     ctx.fill();
     // Left inner ear
-    ctx.fillStyle = pink;
+    ctx.fillStyle = innerEarColor || pink;
     ctx.beginPath();
     ctx.moveTo(1, -43);
     ctx.lineTo(-2, -50);
@@ -345,7 +386,7 @@ export class Cat {
     ctx.fill();
 
     // Right Ear
-    ctx.fillStyle = orange;
+    ctx.fillStyle = (skin.id === 'skin_siamese') ? stripeColor : bodyColor;
     ctx.beginPath();
     ctx.moveTo(12, -44);
     ctx.lineTo(18, -54);
@@ -353,7 +394,7 @@ export class Cat {
     ctx.closePath();
     ctx.fill();
     // Right inner ear
-    ctx.fillStyle = pink;
+    ctx.fillStyle = innerEarColor || pink;
     ctx.beginPath();
     ctx.moveTo(13, -44);
     ctx.lineTo(17, -50);
@@ -361,15 +402,17 @@ export class Cat {
     ctx.closePath();
     ctx.fill();
 
-    // Cute Tabby Forehead Stripes
-    ctx.strokeStyle = darkOrange;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(6, -42);
-    ctx.lineTo(6, -37);
-    ctx.moveTo(10, -42);
-    ctx.lineTo(10, -37);
-    ctx.stroke();
+    // Forehead Stripes / Patterns (for tabby and others)
+    if (skin.id !== 'skin_white' && skin.id !== 'skin_siamese' && skin.id !== 'skin_tuxedo') {
+      ctx.strokeStyle = stripeColor;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(6, -42);
+      ctx.lineTo(6, -37);
+      ctx.moveTo(10, -42);
+      ctx.lineTo(10, -37);
+      ctx.stroke();
+    }
 
     // 4. Face & Eyes
     if (this.state === 'CATCH') {
@@ -465,7 +508,7 @@ export class Cat {
     ctx.stroke();
 
     // 5. Paws holding rod
-    ctx.fillStyle = white;
+    ctx.fillStyle = skin.colors.paw || bellyColor || '#ffffff';
     if (this.state === 'CATCH') {
       // Raised celebration paws!
       ctx.beginPath();

@@ -33,15 +33,32 @@ export class HUD {
     // Floating notifications
     this.notifications = [];
     this.notifContainer = document.getElementById('floating-notifications');
+    this.rod = null;
 
     this.initBaitBar();
     this.initDrawerEvents();
+  }
+
+  setRod(rod) {
+    this.rod = rod;
+  }
+
+  canChangeBaitOrItem() {
+    if (this.rod && this.rod.state !== 'READY') {
+      return false;
+    }
+    return true;
   }
 
   initDrawerEvents() {
     if (this.btnToggleBaitDrawer) {
       this.btnToggleBaitDrawer.addEventListener('click', (e) => {
         e.stopPropagation();
+        if (!this.canChangeBaitOrItem()) {
+          this.sound.playClick();
+          this.showNotification('찌를 던진 후에는 미끼와 아이템을 변경할 수 없습니다!', '🔒');
+          return;
+        }
         this.sound.playClick();
         this.toggleBaitDrawer();
       });
@@ -68,6 +85,10 @@ export class HUD {
   toggleBaitDrawer(forceState = null) {
     if (!this.baitDrawer) return;
     const shouldOpen = forceState !== null ? forceState : !this.baitDrawer.classList.contains('open');
+    if (shouldOpen && !this.canChangeBaitOrItem()) {
+      this.showNotification('찌를 던진 후에는 미끼와 아이템을 변경할 수 없습니다!', '🔒');
+      return;
+    }
     this.baitDrawer.classList.toggle('open', shouldOpen);
   }
 
@@ -129,6 +150,10 @@ export class HUD {
 
   toggleRocketItem() {
     this.sound.playClick();
+    if (!this.canChangeBaitOrItem()) {
+      this.showNotification('찌를 던진 후에는 로켓을 변경할 수 없습니다!', '🔒');
+      return;
+    }
     if (!this.economy.useRocket && (this.economy.baitInventory['rocket'] || 0) <= 0) {
       this.showNotification('🚀 로켓 폭죽이 없습니다! 상점(S)에서 구매하세요.', '⚠️');
       return;
@@ -145,6 +170,10 @@ export class HUD {
 
   selectHookCount(count) {
     this.sound.playClick();
+    if (!this.canChangeBaitOrItem()) {
+      this.showNotification('찌를 던진 후에는 바늘 리그를 변경할 수 없습니다!', '🔒');
+      return;
+    }
     if (count === 2 && (this.economy.baitInventory['multi_hook_2'] || 0) < 1) {
       this.showNotification('🪝 2중 바늘 리그가 없습니다! 상점(S)에서 구매하세요.', '⚠️');
       return;
@@ -167,6 +196,12 @@ export class HUD {
   }
 
   selectBait(baitId) {
+    if (!this.canChangeBaitOrItem()) {
+      this.sound.playClick();
+      this.showNotification('찌를 던진 후에는 미끼를 변경할 수 없습니다!', '🔒');
+      return false;
+    }
+
     if (baitId !== 'bread' && !this.economy.hasBait(baitId)) {
       this.sound.playClick();
       this.showNotification('미끼가 부족합니다! 상점(S)에서 구매하세요.', '⚠️');
@@ -197,15 +232,32 @@ export class HUD {
     if (this.activeBaitName) this.activeBaitName.innerText = `${bait.name}${gadgetBadge}`;
     if (this.activeBaitCount) this.activeBaitCount.innerText = `(${count})`;
 
+    const isLocked = this.rod && this.rod.state !== 'READY';
+
+    if (this.btnToggleBaitDrawer) {
+      this.btnToggleBaitDrawer.classList.toggle('locked', isLocked);
+      const arrowEl = this.btnToggleBaitDrawer.querySelector('.bait-pill-arrow');
+      if (arrowEl) {
+        arrowEl.innerText = isLocked ? '🔒 낚시 중 잠김' : '▲ 미끼/아이템';
+      }
+    }
+
     // Update active highlight and empty class on drawer buttons
     document.querySelectorAll('.bait-btn').forEach(btn => {
       const bId = btn.dataset.baitId;
       btn.classList.toggle('active', this.isItemActive(bId));
       btn.classList.toggle('empty', !this.economy.hasBait(bId));
+      btn.classList.toggle('locked', isLocked);
     });
   }
 
   update(dt, rod, cat, environment = this.environment) {
+    this.rod = rod;
+
+    // Automatically close bait drawer if fishing is ongoing
+    if (rod.state !== 'READY' && this.baitDrawer && this.baitDrawer.classList.contains('open')) {
+      this.baitDrawer.classList.remove('open');
+    }
     // 1. Update Gold & Level
     if (this.goldDisplay) {
       this.goldDisplay.innerText = this.economy.gold.toLocaleString() + ' G';

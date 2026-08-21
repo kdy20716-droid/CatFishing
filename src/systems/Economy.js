@@ -294,7 +294,102 @@ export const PASSIVE_UPGRADES = [
     basePrice: 120,
     priceMult: 1.65,
     icon: '🔔',
-    description: '✨ 이로치(Shiny) 황금 반짝이 물고기 출현 확률을 레벨당 +10% 높여줍니다.'
+    description: '극도로 희귀한 ✨ 이로치(Shiny) 출현 확률을 레벨당 +15% 증가시킵니다.'
+  }
+];
+
+export const CAT_SKINS = [
+  {
+    id: 'skin_orange',
+    name: '치즈 태비 냥이',
+    icon: '🐱',
+    desc: '포근하고 따뜻한 주황빛 치즈 호랑이 무늬 (기본)',
+    colors: {
+      body: '#f4a261',
+      stripe: '#e76f51',
+      belly: '#fefae0',
+      innerEar: '#ffafcc',
+      paw: '#ffafcc'
+    }
+  },
+  {
+    id: 'skin_mackerel',
+    name: '고등어 태비 냥이',
+    icon: '🐟',
+    desc: '은빛 줄무늬가 매력적인 클래식 고등어 냥이',
+    colors: {
+      body: '#8d99ae',
+      stripe: '#495057',
+      belly: '#edf2f4',
+      innerEar: '#ffafcc',
+      paw: '#ffafcc'
+    }
+  },
+  {
+    id: 'skin_calico',
+    name: '삼색이 냥이',
+    icon: '🌸',
+    desc: '행운을 불러오는 아름다운 삼색 털 냥이',
+    colors: {
+      body: '#fefae0',
+      stripe: '#e76f51',
+      spot: '#2b2d42',
+      belly: '#ffffff',
+      innerEar: '#ffafcc',
+      paw: '#ffafcc'
+    }
+  },
+  {
+    id: 'skin_tuxedo',
+    name: '턱시도 냥이',
+    icon: '🤵',
+    desc: '깔끔한 흰 양말과 검은 턱시도를 차려입은 냥이',
+    colors: {
+      body: '#2b2d42',
+      stripe: '#1a1a24',
+      belly: '#ffffff',
+      innerEar: '#ffafcc',
+      paw: '#ffffff'
+    }
+  },
+  {
+    id: 'skin_siamese',
+    name: '샴 냥이',
+    icon: '☕',
+    desc: '고급스러운 크림색 몸체와 초콜릿 포인트',
+    colors: {
+      body: '#faedcd',
+      stripe: '#6b4f3a',
+      belly: '#fefae0',
+      innerEar: '#4a3525',
+      paw: '#4a3525'
+    }
+  },
+  {
+    id: 'skin_white',
+    name: '순백 스노우 냥이',
+    icon: '❄️',
+    desc: '눈송이처럼 뽀송뽀송하고 순백의 털을 가진 냥이',
+    colors: {
+      body: '#ffffff',
+      stripe: '#dee2e6',
+      belly: '#f8f9fa',
+      innerEar: '#ffccd5',
+      paw: '#ffccd5'
+    }
+  },
+  {
+    id: 'skin_pink',
+    name: '딸기우유 냥이',
+    icon: '🍓',
+    desc: '달콤한 딸기우유빛 솜사탕 털을 가진 냥이',
+    colors: {
+      body: '#ffb3c6',
+      stripe: '#ff758f',
+      belly: '#fff0f3',
+      innerEar: '#c9184a',
+      paw: '#ff4d6d'
+    }
   }
 ];
 
@@ -312,6 +407,9 @@ export class Economy {
 
     this.currentHatId = 'hat_none';
     this.ownedHats = ['hat_none'];
+
+    this.catSkinId = 'skin_orange';
+    this.ownedSkins = ['skin_orange', 'skin_mackerel', 'skin_calico', 'skin_tuxedo', 'skin_siamese', 'skin_white', 'skin_pink'];
 
     this.currentBaitId = 'bread';
     this.useRocket = false;
@@ -353,6 +451,8 @@ export class Economy {
         this.ownedBoats = data.ownedBoats || ['boat_raft'];
         this.currentHatId = data.currentHatId || 'hat_none';
         this.ownedHats = data.ownedHats || ['hat_none'];
+        this.catSkinId = data.catSkinId || 'skin_orange';
+        this.ownedSkins = data.ownedSkins || ['skin_orange', 'skin_mackerel', 'skin_calico', 'skin_tuxedo', 'skin_siamese', 'skin_white', 'skin_pink'];
         this.currentBaitId = data.currentBaitId || 'bread';
         this.useRocket = data.useRocket || false;
         this.hookCount = data.hookCount || 1;
@@ -376,6 +476,8 @@ export class Economy {
         ownedBoats: this.ownedBoats,
         currentHatId: this.currentHatId,
         ownedHats: this.ownedHats,
+        catSkinId: this.catSkinId,
+        ownedSkins: this.ownedSkins,
         currentBaitId: this.currentBaitId,
         useRocket: this.useRocket,
         hookCount: this.hookCount,
@@ -386,6 +488,19 @@ export class Economy {
     } catch (e) {
       console.warn("Failed to save economy:", e);
     }
+  }
+
+  equipCatSkin(skinId) {
+    if (this.ownedSkins.includes(skinId)) {
+      this.catSkinId = skinId;
+      this.saveToStorage();
+      return true;
+    }
+    return false;
+  }
+
+  getCurrentCatSkin() {
+    return CAT_SKINS.find(s => s.id === this.catSkinId) || CAT_SKINS[0];
   }
 
   spendBomb() {
@@ -600,10 +715,11 @@ export class Economy {
   }
 
   getShinyChance() {
+    const baseChance = 1 / 1024; // 1/1024 (0.0976%) 극도로 희귀한 이로치 출현 확률
     const lv = this.upgradeLevels.lucky_charm || 0;
-    let chance = 0.12 + lv * 0.05; // 12% ~ 62%
-    if (this.currentHatId === 'hat_pirate') chance += 0.15;
-    return Math.min(0.75, chance);
+    let multiplier = 1 + lv * 0.15;
+    if (this.currentHatId === 'hat_pirate') multiplier *= 1.5;
+    return baseChance * multiplier;
   }
 
   getAttractionRadiusBonus() {

@@ -279,33 +279,66 @@ export class SoundEngine {
     osc.stop(startTime + 1.3);
   }
 
-  // --- Sound Effects ---
-
   playCast() {
     this.ensureRunning();
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
     
-    // Whoosh filter sweep
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    const filter = this.ctx.createBiquadFilter();
+    // 1. Fast Whip Swoosh (바람을 가르는 시원한 채찍 소리)
+    const whipOsc = this.ctx.createOscillator();
+    const whipGain = this.ctx.createGain();
+    const whipFilter = this.ctx.createBiquadFilter();
 
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(300, now);
-    osc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
-    osc.frequency.exponentialRampToValueAtTime(200, now + 0.35);
+    whipOsc.type = 'sawtooth';
+    whipOsc.frequency.setValueAtTime(450, now);
+    whipOsc.frequency.exponentialRampToValueAtTime(1400, now + 0.08);
+    whipOsc.frequency.exponentialRampToValueAtTime(120, now + 0.28);
 
-    gain.gain.setValueAtTime(0.001, now);
-    gain.gain.linearRampToValueAtTime(0.2, now + 0.08);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+    whipFilter.type = 'bandpass';
+    whipFilter.frequency.setValueAtTime(600, now);
+    whipFilter.frequency.exponentialRampToValueAtTime(1800, now + 0.08);
+    whipFilter.frequency.exponentialRampToValueAtTime(250, now + 0.28);
+    whipFilter.Q.setValueAtTime(2.5, now);
 
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.sfxGain);
+    whipGain.gain.setValueAtTime(0.001, now);
+    whipGain.gain.linearRampToValueAtTime(0.35, now + 0.06);
+    whipGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
 
-    osc.start(now);
-    osc.stop(now + 0.36);
+    whipOsc.connect(whipFilter);
+    whipFilter.connect(whipGain);
+    whipGain.connect(this.sfxGain);
+
+    whipOsc.start(now);
+    whipOsc.stop(now + 0.3);
+
+    // 2. Line Reel Zip (낚싯줄이 촤르륵 풀려나가는 회전 마찰음)
+    const bufferSize = this.ctx.sampleRate * 0.35;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      // Rapid intermittent flutter
+      const flutter = Math.sin(i * 0.05) > 0 ? 1 : -0.8;
+      data[i] = (Math.random() * 2 - 1) * flutter * Math.exp(-i / (this.ctx.sampleRate * 0.18));
+    }
+
+    const lineNoise = this.ctx.createBufferSource();
+    lineNoise.buffer = buffer;
+
+    const lineFilter = this.ctx.createBiquadFilter();
+    lineFilter.type = 'highpass';
+    lineFilter.frequency.setValueAtTime(2200, now);
+    lineFilter.frequency.exponentialRampToValueAtTime(800, now + 0.32);
+
+    const lineGain = this.ctx.createGain();
+    lineGain.gain.setValueAtTime(0.001, now);
+    lineGain.gain.linearRampToValueAtTime(0.22, now + 0.05);
+    lineGain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+
+    lineNoise.connect(lineFilter);
+    lineFilter.connect(lineGain);
+    lineGain.connect(this.sfxGain);
+
+    lineNoise.start(now + 0.04);
   }
 
   playSplash(intensity = 1.0) {
