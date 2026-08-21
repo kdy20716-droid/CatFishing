@@ -149,13 +149,26 @@ export class CloudSave {
     }
     try {
       const provider = new GoogleAuthProvider();
+      // Add prompt to select account
+      provider.setCustomParameters({ prompt: 'select_account' });
       const result = await signInWithPopup(this.auth, provider);
       this.currentUser = result.user;
       if (this.sound) this.sound.playCoin();
       if (this.hud) this.hud.showNotification(`🎉 ${this.currentUser.displayName || '집사'}님, 구글 로그인 완료!`, '☁️');
       return true;
     } catch (error) {
-      console.warn("Google Auth popup error (falling back to simulation mode):", error.message);
+      console.error("Google Auth popup error:", error.code, error.message);
+      if (error.code === 'auth/unauthorized-domain') {
+        if (this.hud) {
+          this.hud.showNotification('⚠️ Firebase 콘솔에 GitHub Pages 도메인(kdy20716-droid.github.io) 승인이 필요합니다!', '🔒');
+        }
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        if (this.hud) {
+          this.hud.showNotification('로그인 팝업이 닫혔습니다.', 'ℹ️');
+        }
+        return false;
+      }
+      // Fallback to simulation mode if real auth failed
       this.simulateLogin('google');
       return true;
     }
