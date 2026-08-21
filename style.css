@@ -2068,6 +2068,26 @@ html, body {
   gap: 6px;
 }
 
+.dropdown-item.google-link-item {
+  background: linear-gradient(135deg, #ffffff, #f0fdf4);
+  border: 1.5px solid #4285F4;
+  color: #1f2937;
+  font-weight: 800;
+  margin: 3px 0;
+  box-shadow: 0 2px 6px rgba(66, 133, 244, 0.2);
+}
+
+.dropdown-item.google-link-item:hover {
+  background: linear-gradient(135deg, #f8faff, #e0f2fe);
+  border-color: #2563eb;
+  color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.google-svg-sm {
+  flex-shrink: 0;
+}
+
 .dropdown-item:hover {
   background: #f8f9fa;
   color: #ff4d6d;
@@ -3280,4 +3300,197 @@ html, body {
   font-family: var(--font-main);
   font-size: 13px;
   color: #ffffff;
+}
+
+/* =========================================================
+   🏠 Aquarium Management Modal & Feed Badge Styling
+   ========================================================= */
+.btn-aqua-manage {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  color: #ffffff;
+  border: 1.5px solid #38bdf8;
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+  transition: all 0.2s ease;
+}
+
+.btn-aqua-manage:hover {
+  background: linear-gradient(135deg, #0369a1, #075985);
+  transform: translateY(-1px);
+}
+
+.feed-badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 4px;
+}
+
+.feed-badge.ready {
+  background: #10b981;
+  color: #ffffff;
+  animation: pulse-ready 2s infinite ease-in-out;
+}
+
+.feed-badge.cooldown {
+  background: rgba(100, 116, 139, 0.7);
+  color: #e2e8f0;
+}
+
+@keyframes pulse-ready {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+.aqua-manage-window {
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 2px solid #38bdf8;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(56, 189, 248, 0.35);
+  padding: 20px;
+  color: #f8fafc;
+}
+
+.aqua-manage-sub {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.aqua-manage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.aqua-fish-card {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.aqua-fish-card:hover {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: #38bdf8;
+  transform: translateY(-2px);
+}
+
+.aqua-fish-card.is-shiny {
+  border-color: #f59e0b;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(120, 53, 15, 0.4));
+}
+
+.aqua-card-preview-box {
+  position: relative;
+  width: 90px;
+  height: 60px;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.aqua-card-preview-box .shiny-tag {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  background: #f59e0b;
+  color: #1e1b18;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.aqua-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.aqua-card-name {
+  font-family: var(--font-cute);
+  font-size: 16px;
+  font-weight: 700;
+  color: #f8fafc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.aqua-card-size {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.aqua-card-size strong {
+  color: #38bdf8;
+}
+
+.aqua-card-rarity {
+  font-size: 10px;
+  font-weight: 800;
+  color: #fbbf24;
+  margin-top: 2px;
+}
+
+.btn-aqua-remove-fish {
+  background: linear-gradient(135deg, #e11d48, #be123c);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.4);
+  transition: all 0.15s ease;
+}
+
+.btn-aqua-remove-fish:hover {
+  background: linear-gradient(135deg, #f43f5e, #e11d48);
+  transform: scale(1.04);
+}
+
+.aqua-empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 20px;
+  color: #94a3b8;
+}
+
+.aqua-empty-state .empty-icon {
+  font-size: 44px;
+  margin-bottom: 8px;
+}
+
+.aqua-empty-state .empty-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-bottom: 6px;
+}
+
+.aqua-empty-state .empty-sub {
+  font-size: 13px;
+  color: #64748b;
 }

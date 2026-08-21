@@ -535,21 +535,35 @@ export class CloudSave {
     const userAvatar = document.getElementById('user-avatar');
     const userName = document.getElementById('user-name');
     const dropdownEmail = document.getElementById('dropdown-user-email');
+    const dropdownSync = document.getElementById('dropdown-sync-status');
+    const btnGoogleLink = document.getElementById('btn-dropdown-google-link');
 
-    if (user) {
-      if (btnAuthOpen) btnAuthOpen.classList.add('hidden');
-      if (userProfilePill) userProfilePill.classList.remove('hidden');
+    // Always keep user profile pill visible for quick management & Google linking!
+    if (userProfilePill) userProfilePill.classList.remove('hidden');
+    if (btnAuthOpen) btnAuthOpen.classList.add('hidden');
 
+    if (user && !user.isAnonymous && !user.isSimulated) {
+      // 🌟 Real Logged-in Cloud Account
       const name = user.displayName || user.email?.split('@')[0] || '냥이 집사';
       if (userName) userName.innerText = name;
-      if (dropdownEmail) dropdownEmail.innerText = user.email || '게스트 계정 (임시 연동)';
+      if (dropdownEmail) dropdownEmail.innerText = user.email || '구글 계정 연동됨';
+      if (dropdownSync) dropdownSync.innerText = '☁️ 구글 클라우드 자동 동기화 켜짐';
+      if (btnGoogleLink) btnGoogleLink.classList.add('hidden'); // Already linked!
       if (userAvatar) {
         userAvatar.src = user.photoURL || 'assets/favicon.svg';
       }
-      this.updateSyncBadge('☁️ 자동 동기화됨');
+      this.updateSyncBadge('☁️ 구글 동기화됨');
     } else {
-      if (btnAuthOpen) btnAuthOpen.classList.remove('hidden');
-      if (userProfilePill) userProfilePill.classList.add('hidden');
+      // 🐾 Non-member / Guest Mode (Show prominent Google Link button)
+      const guestName = (user && user.displayName) ? user.displayName : (localStorage.getItem('cozy_cat_player_name_v1') || '냥이 집사 (비회원)');
+      if (userName) userName.innerText = guestName;
+      if (dropdownEmail) dropdownEmail.innerText = '비회원 (게스트 모드)';
+      if (dropdownSync) dropdownSync.innerText = '💾 로컬 브라우저에 임시 저장 중';
+      if (btnGoogleLink) btnGoogleLink.classList.remove('hidden'); // Show Google Link button!
+      if (userAvatar) {
+        userAvatar.src = 'assets/favicon.svg';
+      }
+      this.updateSyncBadge('💾 로컬 저장됨');
     }
   }
 

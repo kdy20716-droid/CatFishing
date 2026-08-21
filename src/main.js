@@ -159,7 +159,7 @@ class Game {
 
     const startX = minSpawnX + Math.random() * (maxSpawnX - minSpawnX);
     const minY = chosen.minDepth * 20;
-    const maxY = chosen.maxDepth * 20;
+    const maxY = Math.min(10050, chosen.maxDepth * 20);
     const startY = minY + Math.random() * (maxY - minY);
 
     // ✨ Shiny (이로치) check (낮: 1.0%, 밤: 3.0%)
@@ -428,6 +428,7 @@ class Game {
 
     if (this.aquarium.isOpen) {
       this.aquarium.update(dt);
+      if (this.modals) this.modals.updateAquariumBadge();
       return;
     }
 

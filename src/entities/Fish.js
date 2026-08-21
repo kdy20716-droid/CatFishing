@@ -46,6 +46,7 @@ export class Fish {
       ? 14.0 + (this.data.strength || 100) * 0.08 
       : 8.0 + (this.data.strength || 20) * 0.07;
     this.isExhausted = false;
+    this.exhaustedTimer = 0; // 10초 후 체력 회복 및 재분노 타이머
     this.slackEscapeTimer = 0; // Tracks idle slack line without reeling
     this.onEscapeCallback = null;
 
@@ -131,9 +132,9 @@ export class Fish {
 
     this.pos.add(Vector2.mult(this.vel, dt));
 
-    // Keep fish within its depth range
+    // Keep fish within its depth range (Clamped strictly to 500m Seabed Floor 10060px)
     const minPixelY = this.data.minDepth * 20; // 1m = 20px
-    const maxPixelY = this.data.maxDepth * 20;
+    const maxPixelY = Math.min(10060, this.data.maxDepth * 20);
 
     if (this.pos.y < minPixelY) {
       this.pos.y = minPixelY;
@@ -295,23 +296,54 @@ export class Fish {
     }
   }
 
+  /**
+   * 🐟 물고기 주둥이/머리(Mouth) 오프셋 계산
+   * 바늘이 물고기 배가 아닌 머리/입에 물리도록 정확한 좌표 보정
+   */
+  getMouthOffset() {
+    if (this.isBoss) {
+      // 👑 10 Boss Fishes have 3x massive bodies (Snout at ~60 - 80px)
+      const bossType = this.data.id;
+      if (bossType === 'boss_megalodon' || bossType === 'boss_cosmic_whale' || bossType === 'boss_leviathan') {
+        return 72 * this.scale;
+      }
+      return 58 * this.scale;
+    }
+    const type = this.data.drawType || this.data.id;
+    if (type === 'anchovy' || type === 'guppy') return 12 * this.scale;
+    if (type === 'clownfish' || type === 'pufferfish' || type === 'butterfly') return 15 * this.scale;
+    if (type === 'bream' || type === 'koibream' || type === 'flounder' || type === 'mackerel' || type === 'flying') return 20 * this.scale;
+    if (type === 'tuna' || type === 'salmon' || type === 'sea_bass' || type === 'angler') return 28 * this.scale;
+    if (type === 'swordfish' || type === 'sawshark' || type === 'coelacanth') return 36 * this.scale;
+    if (type === 'oarfish' || type === 'whale' || type === 'kraken' || type === 'turtle' || type === 'cosmic_turtle') return 38 * this.scale;
+    if (type === 'squid' || type === 'octopus' || type === 'dumbo') return 18 * this.scale;
+    if (type === 'bottle') return 22 * this.scale; // Cork mouth
+    if (type === 'crab') return 18 * this.scale;
+    
+    // Default fallback based on fish body size
+    return Math.min(40, Math.max(14, (this.data.length || 25) * 0.45)) * this.scale;
+  }
+
   updateHooked(dt, hook, cat) {
     const targetSlotPos = (this.targetSlot && this.targetSlot.pos) ? this.targetSlot.pos : (hook.hookPos || hook.pos);
     if (targetSlotPos) {
-      this.pos.copy(targetSlotPos);
+      // 🎣 바늘(Hook)이 물고기의 입/머리(Mouth)에 물리도록 오프셋 계산 적용 & 해저 바닥(10070px) 뚫림 방지!
+      const mouthOffset = this.getMouthOffset();
+      this.pos.x = targetSlotPos.x - this.facing * mouthOffset;
+      this.pos.y = Math.min(10070, targetSlotPos.y + Math.sin(this.animTime * 6) * 2);
     }
 
     this.animTime += dt * 3;
-    this.facing = Math.sin(this.animTime * 3) >= 0 ? 1 : -1;
 
     // --- Struggle, Tiring, and Slack-Line Escape Dynamics ---
     if (this.hasStruggleGauge) {
       this.fightDuration += dt;
 
       // 1. Tiring / Exhaustion Check
-      if (this.fightDuration >= this.maxFightDuration) {
+      if (this.fightDuration >= this.maxFightDuration && !this.isExhausted) {
         this.isExhausted = true;
-        this.rage = 0; // Gauge stops building and stays at 0!
+        this.exhaustedTimer = 0;
+        this.rage = 0; // Gauge stops building during exhaustion!
       }
 
       if (!this.isExhausted) {
@@ -343,9 +375,18 @@ export class Fish {
           }
         }
       } else {
-        // Exhausted: Calm and easily reelable
+        // ⚡ Exhausted State: Calm for 10 seconds, then recovers stamina & resumes struggle!
         this.rage = 0;
         this.slackEscapeTimer = 0;
+        this.exhaustedTimer += dt;
+
+        if (this.exhaustedTimer >= 10.0) {
+          // 👑 10초 후 체력 회복 및 다시 줄다리기 시작!
+          this.isExhausted = false;
+          this.exhaustedTimer = 0;
+          this.fightDuration = 0; // Reset fight timer to start another struggle phase
+          this.rage = 35; // Initial burst of rage upon waking up
+        }
       }
     }
 
@@ -452,10 +493,11 @@ export class Fish {
 
     // 2. Fill Bar
     if (this.isExhausted) {
-      // Fully Exhausted Green Bar
+      // Exhausted Countdown Bar (Decreases over 10 seconds)
+      const remainRatio = Math.max(0, 1.0 - (this.exhaustedTimer / 10.0));
       ctx.fillStyle = '#06d6a0';
       ctx.beginPath();
-      ctx.roundRect(x - barW / 2 + 1, y - barH / 2 + 1, barW - 2, barH - 2, 4);
+      ctx.roundRect(x - barW / 2 + 1, y - barH / 2 + 1, (barW - 2) * remainRatio, barH - 2, 4);
       ctx.fill();
     } else if (pct > 0.02) {
       let grad = ctx.createLinearGradient(x - barW / 2, y, x - barW / 2 + barW * pct, y);
@@ -482,8 +524,9 @@ export class Fish {
     ctx.textBaseline = 'bottom';
 
     if (this.isExhausted) {
+      const remainSec = Math.max(0, 10.0 - this.exhaustedTimer).toFixed(1);
       ctx.fillStyle = '#06d6a0';
-      ctx.fillText(this.isBoss ? '👑 보스 탈진! (지금 빠르게 감기!)' : '✨ 탈진 완료! (지금 감기!)', x, y - 5);
+      ctx.fillText(this.isBoss ? `👑 보스 탈진! (${remainSec}초 후 재분노! 서둘러 감기!)` : `✨ 탈진! (${remainSec}초 후 회복)`, x, y - 5);
     } else if (this.slackEscapeTimer > 1.4) {
       // Blinking Escape Warning!
       const blink = Math.sin(this.animTime * 14) > 0;

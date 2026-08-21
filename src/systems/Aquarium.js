@@ -25,6 +25,11 @@ export class Aquarium {
     this.passiveCoinTimer = 0;
     this.maxCapacity = 20; // 🌟 Maximum 20 fishes in Aquarium
 
+    // 🥐 10-minute Feed Reward Cooldown (10분에 한 번만 골드 보상 지급)
+    this.FEED_REWARD_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes = 600,000ms
+    this.lastFeedRewardTime = 0;
+    this.hasPendingReward = false;
+
     this.loadFromStorage();
   }
 
@@ -35,6 +40,10 @@ export class Aquarium {
         const data = JSON.parse(saved);
         this.theme = data.theme || 'coral';
         this.placedFish = Array.isArray(data.placedFish) ? data.placedFish.slice(0, this.maxCapacity) : [];
+      }
+      const savedFeedTime = localStorage.getItem('cozy_cat_aqua_feed_time_v1');
+      if (savedFeedTime) {
+        this.lastFeedRewardTime = parseInt(savedFeedTime, 10) || 0;
       }
     } catch (e) {
       console.warn("Failed to load aquarium:", e);
@@ -48,10 +57,19 @@ export class Aquarium {
         placedFish: this.placedFish.slice(0, this.maxCapacity)
       };
       localStorage.setItem('cozy_cat_aquarium_v1', JSON.stringify(data));
+      localStorage.setItem('cozy_cat_aqua_feed_time_v1', this.lastFeedRewardTime.toString());
       if (this.onSaveCallback) this.onSaveCallback();
     } catch (e) {
       console.warn("Failed to save aquarium:", e);
     }
+  }
+
+  canGetFeedReward() {
+    return (Date.now() - this.lastFeedRewardTime) >= this.FEED_REWARD_COOLDOWN_MS;
+  }
+
+  getFeedRewardRemainingMs() {
+    return Math.max(0, this.FEED_REWARD_COOLDOWN_MS - (Date.now() - this.lastFeedRewardTime));
   }
 
   addFishToAquarium(basketItem) {
@@ -68,7 +86,42 @@ export class Aquarium {
     };
     this.placedFish.push(item);
     this.saveToStorage();
+    if (this.isOpen) this.populateTank();
     return item;
+  }
+
+  /**
+   * 🧺 수조에서 물고기 꺼내기 (인벤토리 어획 바구니로 안전하게 회수)
+   */
+  removeFishFromAquarium(instanceId, returnToBasket = true) {
+    const idx = this.placedFish.findIndex(f => f.instanceId === instanceId);
+    if (idx === -1) return null;
+
+    const [removed] = this.placedFish.splice(idx, 1);
+
+    if (returnToBasket && this.economy) {
+      const basketItem = {
+        basketId: 'fish_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+        speciesId: removed.speciesId,
+        name: removed.name,
+        isShiny: !!removed.isShiny,
+        sizeCm: removed.sizeCm,
+        price: 0, // Recalculated by species
+        exp: 0,
+        caughtAt: Date.now()
+      };
+      const species = this.encyclopedia.getFishData(removed.speciesId);
+      if (species) {
+        basketItem.price = Math.round(species.basePrice * (removed.isShiny ? 2.5 : 1.0));
+        basketItem.exp = species.baseExp || 20;
+      }
+      this.economy.fishBasket.push(basketItem);
+      this.economy.saveToStorage();
+    }
+
+    this.saveToStorage();
+    if (this.isOpen) this.populateTank();
+    return removed;
   }
 
   open() {
@@ -119,14 +172,29 @@ export class Aquarium {
 
   dropFood(x, y) {
     this.sound.playBubble();
+
+    // Check if 10-minute reward cooldown is ready
+    const isRewardReady = this.canGetFeedReward();
+    if (isRewardReady) {
+      this.lastFeedRewardTime = Date.now();
+      this.saveToStorage();
+      this.hasPendingReward = true;
+    }
+
     for (let i = 0; i < 4; i++) {
       this.foodFlakes.push({
         pos: new Vector2(x + (Math.random() - 0.5) * 20, y + (Math.random() - 0.5) * 10),
         vel: new Vector2((Math.random() - 0.5) * 10, 25 + Math.random() * 20),
         size: 3 + Math.random() * 2,
-        life: 12
+        life: 12,
+        givesReward: isRewardReady
       });
     }
+
+    return {
+      rewardGranted: isRewardReady,
+      remainingMs: this.getFeedRewardRemainingMs()
+    };
   }
 
   collectCoinBubble(bubbleIndex) {
@@ -151,22 +219,6 @@ export class Aquarium {
   update(dt) {
     if (!this.isOpen) return;
     this.animTime += dt;
-
-    // Passive Coin Bubble Spawner
-    this.passiveCoinTimer += dt;
-    if (this.passiveCoinTimer >= 6.0 && this.tankFish.length > 0) {
-      this.passiveCoinTimer = 0;
-      if (this.coinBubbles.length < 15) {
-        const randomFish = this.tankFish[Math.floor(Math.random() * this.tankFish.length)];
-        this.coinBubbles.push({
-          pos: randomFish.pos.clone(),
-          amount: Math.round(randomFish.data.basePrice * 0.15),
-          size: 16,
-          vy: -20 - Math.random() * 15,
-          life: 20
-        });
-      }
-    }
 
     // Update Coin Bubbles
     for (let i = this.coinBubbles.length - 1; i >= 0; i--) {
@@ -226,14 +278,28 @@ export class Aquarium {
 
         // Eat food!
         if (closestDist < 12) {
+          const eatenFlake = closestFood.food;
           this.foodFlakes.splice(closestFood.index, 1);
           this.sound.playBubble();
+
           // Spawn Heart ❤️
           this.hearts.push({
             pos: fish.pos.clone().add(new Vector2(0, -15)),
             vy: -30,
             alpha: 1.0
           });
+
+          // 💰 10분에 한 번만 골드 보상 버블 생성!
+          if (eatenFlake.givesReward) {
+            const rewardAmt = Math.max(15, Math.round((fish.data.basePrice || 30) * 0.85));
+            this.coinBubbles.push({
+              pos: fish.pos.clone().add(new Vector2(0, -10)),
+              amount: rewardAmt,
+              size: 18,
+              vy: -24 - Math.random() * 15,
+              life: 25
+            });
+          }
         }
       } else {
         // Peaceful wander in tank

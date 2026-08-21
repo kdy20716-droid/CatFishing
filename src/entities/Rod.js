@@ -124,9 +124,10 @@ export class Rod {
     this.tension = 0;
     this.tensionSnapTimer = 0;
     this.isSnapped = false;
+    this.baitConsumed = false;
 
-    // Consume 1 unit of selected bait from inventory (falls back to bread if depleted)
-    this.currentBaitId = this.economy.consumeBait();
+    // Equip current selected bait (consumed only when a fish bites!)
+    this.currentBaitId = this.economy.currentBaitId || 'bread';
 
     // Sound
     if (!this.isRocketPowered) {
@@ -144,6 +145,12 @@ export class Rod {
     slot.hookedFish = fish;
     this.hookedFish = fish;
     this.sound.playBite();
+
+    // 🍞 물고기가 미끼를 물었을 때만 인벤토리에서 미끼 1개 소모! (빈 바늘 그대로 회수 시 미끼 보존)
+    if (!this.baitConsumed) {
+      this.currentBaitId = this.economy.consumeBait();
+      this.baitConsumed = true;
+    }
 
     // Check if fish is small and can become live bait on slot 0
     if (slot.index === 0 && fish.data.baitSize === 'small' && !this.isLiveBait) {
@@ -453,19 +460,25 @@ export class Rod {
         } else {
           // Sinking downwards
           this.hookVel.set(0, sinkRate);
-          if (this.hookPos.y - this.waterY >= maxDepthLimit) {
-            this.hookVel.y = 0; // Hit maximum line depth
+          const maxAllowedY = Math.min(10080, this.waterY + maxDepthLimit); // 🌊 500m Seabed Floor limit
+          if (this.hookPos.y >= maxAllowedY) {
+            this.hookPos.y = maxAllowedY;
+            this.hookVel.y = 0; // Hit seabed floor or maximum line depth
           }
         }
       }
 
       this.hookPos.add(Vector2.mult(this.hookVel, dt));
 
-      // Clamp hook position so it never rises above the water surface while submerged/fishing
+      // 🛑 Clamp hook position so it NEVER penetrates the seabed (10080px) or water surface
       const minSubmergedY = this.waterY + 4;
+      const maxSubmergedY = Math.min(10080, this.waterY + maxDepthLimit);
       if (this.hookPos.y < minSubmergedY) {
         this.hookPos.y = minSubmergedY;
         if (this.hookVel.y < 0) this.hookVel.y = 0;
+      } else if (this.hookPos.y > maxSubmergedY) {
+        this.hookPos.y = maxSubmergedY;
+        if (this.hookVel.y > 0) this.hookVel.y = 0;
       }
 
       // Bobber stays floating on water surface directly above hook
@@ -479,9 +492,13 @@ export class Rod {
   updateHookSlots() {
     this.hooks.forEach(h => {
       h.pos.x = this.hookPos.x + h.offsetX;
-      h.pos.y = this.hookPos.y + h.offsetY;
+      h.pos.y = Math.min(10080, this.hookPos.y + h.offsetY);
       if (h.hookedFish) {
-        h.hookedFish.pos.copy(h.pos);
+        const mouthOffset = (typeof h.hookedFish.getMouthOffset === 'function') 
+          ? h.hookedFish.getMouthOffset() 
+          : 20;
+        h.hookedFish.pos.x = h.pos.x - h.hookedFish.facing * mouthOffset;
+        h.hookedFish.pos.y = Math.min(10070, h.pos.y);
       }
     });
   }

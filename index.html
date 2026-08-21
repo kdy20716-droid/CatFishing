@@ -6,7 +6,7 @@
   <title>🐾 냥이의 바다 낚시 힐링 여행 (Cozy Cat Fishing)</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="shortcut icon" href="assets/favicon.svg">
-  <link rel="stylesheet" href="style.css?v=3.1.0">
+  <link rel="stylesheet" href="style.css?v=3.5.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Gothic:wght@400;700;800&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
@@ -58,11 +58,11 @@
             <span class="auth-text">로그인</span>
           </button>
 
-          <div id="user-profile-pill" class="user-profile-pill hidden" title="계정 정보 및 닉네임/클라우드 관리">
+          <div id="user-profile-pill" class="user-profile-pill" title="계정 정보 및 닉네임/클라우드 관리">
             <img id="user-avatar" class="user-avatar" src="assets/favicon.svg" alt="Avatar" />
             <div class="user-info-text">
               <span id="user-name" class="user-name">냥이 집사</span>
-              <span id="cloud-sync-status" class="sync-status">☁️ 동기화됨</span>
+              <span id="cloud-sync-status" class="sync-status">💾 로컬 저장됨</span>
             </div>
             <span class="user-menu-arrow">▼</span>
           </div>
@@ -70,12 +70,24 @@
           <!-- User Dropdown Menu -->
           <div id="user-dropdown-menu" class="user-dropdown-menu hidden">
             <div class="dropdown-header">
-              <div id="dropdown-user-email" class="dropdown-email">user@email.com</div>
+              <div id="dropdown-user-email" class="dropdown-email">비회원 (게스트 모드)</div>
             </div>
-            <div class="dropdown-item sync-info-item">☁️ 자동 클라우드 동기화 켜짐</div>
+            <div id="dropdown-sync-status" class="dropdown-item sync-info-item">💾 로컬 브라우저에 저장 중</div>
+            
+            <!-- 🔗 Google Account Link Button for Non-members / Guests -->
+            <button id="btn-dropdown-google-link" class="dropdown-item google-link-item">
+              <svg class="google-svg-sm" viewBox="0 0 24 24" width="16" height="16">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              <span>구글 계정 연동하기</span>
+            </button>
+
             <div class="dropdown-divider"></div>
             <button id="btn-change-nickname" class="dropdown-item">✏️ 닉네임 변경</button>
-            <button id="btn-auth-logout" class="dropdown-item text-danger">🚪 로그아웃</button>
+            <button id="btn-auth-logout" class="dropdown-item text-danger">🚪 로그아웃 / 계정 전환</button>
           </div>
         </div>
       </div>
@@ -171,12 +183,29 @@
             <option value="night_glow">🌌 심해 야광 오로라 테마</option>
             <option value="ancient">🏛️ 고대 아틀란티스 신전 테마</option>
           </select>
-          <button id="btn-aqua-feed" class="btn-aqua">🥐 먹이 뿌리기 (클릭)</button>
+          <button id="btn-aqua-manage" class="btn-aqua-manage">🐠 물고기 관리/꺼내기 (<span id="aqua-fish-count">0</span>/20)</button>
+          <button id="btn-aqua-feed" class="btn-aqua">🥐 밥주기 <span id="aqua-feed-badge" class="feed-badge ready">💰 골드 보상</span></button>
           <button id="btn-aqua-collect" class="btn-aqua-gold">💰 코인 모두 수거</button>
           <button id="btn-aqua-exit" class="btn-aqua-exit">🌊 낚시터로 돌아가기</button>
         </div>
       </div>
-      <div class="aqua-subtext">✨ 화면을 클릭하여 물고기들에게 맛있는 먹이를 주고 힐링 코인을 모아보세요!</div>
+      <div class="aqua-subtext">✨ 화면을 클릭하여 먹이를 줄 수 있습니다. <strong>(💰 골드 보상은 10분에 1회 지급)</strong></div>
+    </div>
+
+    <!-- Aquarium Fish Management Modal (수조 물고기 확인 및 꺼내기) -->
+    <div id="aquarium-manage-modal" class="modal-backdrop">
+      <div class="modal-window aqua-manage-window" style="max-width: 680px; width: 95%;">
+        <div class="modal-header">
+          <h2>🐠 아쿠아리움 수조 관리 (<span id="aqua-manage-count">0</span>/20마리)</h2>
+          <button class="modal-close-btn">&times;</button>
+        </div>
+        <div class="aqua-manage-sub">
+          수조에서 헤엄치고 있는 물고기 목록입니다. 원치 않는 물고기는 언제든 꺼내어 인벤토리 가방으로 회수할 수 있습니다.
+        </div>
+        <div id="aqua-manage-fish-list" class="aqua-manage-grid">
+          <!-- Injected via Modals.js -->
+        </div>
+      </div>
     </div>
 
     <!-- Catch Ceremony Modal -->
@@ -738,6 +767,6 @@
   </div>
 
   <!-- Entry Script (with cache-busting query) -->
-  <script type="module" src="src/main.js?v=3.1.0"></script>
+  <script type="module" src="src/main.js?v=3.5.0"></script>
 </body>
 </html>

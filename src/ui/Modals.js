@@ -18,6 +18,7 @@ export class Modals {
     this.shopModal = document.getElementById('shop-modal');
     this.encyclopediaModal = document.getElementById('encyclopedia-modal');
     this.aquariumUI = document.getElementById('aquarium-controls-ui');
+    this.aquariumManageModal = document.getElementById('aquarium-manage-modal');
     this.guideModal = document.getElementById('guide-modal');
     this.authModal = document.getElementById('auth-modal');
     this.conflictModal = document.getElementById('cloud-conflict-modal');
@@ -174,7 +175,7 @@ export class Modals {
       });
     }
 
-    // Google Login
+    // Google Login & Profile Link
     const btnGoogleLogin = document.getElementById('btn-google-login');
     if (btnGoogleLogin) {
       btnGoogleLogin.addEventListener('click', async () => {
@@ -182,6 +183,17 @@ export class Modals {
         if (this.cloudSave) {
           await this.cloudSave.loginWithGoogle();
           this.closeAll();
+        }
+      });
+    }
+
+    const btnDropdownGoogleLink = document.getElementById('btn-dropdown-google-link');
+    if (btnDropdownGoogleLink) {
+      btnDropdownGoogleLink.addEventListener('click', async () => {
+        this.sound.playClick();
+        if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
+        if (this.cloudSave) {
+          await this.cloudSave.loginWithGoogle();
         }
       });
     }
@@ -311,8 +323,23 @@ export class Modals {
     if (btnFeed) {
       btnFeed.addEventListener('click', () => {
         const cx = 150 + Math.random() * (this.aquarium.tankWidth - 300);
-        this.aquarium.dropFood(cx, 30);
-        this.hud.showNotification('맛있는 먹이를 뿌렸습니다! 🐟', '🥐');
+        const res = this.aquarium.dropFood(cx, 30);
+        if (res && res.rewardGranted) {
+          this.hud.showNotification('💰 10분 밥주기 보상: 물고기들이 기뻐하며 힐링 골드를 선물했습니다!', '✨');
+        } else if (res) {
+          const mins = Math.floor(res.remainingMs / 60000);
+          const secs = Math.floor((res.remainingMs % 60000) / 1000);
+          this.hud.showNotification(`🥐 냠냠 먹이를 주었습니다! (다음 골드 보상까지: ${mins}분 ${secs}초)`, '🐟');
+        }
+        this.updateAquariumBadge();
+      });
+    }
+
+    const btnManageAqua = document.getElementById('btn-aqua-manage');
+    if (btnManageAqua) {
+      btnManageAqua.addEventListener('click', () => {
+        this.sound.playClick();
+        this.openAquariumManageModal();
       });
     }
 
@@ -543,6 +570,7 @@ export class Modals {
     if (this.nicknameModal) this.nicknameModal.classList.remove('visible');
     if (this.inventoryModal) this.inventoryModal.classList.remove('visible');
     if (this.pauseModal) this.pauseModal.classList.remove('visible');
+    if (this.aquariumManageModal) this.aquariumManageModal.classList.remove('visible');
     if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
     if (this.aquariumUI && !this.aquarium.isOpen) this.aquariumUI.classList.remove('visible');
     if (this.onPauseChange) this.onPauseChange(false);
@@ -563,6 +591,7 @@ export class Modals {
       (this.nicknameModal && this.nicknameModal.classList.contains('visible')) ||
       (this.inventoryModal && this.inventoryModal.classList.contains('visible')) ||
       (this.pauseModal && this.pauseModal.classList.contains('visible')) ||
+      (this.aquariumManageModal && this.aquariumManageModal.classList.contains('visible')) ||
       (this.userDropdownMenu && !this.userDropdownMenu.classList.contains('hidden'))
     );
   }
@@ -769,6 +798,7 @@ export class Modals {
         this.sound.playClick();
         this.closeAll();
         this.aquarium.open();
+        this.updateAquariumBadge();
         if (this.aquariumUI) this.aquariumUI.classList.add('visible');
       });
     }
@@ -1294,6 +1324,100 @@ export class Modals {
         container.appendChild(card);
       });
     }
+  }
+
+  openAquariumManageModal() {
+    if (this.aquariumManageModal) {
+      this.renderAquariumManageContent();
+      this.aquariumManageModal.classList.add('visible');
+    }
+  }
+
+  updateAquariumBadge() {
+    const countEl = document.getElementById('aqua-fish-count');
+    if (countEl && this.aquarium) {
+      countEl.innerText = this.aquarium.placedFish.length;
+    }
+
+    const feedBadge = document.getElementById('aqua-feed-badge');
+    if (feedBadge && this.aquarium) {
+      if (this.aquarium.canGetFeedReward()) {
+        feedBadge.className = 'feed-badge ready';
+        feedBadge.innerText = '💰 골드 가능!';
+      } else {
+        const remMs = this.aquarium.getFeedRewardRemainingMs();
+        const mins = Math.floor(remMs / 60000);
+        const secs = Math.floor((remMs % 60000) / 1000);
+        feedBadge.className = 'feed-badge cooldown';
+        feedBadge.innerText = `⏳ ${mins}분 ${secs}초`;
+      }
+    }
+  }
+
+  renderAquariumManageContent() {
+    const container = document.getElementById('aqua-manage-fish-list');
+    const countEl = document.getElementById('aqua-manage-count');
+    if (!container) return;
+
+    container.innerHTML = '';
+    const fishList = this.aquarium.placedFish;
+    if (countEl) countEl.innerText = fishList.length;
+
+    this.updateAquariumBadge();
+
+    if (fishList.length === 0) {
+      container.innerHTML = `
+        <div class="aqua-empty-state">
+          <div class="empty-icon">🐠</div>
+          <div class="empty-title">수조가 비어있습니다.</div>
+          <div class="empty-sub">부두막 어시장(🐟)에서 잡은 물고기를 아쿠아리움에 전시해보세요! (최대 20마리)</div>
+        </div>
+      `;
+      return;
+    }
+
+    fishList.forEach(item => {
+      const species = this.encyclopedia.getFishData(item.speciesId);
+      const card = document.createElement('div');
+      card.className = `aqua-fish-card ${item.isShiny ? 'is-shiny' : ''}`;
+      card.innerHTML = `
+        <div class="aqua-card-preview-box">
+          <canvas class="aqua-card-preview" width="90" height="60"></canvas>
+          ${item.isShiny ? '<span class="shiny-tag">✨ 이로치</span>' : ''}
+        </div>
+        <div class="aqua-card-info">
+          <div class="aqua-card-name">${item.name}</div>
+          <div class="aqua-card-size">크기: <strong>${item.sizeCm.toFixed(1)} cm</strong></div>
+          <div class="aqua-card-rarity">${species ? species.rarity.toUpperCase() : 'FISH'}</div>
+        </div>
+        <div class="aqua-card-actions">
+          <button class="btn-aqua-remove-fish" data-instance-id="${item.instanceId}" title="수조에서 꺼내어 인벤토리 가방으로 회수합니다.">
+            🧺 가방으로 꺼내기
+          </button>
+        </div>
+      `;
+
+      // Draw fish preview canvas
+      const canvas = card.querySelector('.aqua-card-preview');
+      if (canvas && species) {
+        Fish.drawPreview(canvas, species, true, item.isShiny);
+      }
+
+      // Remove / Withdraw Button
+      const btnRemove = card.querySelector('.btn-aqua-remove-fish');
+      if (btnRemove) {
+        btnRemove.addEventListener('click', () => {
+          this.sound.playClick();
+          const removed = this.aquarium.removeFishFromAquarium(item.instanceId, true);
+          if (removed) {
+            this.hud.showNotification(`🧺 [${removed.name}]을(를) 수조에서 꺼내어 가방으로 회수했습니다!`, '🐟');
+            this.renderAquariumManageContent();
+          }
+        });
+      }
+
+      container.appendChild(card);
+    });
   }
 
   openMultiplayerModal() {
