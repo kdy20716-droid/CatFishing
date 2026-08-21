@@ -228,6 +228,35 @@ export class CloudSave {
     }
   }
 
+  async updateNickname(newName) {
+    if (!newName || !newName.trim()) return false;
+    const cleanName = newName.trim().substring(0, 10);
+
+    if (this.currentUser) {
+      this.currentUser.displayName = cleanName;
+
+      // If Firebase Auth user, update Firebase Auth profile
+      if (this.auth && this.auth.currentUser && !this.currentUser.isSimulated) {
+        try {
+          await updateProfile(this.auth.currentUser, { displayName: cleanName });
+          console.log("☁️ Firebase user profile displayName updated:", cleanName);
+        } catch (e) {
+          console.warn("Failed to update Firebase auth profile:", e);
+        }
+      } else if (this.currentUser.isSimulated) {
+        localStorage.setItem('cozy_cat_simulated_user', JSON.stringify(this.currentUser));
+      }
+
+      this.updateAuthUI(this.currentUser);
+      await this.saveToCloud();
+    }
+
+    // Save custom nickname to local storage as fallback
+    localStorage.setItem('cozy_cat_player_nickname', cleanName);
+
+    return cleanName;
+  }
+
   async logout() {
     if (this.auth && this.currentUser) {
       try {

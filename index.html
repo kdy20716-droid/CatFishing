@@ -68,6 +68,7 @@
               </div>
               <div class="dropdown-item sync-info-item">☁️ 자동 클라우드 동기화 켜짐</div>
               <div class="dropdown-divider"></div>
+              <button id="btn-change-nickname" class="dropdown-item">✏️ 닉네임 변경</button>
               <button id="btn-auth-logout" class="dropdown-item text-danger">🚪 로그아웃</button>
             </div>
           </div>
@@ -552,6 +553,26 @@
             <div class="active-room-actions">
               <button id="btn-multi-leave" class="btn-danger btn-full-width">🚪 방 나가기 (싱글 플레이로 복귀)</button>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nickname Edit Modal -->
+    <div id="nickname-modal" class="modal-backdrop">
+      <div class="modal-window auth-window" style="max-width: 380px;">
+        <div class="modal-header">
+          <h2>✏️ 냥이 닉네임 변경</h2>
+          <button class="modal-close-btn">&times;</button>
+        </div>
+        <div class="auth-content">
+          <div class="form-group">
+            <label for="input-nickname-new">새로운 닉네임 (최대 10자)</label>
+            <input type="text" id="input-nickname-new" class="auth-input" placeholder="새로운 닉네임 입력" maxlength="10">
+          </div>
+          <div class="modal-actions" style="display: flex; gap: 8px; margin-top: 16px;">
+            <button id="btn-nickname-cancel" class="btn-secondary" style="flex: 1;">취소</button>
+            <button id="btn-nickname-save" class="btn-primary" style="flex: 1;">저장 완료</button>
           </div>
         </div>
       </div>

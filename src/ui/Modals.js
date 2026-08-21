@@ -91,9 +91,14 @@ export class Modals {
       });
     }
 
-    const btnUserMenu = document.getElementById('btn-user-menu');
-    if (btnUserMenu) {
-      btnUserMenu.addEventListener('click', (e) => {
+    // Toggle Dropdown when clicking anywhere on User Profile Pill
+    const userProfilePill = document.getElementById('user-profile-pill');
+    if (userProfilePill) {
+      userProfilePill.addEventListener('click', (e) => {
+        // If clicking inside dropdown itself, let buttons handle their events
+        if (this.userDropdownMenu && this.userDropdownMenu.contains(e.target)) {
+          return;
+        }
         e.stopPropagation();
         this.sound.playClick();
         if (this.userDropdownMenu) {
@@ -103,32 +108,61 @@ export class Modals {
     }
 
     window.addEventListener('click', (e) => {
-      if (this.userDropdownMenu && !this.userDropdownMenu.contains(e.target) && e.target !== btnUserMenu) {
+      if (this.userDropdownMenu && !this.userDropdownMenu.contains(e.target) && (!userProfilePill || !userProfilePill.contains(e.target))) {
         this.userDropdownMenu.classList.add('hidden');
       }
     });
 
-    // Cloud Save / Load Manual Buttons
-    const btnCloudSaveNow = document.getElementById('btn-cloud-save-now');
-    if (btnCloudSaveNow) {
-      btnCloudSaveNow.addEventListener('click', async () => {
-        this.sound.playCoin();
+    // Nickname Change Button & Modal
+    const btnChangeNickname = document.getElementById('btn-change-nickname');
+    const nicknameModal = document.getElementById('nickname-modal');
+    const inputNicknameNew = document.getElementById('input-nickname-new');
+    const btnNicknameSave = document.getElementById('btn-nickname-save');
+    const btnNicknameCancel = document.getElementById('btn-nickname-cancel');
+
+    if (btnChangeNickname && nicknameModal) {
+      btnChangeNickname.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.sound.playClick();
         if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
-        if (this.cloudSave) {
-          const ok = await this.cloudSave.saveToCloud();
-          if (ok) this.hud.showNotification('💾 클라우드에 최신 진행 상태를 안전하게 저장했습니다!', '☁️');
-        }
+        
+        const currentName = this.cloudSave?.currentUser?.displayName || (this.multiplayer ? this.multiplayer.playerName : '냥이 집사');
+        if (inputNicknameNew) inputNicknameNew.value = currentName;
+        nicknameModal.classList.add('visible');
+        setTimeout(() => inputNicknameNew?.focus(), 50);
       });
     }
 
-    const btnCloudLoadNow = document.getElementById('btn-cloud-load-now');
-    if (btnCloudLoadNow) {
-      btnCloudLoadNow.addEventListener('click', async () => {
+    const handleSaveNickname = async () => {
+      const newName = inputNicknameNew ? inputNicknameNew.value.trim() : '';
+      if (!newName) {
+        this.hud.showNotification('닉네임을 1자 이상 입력해주세요.', '⚠️');
+        return;
+      }
+      this.sound.playCoin();
+      if (this.cloudSave) {
+        await this.cloudSave.updateNickname(newName);
+      }
+      if (this.multiplayer) {
+        this.multiplayer.playerName = newName;
+        this.multiplayer.updateMultiplayerUI();
+      }
+      if (nicknameModal) nicknameModal.classList.remove('visible');
+      this.hud.showNotification(`🎉 닉네임이 [${newName}] (으)로 변경되었습니다!`, '✏️');
+    };
+
+    if (btnNicknameSave) {
+      btnNicknameSave.addEventListener('click', handleSaveNickname);
+    }
+    if (inputNicknameNew) {
+      inputNicknameNew.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handleSaveNickname();
+      });
+    }
+    if (btnNicknameCancel) {
+      btnNicknameCancel.addEventListener('click', () => {
         this.sound.playClick();
-        if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
-        if (this.cloudSave) {
-          await this.cloudSave.loadFromCloud();
-        }
+        if (nicknameModal) nicknameModal.classList.remove('visible');
       });
     }
 
@@ -493,6 +527,7 @@ export class Modals {
     if (this.wardrobeModal) this.wardrobeModal.classList.remove('visible');
     if (this.dockMerchantModal) this.dockMerchantModal.classList.remove('visible');
     if (this.fishMarketModal) this.fishMarketModal.classList.remove('visible');
+    if (this.nicknameModal) this.nicknameModal.classList.remove('visible');
     if (this.inventoryModal) this.inventoryModal.classList.remove('visible');
     if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
     if (this.aquariumUI && !this.aquarium.isOpen) this.aquariumUI.classList.remove('visible');

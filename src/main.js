@@ -438,8 +438,11 @@ class Game {
       this.multiplayer.draw(this.ctx, this.cat, this.rod);
     }
 
-    // 5. Draw Local Cat & Boat
-    this.cat.draw(this.ctx);
+    // 5. Draw Local Cat & Boat (with active player nickname tag)
+    const localPlayerName = this.cloudSave?.currentUser?.displayName 
+      || localStorage.getItem('cozy_cat_player_nickname') 
+      || (this.multiplayer ? this.multiplayer.playerName : '냥이 집사');
+    this.cat.draw(this.ctx, localPlayerName);
 
     // 6. Draw Local Fishing Line, Bobber & Hook
     this.rod.draw(this.ctx, this.cat);

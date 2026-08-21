@@ -111,7 +111,7 @@ export class Cat {
     return new Vector2(tipX, tipY);
   }
 
-  draw(ctx) {
+  draw(ctx, customName = null) {
     ctx.save();
     ctx.translate(this.pos.x, this.pos.y);
     ctx.rotate(this.bobAngle);
@@ -130,6 +130,54 @@ export class Cat {
 
     // Draw Exclamation / Emotion Popups
     this.drawEmotions(ctx);
+
+    ctx.restore();
+
+    // Draw Player Name Tag above Cat
+    if (customName) {
+      this.drawNameTag(ctx, customName);
+    }
+  }
+
+  drawNameTag(ctx, name) {
+    if (!name) return;
+    ctx.save();
+    const tagX = this.pos.x;
+    const tagY = this.pos.y - 65;
+
+    ctx.font = 'bold 12px "Pretendard", "Gaegu", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const textWidth = ctx.measureText(name).width;
+    const tagWidth = textWidth + 22;
+    const tagHeight = 20;
+
+    // Background Shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetY = 2;
+
+    // Background Pill
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.94)';
+    ctx.beginPath();
+    ctx.roundRect(tagX - tagWidth / 2, tagY - tagHeight / 2, tagWidth, tagHeight, 10);
+    ctx.fill();
+
+    // Reset shadow for crisp border
+    ctx.shadowColor = 'transparent';
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Online Green / Gold Dot
+    ctx.fillStyle = '#10b981';
+    ctx.beginPath();
+    ctx.arc(tagX - textWidth / 2 - 2, tagY, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Text
+    ctx.fillStyle = '#1e293b';
+    ctx.fillText(name, tagX + 4, tagY + 0.5);
 
     ctx.restore();
   }
