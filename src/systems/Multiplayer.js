@@ -255,6 +255,10 @@ export class Multiplayer {
     return { success: true, roomId: cleanCode };
   }
 
+  async joinPlayerToRoom(roomId) {
+    const db = this.getDb();
+    if (!db) return;
+
     const spawnX = 240 + Math.floor(Math.random() * 35);
     const playerRef = doc(db, 'cozy_fishing_rooms', roomId, 'players', this.playerId);
     await setDoc(playerRef, {
