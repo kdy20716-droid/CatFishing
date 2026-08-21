@@ -1363,13 +1363,15 @@ export class Modals {
         else if (bait.isTackle) countLabel = isOwnedTackle ? '영구 해금됨' : '미보유';
         else countLabel = `보유량: ${this.economy.baitInventory[bait.id] || 0}개`;
 
+        const depthBadge = bait.maxDepth ? `<span style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-left: 6px;">유효 수심 ~${bait.maxDepth}m</span>` : '';
+
         const card = document.createElement('div');
         card.className = `shop-card ${isEquippedTackle ? 'equipped' : ''}`;
         card.innerHTML = `
           <div class="shop-card-header">
             <span class="card-icon card-bait-icon-wrapper">${getBaitIconSvg(bait.id)}</span>
             <div class="card-title-group">
-              <div class="card-title">${bait.name}</div>
+              <div class="card-title">${bait.name} ${depthBadge}</div>
               <div class="card-subtitle">${countLabel}</div>
             </div>
           </div>

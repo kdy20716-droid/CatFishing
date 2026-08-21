@@ -101,19 +101,18 @@ export class HUD {
       const btn = document.createElement('button');
       btn.className = `bait-btn ${this.isItemActive(bait.id) ? 'active' : ''} ${!hasStock ? 'empty' : ''}`;
       btn.dataset.baitId = bait.id;
+      btn.title = `${bait.name} ${bait.maxDepth ? `(유효 수심: ~${bait.maxDepth}m)` : ''} - ${bait.description}`;
+      btn.dataset.tooltip = `${bait.name} [${index + 1}]`;
 
       let count = '';
-      if (bait.id === 'bread') count = '무제한';
-      else if (bait.isTackle) count = hasStock ? '보유중' : '미보유';
+      if (bait.id === 'bread') count = '∞';
+      else if (bait.isTackle) count = hasStock ? '보유' : '0';
       else count = `x${this.economy.baitInventory[bait.id] || 0}`;
 
       btn.innerHTML = `
         <span class="bait-key">${index + 1}</span>
         <span class="bait-icon-wrapper">${getBaitIconSvg(bait.id)}</span>
-        <span class="bait-info">
-          <span class="bait-name">${bait.name}</span>
-          <span class="bait-count" id="bait-count-${bait.id}">${count}</span>
-        </span>
+        <span class="bait-count" id="bait-count-${bait.id}">${count}</span>
       `;
 
       btn.addEventListener('click', () => {
@@ -275,7 +274,10 @@ export class HUD {
     BAITS.forEach(bait => {
       const el = document.getElementById(`bait-count-${bait.id}`);
       if (el) {
-        el.innerText = bait.id === 'bread' ? '무제한' : `x${this.economy.baitInventory[bait.id] || 0}`;
+        const hasStock = this.economy.hasBait(bait.id);
+        if (bait.id === 'bread') el.innerText = '∞';
+        else if (bait.isTackle) el.innerText = hasStock ? '보유' : '0';
+        else el.innerText = `x${this.economy.baitInventory[bait.id] || 0}`;
       }
     });
     this.updateActiveBaitPill();

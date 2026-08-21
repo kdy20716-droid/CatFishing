@@ -23,8 +23,9 @@ class Game {
     this.ctx = this.canvas.getContext('2d');
 
     this.lastTime = 0;
-    this.maxFishCount = 65; // Populate entire 0~500m ocean richly
+    this.maxFishCount = 100; // Increased 1.5x (65 -> 100) to populate the ocean densely
     this.fishList = [];
+    this.prevTimeOfDay = 'day';
 
     this.init();
   }
@@ -106,8 +107,9 @@ class Game {
     const startY = minY + Math.random() * (maxY - minY);
     const startX = -600 + Math.random() * 4800;
 
-    // ✨ Shiny (이로치) check
-    const isShiny = Math.random() < this.economy.getShinyChance();
+    // ✨ Shiny (이로치) check (낮: 1.0%, 밤: 3.0%)
+    const isNight = this.environment && this.environment.timeOfDay === 'night';
+    const isShiny = Math.random() < this.economy.getShinyChance(isNight);
 
     const fish = new Fish(chosen, new Vector2(startX, startY), isShiny);
     fish.onEscapeCallback = (f) => {
@@ -344,6 +346,14 @@ class Game {
   update(dt) {
     this.input.update(dt);
     this.environment.update(dt, this.sound);
+
+    // Notify player on night arrival (Shiny Fever Time!)
+    if (this.environment.timeOfDay !== this.prevTimeOfDay) {
+      if (this.environment.timeOfDay === 'night') {
+        this.hud.showNotification('🌌 밤이 찾아왔습니다! 황금빛 이로치 물고기 출현 확률이 3%로 대폭 상승합니다! ✨', '🌟');
+      }
+      this.prevTimeOfDay = this.environment.timeOfDay;
+    }
 
     if (this.aquarium.isOpen) {
       this.aquarium.update(dt);

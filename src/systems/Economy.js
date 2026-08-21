@@ -112,7 +112,8 @@ export const BAITS = [
     price: 0, // Infinite
     costPerBuy: 0,
     countPerBuy: 999,
-    description: '기본 미끼. 얕은 바다의 작은 물고기들이 좋아합니다.',
+    maxDepth: 35,
+    description: '기본 미끼. 수심 35m까지의 표층·연안 물고기들을 유혹합니다.',
     icon: '🍞',
     sinkSpeed: 1.0
   },
@@ -122,9 +123,10 @@ export const BAITS = [
     category: 'bait',
     price: 15,
     countPerBuy: 5,
-    description: '활발하게 꿈틀거려 표층과 중층의 물고기들을 유혹합니다.',
+    maxDepth: 80,
+    description: '활발하게 꿈틀거려 수심 80m까지의 표층·중층 물고기들을 유혹합니다.',
     icon: '🪱',
-    sinkSpeed: 1.2
+    sinkSpeed: 1.25
   },
   {
     id: 'shrimp',
@@ -132,9 +134,10 @@ export const BAITS = [
     category: 'bait',
     price: 45,
     countPerBuy: 5,
-    description: '고소한 냄새로 참돔, 오징어 등 중층 고급 어종이 가장 선호합니다.',
+    maxDepth: 180,
+    description: '고소한 냄새로 수심 180m까지의 중층·중심해 고급 어종을 유혹합니다.',
     icon: '🦐',
-    sinkSpeed: 1.4
+    sinkSpeed: 1.5
   },
   {
     id: 'lure',
@@ -142,9 +145,10 @@ export const BAITS = [
     category: 'bait',
     price: 120,
     countPerBuy: 3,
-    description: '어두운 심해에서 화려하게 발광하여 초롱아귀와 희귀어를 유혹합니다.',
+    maxDepth: 320,
+    description: '화려하게 발광하여 수심 320m까지의 심해 어둠층과 희귀어를 유혹합니다.',
     icon: '✨',
-    sinkSpeed: 1.7
+    sinkSpeed: 1.8
   },
   {
     id: 'golden',
@@ -152,9 +156,10 @@ export const BAITS = [
     category: 'bait',
     price: 350,
     countPerBuy: 2,
-    description: '전설의 바다 생물도 매혹시키는 황금빛 특급 미끼!',
+    maxDepth: 600,
+    description: '수심 600m+ 초심연의 전설 어종까지 모든 물고기를 매혹시키는 특급 미끼! (이로치 확률 2배)',
     icon: '👑',
-    sinkSpeed: 2.1
+    sinkSpeed: 2.2
   },
   {
     id: 'rocket',
@@ -774,11 +779,13 @@ export class Economy {
     return mult;
   }
 
-  getShinyChance() {
-    const baseChance = 1 / 1024; // 1/1024 (0.0976%) 극도로 희귀한 이로치 출현 확률
+  getShinyChance(isNight = false) {
+    // 🌟 낮 기본 1.0% (0.01), 밤(Night) 시간대 3.0% (0.03) 상향!
+    const baseChance = isNight ? 0.03 : 0.01;
     const lv = this.upgradeLevels.lucky_charm || 0;
     let multiplier = 1 + lv * 0.15;
     if (this.currentHatId === 'hat_pirate') multiplier *= 1.5;
+    if (this.currentBaitId === 'golden') multiplier *= 2.0; // 황금 미끼 사용 시 2배 보너스!
     return baseChance * multiplier;
   }
 

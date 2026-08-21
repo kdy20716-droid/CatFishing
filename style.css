@@ -559,10 +559,10 @@ html, body {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
   background: #ffffff;
   border: 2.5px solid #e9ecef;
-  padding: 6px 14px;
+  padding: 6px 12px;
   border-radius: var(--radius-md);
   font-family: var(--font-main);
   cursor: pointer;
@@ -598,6 +598,17 @@ html, body {
   opacity: 0.55;
   background: #f8f9fa;
   border-style: dashed;
+}
+
+.bait-count {
+  font-family: var(--font-cute);
+  font-size: 15px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.bait-btn.active .bait-count {
+  color: #d90429;
 }
 
 .bait-btn.empty .bait-count {

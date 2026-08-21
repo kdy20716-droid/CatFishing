@@ -163,8 +163,31 @@ export class Fish {
         isAttractive = true;
       }
     } else {
-      // 🍞 Bread Crumbs can catch all surface & shallow fish up to 25m!
-      if (currentBaitId === 'bread' && (this.data.minDepth <= 25 || this.data.zone === 'shallow')) {
+      // 🎯 Depth-based Bait Coverage Tier System
+      const fishMinDepth = this.data.minDepth || 0;
+      
+      if (currentBaitId === 'bread') {
+        // 🍞 식빵: 수심 35m까지의 표층·연안 어종 유혹
+        if (fishMinDepth <= 35 || this.data.zone === 'shallow' || this.data.favBait.includes('bread')) {
+          isAttractive = true;
+        }
+      } else if (currentBaitId === 'worm') {
+        // 🪱 갯지렁이: 수심 80m까지의 표층·중층 어종 완벽 커버!
+        if (fishMinDepth <= 80 || this.data.zone === 'shallow' || this.data.zone === 'mid' || this.data.favBait.includes('worm')) {
+          isAttractive = true;
+        }
+      } else if (currentBaitId === 'shrimp') {
+        // 🦐 생새우: 수심 180m까지의 중층·중심해 고급 어종 유혹
+        if (fishMinDepth <= 180 || this.data.zone === 'shallow' || this.data.zone === 'mid' || this.data.favBait.includes('shrimp')) {
+          isAttractive = true;
+        }
+      } else if (currentBaitId === 'lure') {
+        // ✨ 야광 루어: 수심 320m까지의 심해 어둠층 어종 유혹
+        if (fishMinDepth <= 320 || this.data.favBait.includes('lure')) {
+          isAttractive = true;
+        }
+      } else if (currentBaitId === 'golden') {
+        // 👑 황금 크릴 엑기스: 600m+ 초심연의 전설 어종 포함 모든 물고기 유혹!
         isAttractive = true;
       } else if (this.data.favBait.includes(currentBaitId)) {
         isAttractive = true;
