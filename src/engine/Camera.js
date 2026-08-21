@@ -15,9 +15,9 @@ export class Camera {
     
     // Bounds in world coordinates
     this.minX = -1200;
-    this.maxX = 3500;
+    this.maxX = 14500;
     this.minY = -400; // Above water (sky)
-    this.maxY = 2800; // Deep seabed
+    this.maxY = 11500; // Deep 500m+ seabed floor
 
     // Screen Shake
     this.shakeDuration = 0;

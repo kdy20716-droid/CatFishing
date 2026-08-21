@@ -1,8 +1,9 @@
 /**
  * HUD & In-Game UI Overlay Manager
  */
-import { BAITS } from '../systems/Economy.js';
-import { getBaitIconSvg } from './BaitIcons.js';
+import { BAITS } from '../systems/Economy.js?v=2.6.0';
+import { Fish } from '../entities/Fish.js?v=2.6.0';
+import { getBaitIconSvg } from './BaitIcons.js?v=2.6.0';
 
 export class HUD {
   constructor(economy, encyclopedia, soundEngine, environment = null) {
@@ -338,6 +339,20 @@ export class HUD {
       if (timeIconEl) timeIconEl.innerText = timeInfo.icon;
       if (timeTextEl) timeTextEl.innerText = timeInfo.phase;
     }
+
+    // 7. ⬅️ Update Dock Distance Indicator (부두막 방향 & 거리 알림)
+    const dockDistEl = document.getElementById('dock-distance-indicator');
+    if (dockDistEl && cat) {
+      const dockX = 200; // Dock wooden pier center
+      const distM = Math.max(0, Math.round((cat.pos.x - dockX) / 20));
+      if (distM >= 10) {
+        dockDistEl.classList.remove('hidden');
+        const textEl = dockDistEl.querySelector('.dock-dist-text');
+        if (textEl) textEl.innerHTML = `부두막 <b>${distM.toLocaleString()}m</b>`;
+      } else {
+        dockDistEl.classList.add('hidden');
+      }
+    }
   }
 
   showCatchPopup(fishInstance, catchResult) {
@@ -372,14 +387,42 @@ export class HUD {
       mythic: '신화급 해양신 🦄'
     };
 
+    const isBoss = !!fishInstance.isBoss;
+    const isFirstTime = !!catchResult.isFirstTime;
+
+    let bannerHtml = '<div class="catch-confetti">✨ 냐앙~! 낚았다냥! ✨</div>';
+    if (isBoss) {
+      bannerHtml = '<div class="shiny-celebration-banner" style="background: linear-gradient(90deg, #ff0054, #ffd166, #ff0054); animation: pulse 1s infinite;">👑⚡ 대격돌 승리! 초대형 신화 보스 포획 성공! ⚡👑</div>';
+    } else if (isFirstTime) {
+      bannerHtml = '<div class="shiny-celebration-banner" style="background: linear-gradient(90deg, #ffd166, #06d6a0, #ffd166);">🌟🎉 [NEW DISCOVERY!] 새로운 어종 최초 발견! 🎉🌟</div>';
+    } else if (isShiny) {
+      bannerHtml = '<div class="shiny-celebration-banner">✨🌟 대박! 이로치 (Shiny) 물고기 획득! 🌟✨</div>';
+    }
+
+    let badgeText = rarityKorean[data.rarity] || '어종';
+    if (isBoss) badgeText = '👑 초대형 신화 보스';
+    else if (isShiny) badgeText = '✨ 이로치 (Shiny)';
+
+    let badgeBg = rarityBadgeColors[data.rarity] || '#0077b6';
+    if (isBoss) badgeBg = 'linear-gradient(90deg, #ff0054, #7b2cbf)';
+    else if (isShiny) badgeBg = 'linear-gradient(90deg, #ffd166, #ff007f)';
+
     this.catchModal.innerHTML = `
-      <div class="catch-modal-content ${isShiny ? 'shiny-modal-content' : ''}">
-        ${isShiny ? '<div class="shiny-celebration-banner">✨🌟 대박! 이로치 (Shiny) 물고기 획득! 🌟✨</div>' : '<div class="catch-confetti">✨ 냐앙~! 낚았다냥! ✨</div>'}
-        <div class="catch-badge" style="background: ${isShiny ? 'linear-gradient(90deg, #ffd166, #ff007f)' : (rarityBadgeColors[data.rarity] || '#0077b6')}">
-          ${isShiny ? '✨ 이로치 (Shiny)' : (rarityKorean[data.rarity] || '어종')}
+      <div class="catch-modal-content ${(isShiny || isBoss) ? 'shiny-modal-content' : ''}">
+        ${bannerHtml}
+        
+        <div class="catch-badge" style="background: ${badgeBg}">
+          ${badgeText}
         </div>
-        <h2 class="catch-title" style="${isShiny ? 'color: #ffd166; text-shadow: 0 0 12px #ffd166;' : ''}">${isShiny ? '✨ ' : ''}${data.name}</h2>
-        <div class="catch-eng">${data.engName} ${isShiny ? '(Shiny Variant)' : ''}</div>
+        
+        <h2 class="catch-title" style="${(isShiny || isBoss || isFirstTime) ? 'color: #ffd166; text-shadow: 0 0 14px #ffd166;' : ''}">${isBoss ? '👑 ' : (isShiny ? '✨ ' : '')}${data.name}</h2>
+        <div class="catch-eng">${data.engName} ${isBoss ? '(Mythic Boss)' : (isShiny ? '(Shiny Variant)' : '')}</div>
+
+        <!-- 🌟 Dark Showcase Box with Rotating Sunburst for First Catch -->
+        <div class="catch-showcase-box ${isFirstTime ? 'has-sunburst' : ''}">
+          ${isFirstTime ? '<div class="catch-sunburst"></div>' : ''}
+          <canvas id="catch-fish-canvas" class="catch-showcase-canvas" width="240" height="130"></canvas>
+        </div>
         
         <div class="catch-stats">
           <div class="stat-box">
@@ -388,7 +431,7 @@ export class HUD {
           </div>
           <div class="stat-box">
             <span class="label">예상 판매가 ${isShiny ? '(3배!)' : ''}</span>
-            <span class="val gold-text">${price} G</span>
+            <span class="val gold-text">${price.toLocaleString()} G</span>
           </div>
           <div class="stat-box">
             <span class="label">획득 경험치 ${isShiny ? '(3배!)' : ''}</span>
@@ -397,8 +440,8 @@ export class HUD {
         </div>
 
         <p class="catch-desc">${data.description}</p>
-        <div class="basket-stored-banner">🧺 어획 바구니에 보관되었습니다. (부두 상인에게 판매/수집 가능)</div>
-        ${catchResult.isFirstTime ? '<div class="first-caught-banner">🎉 새로운 어종 도감 등록 완료!</div>' : ''}
+        <div class="basket-stored-banner" style="font-size: 12px; color: #94a3b8; margin: 2px 0;">🧺 어획 바구니에 보관되었습니다. (부두 상인에게 판매/수집 가능)</div>
+        ${isFirstTime ? '<div class="first-caught-banner">📖 새로운 어종 도감 등록 완료! ✨</div>' : ''}
 
         <div class="catch-actions">
           <button id="btn-catch-ok" class="btn-primary">확인 (계속 낚시)</button>
@@ -406,12 +449,100 @@ export class HUD {
       </div>
     `;
 
+    // Render Fish Visual on Canvas
+    const canvas = document.getElementById('catch-fish-canvas');
+    if (canvas) {
+      Fish.drawPreview(canvas, data, true, isShiny);
+    }
+
+    // 🎆 Fire 3 Celebratory Fireworks if New Discovery
+    if (isFirstTime) {
+      this.triggerCatchFireworks();
+    }
+
     this.catchModal.classList.add('visible');
 
     document.getElementById('btn-catch-ok').addEventListener('click', () => {
       this.sound.playClick();
       this.catchModal.classList.remove('visible');
     });
+  }
+
+  triggerCatchFireworks() {
+    let canvas = document.getElementById('catch-fireworks-canvas');
+    if (!canvas) {
+      canvas = document.createElement('canvas');
+      canvas.id = 'catch-fireworks-canvas';
+      document.body.appendChild(canvas);
+    }
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const ctx = canvas.getContext('2d');
+
+    const particles = [];
+    const colors = ['#ffd166', '#ff0054', '#06d6a0', '#118ab2', '#70e000', '#f72585', '#4cc9f0', '#ffffff'];
+
+    const createFirework = (originX, originY) => {
+      for (let i = 0; i < 42; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 3 + Math.random() * 8;
+        particles.push({
+          x: originX,
+          y: originY,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          alpha: 1.0,
+          decay: 0.012 + Math.random() * 0.015,
+          size: 2.5 + Math.random() * 3.5
+        });
+      }
+    };
+
+    const w = canvas.width;
+    const h = canvas.height;
+
+    // 💥 3 Explosions in Sequence (Left, Right, Center)
+    createFirework(w * 0.28, h * 0.32);
+    setTimeout(() => createFirework(w * 0.72, h * 0.28), 240);
+    setTimeout(() => createFirework(w * 0.50, h * 0.20), 480);
+
+    let animId;
+    const renderLoop = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.12; // Gravity
+        p.alpha -= p.decay;
+
+        if (p.alpha <= 0) {
+          particles.splice(i, 1);
+        } else {
+          ctx.save();
+          ctx.globalAlpha = p.alpha;
+          ctx.fillStyle = p.color;
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      if (particles.length > 0) {
+        animId = requestAnimationFrame(renderLoop);
+      } else {
+        cancelAnimationFrame(animId);
+        if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+      }
+    };
+
+    renderLoop();
   }
 
   showNotification(text, icon = '✨') {

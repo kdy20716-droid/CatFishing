@@ -1,21 +1,21 @@
 /**
  * Master Game Controller & Loop
  */
-import { Vector2 } from './engine/Vector.js?v=2.1.0';
-import { Camera } from './engine/Camera.js?v=2.1.0';
-import { Input } from './engine/Input.js?v=2.1.0';
-import { SoundEngine } from './audio.js?v=2.1.0';
-import { Economy } from './systems/Economy.js?v=2.1.0';
-import { Encyclopedia, FISH_SPECIES } from './systems/Encyclopedia.js?v=2.1.0';
-import { Environment } from './systems/Environment.js?v=2.1.0';
-import { Aquarium } from './systems/Aquarium.js?v=2.1.0';
-import { Cat } from './entities/Cat.js?v=2.1.0';
-import { Rod } from './entities/Rod.js?v=2.1.0';
-import { Fish } from './entities/Fish.js?v=2.1.0';
-import { HUD } from './ui/HUD.js?v=2.1.0';
-import { Modals } from './ui/Modals.js?v=2.1.0';
-import { CloudSave } from './systems/CloudSave.js?v=2.1.0';
-import { Multiplayer } from './systems/Multiplayer.js?v=2.1.0';
+import { Vector2 } from './engine/Vector.js?v=2.6.0';
+import { Camera } from './engine/Camera.js?v=2.6.0';
+import { Input } from './engine/Input.js?v=2.6.0';
+import { SoundEngine } from './audio.js?v=2.6.0';
+import { Economy } from './systems/Economy.js?v=2.6.0';
+import { Encyclopedia, FISH_SPECIES } from './systems/Encyclopedia.js?v=2.6.0';
+import { Environment } from './systems/Environment.js?v=2.6.0';
+import { Aquarium } from './systems/Aquarium.js?v=2.6.0';
+import { Cat } from './entities/Cat.js?v=2.6.0';
+import { Rod } from './entities/Rod.js?v=2.6.0';
+import { Fish } from './entities/Fish.js?v=2.6.0';
+import { HUD } from './ui/HUD.js?v=2.6.0';
+import { Modals } from './ui/Modals.js?v=2.6.0';
+import { CloudSave } from './systems/CloudSave.js?v=2.6.0';
+import { Multiplayer } from './systems/Multiplayer.js?v=2.6.0';
 
 class Game {
   constructor() {
@@ -23,7 +23,7 @@ class Game {
     this.ctx = this.canvas.getContext('2d');
 
     this.lastTime = 0;
-    this.maxFishCount = 100; // Increased 1.5x (65 -> 100) to populate the ocean densely
+    this.maxFishCount = 240; // Dense, lively ocean across entire 14,000px wide & 500m deep waters!
     this.fishList = [];
     this.prevTimeOfDay = 'day';
 
@@ -52,6 +52,10 @@ class Game {
     this.hud.setRod(this.rod);
     this.modals.setRod(this.rod);
     this.modals.setMultiplayer(this.multiplayer);
+    this.isPaused = false;
+    this.modals.onPauseChange = (paused) => {
+      this.isPaused = paused;
+    };
 
     this.hasTriggeredDockMerchant = false;
 
@@ -102,19 +106,62 @@ class Game {
       ? candidates[Math.floor(Math.random() * candidates.length)] 
       : FISH_SPECIES[Math.floor(Math.random() * FISH_SPECIES.length)];
 
+    const speciesIndex = FISH_SPECIES.indexOf(chosen);
+    const totalSpecies = Math.max(1, FISH_SPECIES.length - 1);
+    const depthProgress = Math.max(0, Math.min(1, speciesIndex / totalSpecies)); // 0.0 (도감 상단 표층) ~ 1.0 (도감 하단 초심연)
+
+    // 🌊 도감 아래로 내려갈수록 오른쪽 먼 바다(X: 1800 ~ 5200px)에서 집중 출현
+    // 🏡 도감 위쪽 표층/근해 어종은 부두막 근처(X: -300 ~ 1400px)에서 집중 출현
+    // 🌊 14,000px 광활한 바다 전역에 표층, 중층, 심해, 초심연 물고기들을 골고루 풍성하게 분산 배치!
+    let minSpawnX, maxSpawnX;
+    let minSwimX, maxSwimX;
+
+    if (chosen.isBoss) {
+      // 👑 10 Giant Boss Fishes: STRICTLY X >= 500 across deep ocean (500 ~ 13,800px)
+      minSpawnX = Math.max(500, chosen.minX || 500);
+      maxSpawnX = 13800;
+      minSwimX = 450;
+      maxSwimX = 14200;
+    } else if (depthProgress < 0.25) {
+      // 1. 도감 상단 (표층/초근해: 멸치, 구피, 흰동가리, 복어, 해파리 등) - 부두막부터 원양 끝까지 골고루!
+      minSpawnX = -350;
+      maxSpawnX = 13800;
+      minSwimX = -500;
+      maxSwimX = 14200;
+    } else if (depthProgress < 0.50) {
+      // 2. 도감 중층 (참돔, 고등어, 꽁치, 날치, 바다거북, 오징어 등) - 부두막 인근부터 원양 끝까지 골고루!
+      minSpawnX = 150;
+      maxSpawnX = 13800;
+      minSwimX = 0;
+      maxSwimX = 14200;
+    } else if (depthProgress < 0.75) {
+      // 3. 도감 심해 어둠층 (갈치, 초롱아귀, 문어, 톱상어, 투구게 등)
+      minSpawnX = 400;
+      maxSpawnX = 13800;
+      minSwimX = 300;
+      maxSwimX = 14200;
+    } else {
+      // 4. 도감 최하단 심연/전설 어종 (대왕 산갈치, 덤보문어, 실러캔스, 별빛고래, 크라켄, 코스믹 거북 등)
+      minSpawnX = 600;
+      maxSpawnX = 13800;
+      minSwimX = 450;
+      maxSwimX = 14200;
+    }
+
+    const startX = minSpawnX + Math.random() * (maxSpawnX - minSpawnX);
     const minY = chosen.minDepth * 20;
     const maxY = chosen.maxDepth * 20;
     const startY = minY + Math.random() * (maxY - minY);
-    const startX = -600 + Math.random() * 4800;
 
     // ✨ Shiny (이로치) check (낮: 1.0%, 밤: 3.0%)
     const isNight = this.environment && this.environment.timeOfDay === 'night';
     const isShiny = Math.random() < this.economy.getShinyChance(isNight);
 
-    const fish = new Fish(chosen, new Vector2(startX, startY), isShiny);
+    const swimBounds = { minX: minSwimX, maxX: maxSwimX };
+    const fish = new Fish(chosen, new Vector2(startX, startY), isShiny, swimBounds);
     fish.onEscapeCallback = (f) => {
-      this.camera.shake(8, 0.4);
-      this.hud.showNotification(`⚠️ 너무 오래 방치하여 ${f.isShiny ? '✨ 이로치 ' : ''}${f.data.name}이(가) 도망쳤습니다!`, '💨');
+      this.camera.shake(12, 0.5);
+      this.hud.showNotification(`⚠️ 너무 오래 방치하여 ${f.isBoss ? '👑 보스 ' : (f.isShiny ? '✨ 이로치 ' : '')}${f.data.name}이(가) 도망쳤습니다!`, '💨');
     };
 
     this.fishList.push(fish);
@@ -284,14 +331,25 @@ class Game {
       }
 
       if (code === 'KeyH') this.modals.openGuide();
-      if (code === 'Escape') this.modals.closeAll();
+      if (code === 'Escape') {
+        if (this.modals.isPauseOpen()) {
+          this.modals.closeAll();
+          this.isPaused = false;
+        } else if (this.modals.hasAnyModalOpen()) {
+          this.modals.closeAll();
+          this.isPaused = false;
+        } else {
+          this.isPaused = true;
+          this.modals.openPauseModal();
+        }
+      }
     });
   }
 
   handleFishCaught(fish) {
-    this.sound.playCatch(fish.isShiny ? 'mythic' : fish.data.rarity);
+    this.sound.playCatch((fish.isBoss || fish.isShiny) ? 'mythic' : fish.data.rarity);
     this.cat.triggerCatch();
-    this.camera.shake(fish.isShiny ? 10 : 6, 0.45);
+    this.camera.shake(fish.isBoss ? 16 : (fish.isShiny ? 10 : 6), 0.55);
 
     let price = fish.data.basePrice;
     let exp = fish.data.baseExp;
@@ -309,7 +367,9 @@ class Game {
     const result = this.encyclopedia.recordCatch(fish.data.id, fish.sizeCm, price, fish.isShiny);
     this.hud.showCatchPopup(fish, { ...result, basketPrice: price });
 
-    if (fish.isShiny) {
+    if (fish.isBoss) {
+      this.hud.showNotification(`👑 대박! 전설의 보스 [${fish.data.name}] 포획 성공! (+${price} G)`, '🏆');
+    } else if (fish.isShiny) {
       this.hud.showNotification(`✨ 이로치 ${fish.data.name} 낚시 성공! 어획 바구니에 보관되었습니다.`, '🌟');
     } else {
       this.hud.showNotification(`🐟 ${fish.data.name}(${fish.sizeCm}cm) 어획 바구니에 쏙! 부두 상인에게 판매/수집하세요.`, '🧺');
@@ -337,7 +397,9 @@ class Game {
     const dt = Math.min(0.1, (currentTime - this.lastTime) / 1000);
     this.lastTime = currentTime;
 
-    this.update(dt);
+    if (!this.isPaused) {
+      this.update(dt);
+    }
     this.render();
 
     requestAnimationFrame((t) => this.loop(t));
@@ -386,8 +448,8 @@ class Game {
       this.cat.triggerNibble();
     }
 
-    // Update Ocean Fish population across 0m ~ 500m+
-    const oceanBounds = { left: -800, right: 4800, top: 0, bottom: 10400 };
+    // Update Ocean Fish population across 0m ~ 500m+ and -800 ~ 14,500px wide
+    const oceanBounds = { left: -800, right: 14500, top: 0, bottom: 10800 };
     this.fishList.forEach(fish => fish.update(dt, this.rod, oceanBounds, this.cat));
 
     // Maintain fish count

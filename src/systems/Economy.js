@@ -8,60 +8,60 @@ export const RODS = [
     name: '나뭇가지 낚싯대',
     tier: 1,
     price: 0,
-    maxLineLength: 1000, // ~50m
+    maxLineLength: 1800, // ~90m
     maxTension: 100,
-    reelSpeed: 190,
-    castPower: 380,
+    reelSpeed: 210,
+    castPower: 420,
     color: '#8b5a2b',
-    description: '작은 나뭇가지로 만든 정겨운 첫 낚싯대. 표층(50m)의 물고기들을 낚을 수 있습니다.'
+    description: '작은 나뭇가지로 만든 정겨운 첫 낚싯대. 표층(90m)의 물고기들을 낚을 수 있습니다.'
   },
   {
     id: 'rod_bamboo',
     name: '단단 대나무 낚싯대',
     tier: 2,
     price: 180,
-    maxLineLength: 2400, // ~120m
+    maxLineLength: 3800, // ~190m
     maxTension: 180,
-    reelSpeed: 250,
-    castPower: 520,
+    reelSpeed: 280,
+    castPower: 580,
     color: '#70e000',
-    description: '유연하고 질긴 대나무 낚싯대. 중층 바다(120m)까지 깊숙이 낚싯줄을 내립니다.'
+    description: '유연하고 질긴 대나무 낚싯대. 중층 바다(190m)까지 깊숙이 낚싯줄을 내립니다.'
   },
   {
     id: 'rod_carbon',
     name: '카본 프로 로드',
     tier: 3,
     price: 750,
-    maxLineLength: 5200, // ~260m
-    maxTension: 300,
-    reelSpeed: 340,
-    castPower: 680,
+    maxLineLength: 6800, // ~340m
+    maxTension: 320,
+    reelSpeed: 380,
+    castPower: 750,
     color: '#343a40',
-    description: '탄소 섬유로 제작되어 가볍고 튼튼합니다. 심해 어둠층(260m)의 희귀 어종과 겨룹니다.'
+    description: '탄소 섬유로 제작되어 가볍고 튼튼합니다. 심해 어둠층(340m)의 희귀 어종과 겨룹니다.'
   },
   {
     id: 'rod_titanium',
     name: '심해 티타늄 로드',
     tier: 4,
     price: 2200,
-    maxLineLength: 8400, // ~420m
-    maxTension: 480,
-    reelSpeed: 450,
-    castPower: 850,
+    maxLineLength: 9200, // ~460m
+    maxTension: 500,
+    reelSpeed: 490,
+    castPower: 920,
     color: '#48cae4',
-    description: '심해의 극심한 수압을 견디는 특수 티타늄 합금. 심연의 해구(420m)를 탐사합니다.'
+    description: '심해의 극심한 수압을 견디는 특수 티타늄 합금. 심연의 해구(460m)를 탐사합니다.'
   },
   {
     id: 'rod_aurora',
     name: '전설의 별빛 오로라 로드',
     tier: 5,
     price: 5500,
-    maxLineLength: 11000, // ~550m+
-    maxTension: 850,
-    reelSpeed: 580,
-    castPower: 1000,
+    maxLineLength: 12500, // ~625m (500m 해저 바닥 돌파!)
+    maxTension: 900,
+    reelSpeed: 620,
+    castPower: 1100,
     color: '#ff006e',
-    description: '별빛과 오로라가 깃든 신화의 로드. 500m 초심연의 별빛 고래와 크라켄도 낚아올립니다!'
+    description: '별빛과 오로라가 깃든 신화의 로드. 500m 초심연 해저 바닥의 별빛 고래와 크라켄도 낚아올립니다!'
   }
 ];
 
@@ -70,8 +70,8 @@ export const BOATS = [
     id: 'boat_raft',
     name: '통나무 뗏목',
     price: 0,
-    speed: 70,
-    maxTravelX: 1000,
+    speed: 85,
+    maxTravelX: 3200,
     description: '해변 근처에서 잔잔하게 즐기는 통나무 뗏목.',
     drawType: 'raft'
   },
@@ -79,8 +79,8 @@ export const BOATS = [
     id: 'boat_rowboat',
     name: '낭만 조각배',
     price: 250,
-    speed: 120,
-    maxTravelX: 2500,
+    speed: 145,
+    maxTravelX: 6500,
     description: '노를 저으며 먼바다로 나아가는 클래식 나룻배.',
     drawType: 'rowboat'
   },
@@ -88,8 +88,8 @@ export const BOATS = [
     id: 'boat_cruiser',
     name: '쾌속 냥냥 어선',
     price: 900,
-    speed: 180,
-    maxTravelX: 4500,
+    speed: 210,
+    maxTravelX: 10500,
     description: '원거리 원양 낚시를 위한 기동성 뛰어난 고양이 어선.',
     drawType: 'cruiser'
   },
@@ -97,9 +97,9 @@ export const BOATS = [
     id: 'boat_submarine',
     name: '냥냥 노란 잠수정',
     price: 3200,
-    speed: 240,
-    maxTravelX: 3400,
-    description: '깊은 바다 한가운데까지 진출할 수 있는 최첨단 고양이 잠수정!',
+    speed: 280,
+    maxTravelX: 14000,
+    description: '가로 14,000px 끝없는 초원양 바다 한가운데까지 진출할 수 있는 최첨단 고양이 잠수정!',
     drawType: 'submarine'
   }
 ];

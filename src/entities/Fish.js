@@ -5,12 +5,13 @@
 import { Vector2 } from '../engine/Vector.js';
 
 export class Fish {
-  constructor(speciesData, startPos, isShiny = false) {
+  constructor(speciesData, startPos, isShiny = false, swimBounds = null) {
     this.data = speciesData;
     this.pos = (startPos && typeof startPos.clone === 'function') 
       ? startPos.clone() 
       : new Vector2(startPos?.x || 0, startPos?.y || 0);
     this.vel = new Vector2(0, 0);
+    this.swimBounds = swimBounds; // { minX, maxX }
     
     // Facing direction: 1 (right) or -1 (left)
     this.facing = Math.random() < 0.5 ? 1 : -1;
@@ -18,11 +19,16 @@ export class Fish {
     // Randomized individual size within species range
     const [minCm, maxCm] = this.data.sizeRange;
     this.sizeCm = Math.round(minCm + Math.random() * (maxCm - minCm));
-    this.scale = 0.7 + (this.sizeCm / maxCm) * 0.6; // Visual scale
+    this.isBoss = !!this.data.isBoss;
 
-    // ✨ Shiny (이로치) Variant State
+    // 🌟 Visual scale: Boss fish is 3x larger than normal fish!
+    const baseScale = 0.7 + (this.sizeCm / maxCm) * 0.6;
+    this.scale = this.isBoss ? baseScale * 2.85 : baseScale;
+
+    // ✨ Shiny (이로치) & 👑 Boss States
     this.isShiny = isShiny;
     this.shinyParticles = [];
+    this.bossParticles = [];
 
     // AI States: 'WANDER', 'CURIOUS', 'HOOKED', 'FLEE'
     this.state = 'WANDER';
@@ -32,11 +38,13 @@ export class Fish {
     this.wanderAngle = this.facing > 0 ? 0 : Math.PI;
 
     // Struggle & Tiring (탈진 & 방치 탈출 줄타기) Mechanics
-    // The struggle gauge is ONLY applied to Shiny (이로치) variants and Mythic titans!
-    this.hasStruggleGauge = this.isShiny || (this.data.rarity === 'mythic');
+    // The struggle gauge is applied to Bosses, Shiny variants, and Mythic titans!
+    this.hasStruggleGauge = this.isBoss || this.isShiny || (this.data.rarity === 'mythic');
     this.rage = 0; // 0 ~ 100
     this.fightDuration = 0;
-    this.maxFightDuration = 8.0 + (this.data.strength || 20) * 0.07; // 8~22 seconds of fight stamina
+    this.maxFightDuration = this.isBoss 
+      ? 14.0 + (this.data.strength || 100) * 0.08 
+      : 8.0 + (this.data.strength || 20) * 0.07;
     this.isExhausted = false;
     this.slackEscapeTimer = 0; // Tracks idle slack line without reeling
     this.onEscapeCallback = null;
@@ -58,22 +66,23 @@ export class Fish {
       this.ignoreCooldown -= dt;
     }
 
-    // ✨ Update Shiny Stardust Particles
-    if (this.isShiny) {
-      if (Math.random() < 0.35) {
+    // ✨ Update Shiny Stardust & 👑 Boss Aura Particles
+    if (this.isShiny || this.isBoss) {
+      if (Math.random() < (this.isBoss ? 0.6 : 0.35)) {
         this.shinyParticles.push({
-          x: this.pos.x + (Math.random() - 0.5) * 45 * this.scale,
-          y: this.pos.y + (Math.random() - 0.5) * 30 * this.scale,
-          size: 3 + Math.random() * 5,
+          x: this.pos.x + (Math.random() - 0.5) * 50 * this.scale,
+          y: this.pos.y + (Math.random() - 0.5) * 35 * this.scale,
+          size: (this.isBoss ? 4 : 3) + Math.random() * 6,
           alpha: 1.0,
-          vy: -15 - Math.random() * 20,
-          color: Math.random() > 0.5 ? '#ffd166' : '#ff007f'
+          vy: -18 - Math.random() * 25,
+          color: this.isBoss ? (Math.random() > 0.5 ? '#ff0054' : '#ffd166') : (Math.random() > 0.5 ? '#ffd166' : '#ff007f'),
+          symbol: this.isBoss ? (Math.random() > 0.5 ? '👑' : '⚡') : '✦'
         });
       }
       for (let i = this.shinyParticles.length - 1; i >= 0; i--) {
         const p = this.shinyParticles[i];
         p.y += p.vy * dt;
-        p.alpha -= dt * 1.5;
+        p.alpha -= dt * 1.6;
         if (p.alpha <= 0) this.shinyParticles.splice(i, 1);
       }
     }
@@ -134,9 +143,11 @@ export class Fish {
       this.wanderAngle = -Math.abs(this.wanderAngle);
     }
 
-    // Keep within horizontal bounds
-    const minX = bounds ? bounds.left : 100;
-    const maxX = bounds ? bounds.right : 3200;
+    // Keep within horizontal bounds (Respect custom species swimBounds)
+    const defaultLeft = bounds ? bounds.left : -600;
+    const defaultRight = bounds ? bounds.right : 14000;
+    const minX = this.swimBounds?.minX ?? defaultLeft;
+    const maxX = this.swimBounds?.maxX ?? defaultRight;
 
     if (this.pos.x < minX) {
       this.pos.x = minX;
@@ -164,32 +175,31 @@ export class Fish {
       }
     } else {
       // 🎯 Depth-based Bait Coverage Tier System
-      const fishMinDepth = this.data.minDepth || 0;
-      
+      const zone = this.data.zone || 'shallow';
+      const isDeepSea = (zone === 'deep' || zone === 'abyss' || zone === 'hadal' || this.isBoss);
+
       if (currentBaitId === 'bread') {
-        // 🍞 식빵: 수심 35m까지의 표층·연안 어종 유혹
-        if (fishMinDepth <= 35 || this.data.zone === 'shallow' || this.data.favBait.includes('bread')) {
+        // 🍞 식빵: 표층(0~30m) 연안 어종만 유혹 (심해어/중층어 절대 불가)
+        if (zone === 'shallow' && !isDeepSea) {
           isAttractive = true;
         }
       } else if (currentBaitId === 'worm') {
-        // 🪱 갯지렁이: 수심 80m까지의 표층·중층 어종 완벽 커버!
-        if (fishMinDepth <= 80 || this.data.zone === 'shallow' || this.data.zone === 'mid' || this.data.favBait.includes('worm')) {
+        // 🪱 갯지렁이: 표층 및 중층(0~80m) 어종만 유혹 (심해어 절대 불가)
+        if ((zone === 'shallow' || zone === 'mid') && !isDeepSea) {
           isAttractive = true;
         }
       } else if (currentBaitId === 'shrimp') {
-        // 🦐 생새우: 수심 180m까지의 중층·중심해 고급 어종 유혹
-        if (fishMinDepth <= 180 || this.data.zone === 'shallow' || this.data.zone === 'mid' || this.data.favBait.includes('shrimp')) {
+        // 🦐 생새우: 표층 및 중층(0~100m) 어종만 유혹! (심해 어둠층 및 심해어/보스는 절대 불가!)
+        if ((zone === 'shallow' || zone === 'mid') && !isDeepSea) {
           isAttractive = true;
         }
       } else if (currentBaitId === 'lure') {
-        // ✨ 야광 루어: 수심 320m까지의 심해 어둠층 어종 유혹
-        if (fishMinDepth <= 320 || this.data.favBait.includes('lure')) {
+        // ✨ 반짝 야광 루어: 심해 어둠층(100~250m) 및 심연(250~400m), 중층 심해어 전용!
+        if (zone === 'deep' || zone === 'abyss' || zone === 'mid' || this.isBoss || this.data.favBait.includes('lure')) {
           isAttractive = true;
         }
       } else if (currentBaitId === 'golden') {
-        // 👑 황금 크릴 엑기스: 600m+ 초심연의 전설 어종 포함 모든 물고기 유혹!
-        isAttractive = true;
-      } else if (this.data.favBait.includes(currentBaitId)) {
+        // 👑 황금 크릴 엑기스: 500m+ 초심연의 전설 어종 및 보스 포함 모든 물고기 유혹!
         isAttractive = true;
       }
     }
@@ -385,8 +395,8 @@ export class Fish {
       this.shinyParticles.forEach(p => {
         ctx.fillStyle = p.color;
         ctx.globalAlpha = p.alpha;
-        ctx.font = 'bold 12px sans-serif';
-        ctx.fillText('✦', p.x, p.y);
+        ctx.font = this.isBoss ? 'bold 14px sans-serif' : 'bold 12px sans-serif';
+        ctx.fillText(p.symbol || '✦', p.x, p.y);
       });
       ctx.restore();
     }
@@ -396,8 +406,13 @@ export class Fish {
     ctx.translate(this.pos.x, this.pos.y);
     ctx.scale(this.facing * this.scale, this.scale);
 
-    // ✨ Shiny Glowing Aura & Chromatic Shimmer
-    if (this.isShiny) {
+    // 👑 Boss Aura or ✨ Shiny Glowing Aura & Chromatic Shimmer
+    if (this.isBoss) {
+      ctx.shadowColor = '#ff0054';
+      ctx.shadowBlur = 24 + Math.sin(this.animTime * 8) * 12;
+      ctx.strokeStyle = '#ffd166';
+      ctx.lineWidth = 2.5;
+    } else if (this.isShiny) {
       ctx.shadowColor = '#ffd166';
       ctx.shadowBlur = 14 + Math.sin(this.animTime * 6) * 6;
       ctx.strokeStyle = '#ffd166';
@@ -409,7 +424,7 @@ export class Fish {
 
     ctx.restore();
 
-    // Render In-Water Struggle Rage Gauge above hooked Shiny fish
+    // Render In-Water Struggle Rage Gauge above hooked Boss / Shiny fish
     if (this.state === 'HOOKED' && this.hasStruggleGauge) {
       this.drawStruggleGauge(ctx);
     }
@@ -417,21 +432,21 @@ export class Fish {
 
   drawStruggleGauge(ctx) {
     const x = this.pos.x;
-    const y = this.pos.y - 32 * this.scale;
-    const barW = 68;
-    const barH = 8;
+    const y = this.pos.y - 36 * this.scale;
+    const barW = this.isBoss ? 96 : 68;
+    const barH = this.isBoss ? 11 : 8;
     const pct = Math.min(100, Math.max(0, this.rage)) / 100;
 
     ctx.save();
 
     // 1. Drop shadow & Gauge Background Pill
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-    ctx.shadowBlur = 8;
-    ctx.fillStyle = 'rgba(15, 17, 26, 0.92)';
-    ctx.strokeStyle = this.isExhausted ? '#06d6a0' : (this.rage >= 85 ? '#ff0054' : '#ffd166');
-    ctx.lineWidth = 2;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = 'rgba(15, 17, 26, 0.95)';
+    ctx.strokeStyle = this.isExhausted ? '#06d6a0' : (this.rage >= 85 ? '#ff0054' : (this.isBoss ? '#ffd166' : '#ffd166'));
+    ctx.lineWidth = this.isBoss ? 2.5 : 2;
     ctx.beginPath();
-    ctx.roundRect(x - barW / 2, y - barH / 2, barW, barH, 4);
+    ctx.roundRect(x - barW / 2, y - barH / 2, barW, barH, 5);
     ctx.fill();
     ctx.stroke();
 
@@ -440,7 +455,7 @@ export class Fish {
       // Fully Exhausted Green Bar
       ctx.fillStyle = '#06d6a0';
       ctx.beginPath();
-      ctx.roundRect(x - barW / 2 + 1, y - barH / 2 + 1, barW - 2, barH - 2, 3);
+      ctx.roundRect(x - barW / 2 + 1, y - barH / 2 + 1, barW - 2, barH - 2, 4);
       ctx.fill();
     } else if (pct > 0.02) {
       let grad = ctx.createLinearGradient(x - barW / 2, y, x - barW / 2 + barW * pct, y);
@@ -456,33 +471,33 @@ export class Fish {
       }
       ctx.fillStyle = grad;
       ctx.beginPath();
-      ctx.roundRect(x - barW / 2 + 1, y - barH / 2 + 1, (barW - 2) * pct, barH - 2, 3);
+      ctx.roundRect(x - barW / 2 + 1, y - barH / 2 + 1, (barW - 2) * pct, barH - 2, 4);
       ctx.fill();
     }
 
     // 3. Status Text Badge
     ctx.shadowBlur = 0;
-    ctx.font = 'bold 11px sans-serif';
+    ctx.font = this.isBoss ? 'bold 12px sans-serif' : 'bold 11px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
 
     if (this.isExhausted) {
       ctx.fillStyle = '#06d6a0';
-      ctx.fillText('✨ 탈진 완료! (지금 감기!)', x, y - 4);
-    } else if (this.slackEscapeTimer > 1.6) {
+      ctx.fillText(this.isBoss ? '👑 보스 탈진! (지금 빠르게 감기!)' : '✨ 탈진 완료! (지금 감기!)', x, y - 5);
+    } else if (this.slackEscapeTimer > 1.4) {
       // Blinking Escape Warning!
-      const blink = Math.sin(this.animTime * 12) > 0;
+      const blink = Math.sin(this.animTime * 14) > 0;
       ctx.fillStyle = blink ? '#ff0054' : '#ffd166';
-      ctx.fillText('⚠️ 놓침 경고! (지금 감아주세요!)', x, y - 4);
+      ctx.fillText('⚠️ 바늘 털림 주의! (가끔 감아주세요!)', x, y - 5);
     } else if (this.rage >= 85) {
       ctx.fillStyle = '#ff0054';
-      ctx.fillText('💢 분노 폭발! (릴 멈추기!)', x, y - 4);
+      ctx.fillText(this.isBoss ? '💥 보스 분노 폭발! (릴 멈추기!)' : '💢 분노 폭발! (릴 멈추기!)', x, y - 5);
     } else if (this.rage <= 15) {
       ctx.fillStyle = '#4cc9f0';
-      ctx.fillText('💤 힘 빠지는 중...', x, y - 4);
+      ctx.fillText('💤 힘 빠지는 중...', x, y - 5);
     } else {
       ctx.fillStyle = '#ffd166';
-      ctx.fillText(`✨ 이로치 저항 ${Math.round(this.rage)}%`, x, y - 4);
+      ctx.fillText(this.isBoss ? `👑 [보스 대물 저항] ${Math.round(this.rage)}%` : `✨ 이로치 저항 ${Math.round(this.rage)}%`, x, y - 5);
     }
 
     ctx.restore();
@@ -709,16 +724,119 @@ export class Fish {
         break;
 
       case 'turtle':
-      case 'cosmic_turtle':
-        ctx.fillStyle = c.shell || '#2d6a4f';
+      case 'cosmic_turtle': {
+        const isCosmic = (type === 'cosmic_turtle');
+        const flipperWag = Math.sin(this.animTime * 4) * 0.35; // 역동적으로 퍼덕이는 앞다리(팔) 지느러미
+        const backFlipperWag = -Math.sin(this.animTime * 4 + 0.4) * 0.22;
+
+        const bodyCol = c.body || (isCosmic ? '#4cc9f0' : '#74c69d');
+        const shellCol = c.shell || (isCosmic ? '#3a0ca3' : '#2d6a4f');
+        const patternCol = c.pattern || (isCosmic ? '#f72585' : '#1b4332');
+
+        // 1. 꼬리 (Tail)
+        ctx.fillStyle = bodyCol;
+        ctx.beginPath();
+        ctx.moveTo(-20, 0);
+        ctx.lineTo(-30, 0);
+        ctx.lineTo(-22, 3);
+        ctx.closePath();
+        ctx.fill();
+
+        // 2. 뒷다리 지느러미 (Back Flippers - 위/아래)
+        ctx.save();
+        ctx.translate(-14, -13);
+        ctx.rotate(backFlipperWag);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 9, 4, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.translate(-14, 13);
+        ctx.rotate(-backFlipperWag);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 9, 4, 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // 3. 앞다리 팔 지느러미 (Front Large Flippers - 위/아래)
+        // 위쪽 앞다리 (팔)
+        ctx.save();
+        ctx.translate(10, -12);
+        ctx.rotate(-0.55 + flipperWag);
+        ctx.fillStyle = bodyCol;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(8, -16, 18, -20);
+        ctx.quadraticCurveTo(8, -10, -2, -3);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // 아래쪽 앞다리 (팔)
+        ctx.save();
+        ctx.translate(10, 12);
+        ctx.rotate(0.55 - flipperWag);
+        ctx.fillStyle = bodyCol;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(8, 16, 18, 20);
+        ctx.quadraticCurveTo(8, 10, -2, 3);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // 4. 머리 및 목 (Head & Beak)
+        ctx.fillStyle = bodyCol;
+        ctx.beginPath();
+        ctx.ellipse(22, 0, 10, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 똘망한 눈 (Eye)
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(26, -2, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(27, -2, 1.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 5. 둥근 등껍질 (Shell Carapace)
+        ctx.fillStyle = shellCol;
         ctx.beginPath();
         ctx.ellipse(0, 0, 24, 18, 0, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = c.body || '#74c69d';
+        ctx.strokeStyle = patternCol;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // 등껍질 무늬 (Shell Hexagon/Oval Patterns)
+        ctx.fillStyle = patternCol;
         ctx.beginPath();
-        ctx.arc(24, 0, 8, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, 9, 7, 0, 0, Math.PI * 2);
         ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(11, 0, 5, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(-11, 0, 5, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(0, -9, 5, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(0, 9, 5, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (isCosmic) {
+          ctx.fillStyle = '#ffd166';
+          ctx.beginPath();
+          ctx.arc(0, 0, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
         break;
+      }
 
       case 'marlin':
       case 'dragonfish':
@@ -1101,6 +1219,437 @@ export class Fish {
         });
         ctx.restore();
         break;
+
+      // =========================================================
+      // 👑 10 GIANT MYTHIC BOSS FISHES RENDERERS
+      // =========================================================
+      case 'boss_megalodon': {
+        // 🦈 1. Ancient Megalodon Shark (Giant Jaws & Fins)
+        ctx.fillStyle = c.body || '#1e293b';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 78, 28, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // White underbelly
+        ctx.fillStyle = c.belly || '#e2e8f0';
+        ctx.beginPath();
+        ctx.ellipse(8, 12, 60, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Giant Dorsal Shark Fin
+        ctx.fillStyle = c.fin || '#0f172a';
+        ctx.beginPath();
+        ctx.moveTo(5, -28);
+        ctx.lineTo(-15, -60);
+        ctx.lineTo(25, -28);
+        ctx.closePath();
+        ctx.fill();
+
+        // Massive Tail Fin
+        ctx.beginPath();
+        ctx.moveTo(-68, 0);
+        ctx.lineTo(-105, -38 + tailWag * 14);
+        ctx.lineTo(-85, 0);
+        ctx.lineTo(-105, 38 + tailWag * 14);
+        ctx.closePath();
+        ctx.fill();
+
+        // Sharp Shark Teeth & Jaws
+        ctx.fillStyle = '#ffffff';
+        for (let tx = 35; tx <= 65; tx += 6) {
+          ctx.beginPath();
+          ctx.moveTo(tx, 14);
+          ctx.lineTo(tx + 3, 22);
+          ctx.lineTo(tx + 6, 14);
+          ctx.fill();
+        }
+
+        // Glowing Red Predator Eye
+        ctx.fillStyle = c.eye || '#ff0054';
+        ctx.beginPath();
+        ctx.arc(52, -6, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(54, -7, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'boss_cosmic_whale': {
+        // 🌌 2. Cosmic Galaxy Nebula Whale
+        ctx.fillStyle = c.body || '#240046';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 85, 32, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Nebula Gradient Swirl Belly
+        ctx.fillStyle = c.belly || '#5a189a';
+        ctx.beginPath();
+        ctx.ellipse(10, 15, 65, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cosmic Nebula Starlight Constellations
+        ctx.fillStyle = c.star || '#ffd166';
+        [[-40, -10], [-20, -18], [0, -8], [25, -15], [50, -6], [-10, 5], [30, 8], [-35, 10]].forEach(([sx, sy]) => {
+          ctx.beginPath();
+          ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        // Giant Galaxy Flipper Wings
+        ctx.fillStyle = c.fin || '#7b2cbf';
+        ctx.beginPath();
+        ctx.moveTo(-5, 12);
+        ctx.quadraticCurveTo(10, 48, 25, 55);
+        ctx.quadraticCurveTo(15, 30, 20, 12);
+        ctx.closePath();
+        ctx.fill();
+
+        // Majestic Whale Tail
+        ctx.beginPath();
+        ctx.moveTo(-78, 0);
+        ctx.lineTo(-118, -32 + tailWag * 14);
+        ctx.lineTo(-95, 0);
+        ctx.lineTo(-118, 32 + tailWag * 14);
+        ctx.closePath();
+        ctx.fill();
+
+        // Glowing Star Eye
+        ctx.fillStyle = '#ffd166';
+        ctx.beginPath();
+        ctx.arc(60, -8, 4, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'boss_kraken_king': {
+        // 🐙 3. Abyssal Kraken King (Golden Crown & 10 Massive Tentacles)
+        ctx.fillStyle = c.body || '#9d0208';
+        ctx.beginPath();
+        ctx.arc(15, 0, 36, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Crown on head
+        ctx.fillStyle = c.crown || '#ffd166';
+        ctx.beginPath();
+        ctx.moveTo(5, -36);
+        ctx.lineTo(15, -55);
+        ctx.lineTo(25, -38);
+        ctx.lineTo(35, -55);
+        ctx.lineTo(45, -36);
+        ctx.closePath();
+        ctx.fill();
+
+        // 8-10 Giant Waving Tentacles
+        ctx.strokeStyle = c.tentacle || '#6a040f';
+        ctx.lineWidth = 6;
+        for (let i = -24; i <= 24; i += 8) {
+          const sway = Math.sin(this.animTime * 4 + i) * 20;
+          ctx.beginPath();
+          ctx.moveTo(0, i);
+          ctx.quadraticCurveTo(-45, i + sway, -85, i - sway * 1.5);
+          ctx.stroke();
+        }
+
+        // Fiery Glowing Eye
+        ctx.fillStyle = c.eye || '#ffba08';
+        ctx.beginPath();
+        ctx.arc(28, -6, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(30, -6, 3, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'boss_sea_dragon': {
+        // 🐉 4. Storm Ocean Dragon (Serpentine with Blue Lightning Mane)
+        ctx.fillStyle = c.body || '#0077b6';
+        // Sinusoidal wavy body
+        for (let seg = 0; seg < 6; seg++) {
+          const sx = 40 - seg * 24;
+          const sy = Math.sin(this.animTime * 5 + seg * 0.8) * 14;
+          ctx.beginPath();
+          ctx.ellipse(sx, sy, 18 - seg * 1.5, 14 - seg * 1.2, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Head & Horns
+        const headY = Math.sin(this.animTime * 5) * 14;
+        ctx.fillStyle = c.body || '#0077b6';
+        ctx.beginPath();
+        ctx.ellipse(55, headY, 22, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Golden Dragon Horns
+        ctx.fillStyle = c.horn || '#ffd166';
+        ctx.beginPath();
+        ctx.moveTo(50, headY - 10);
+        ctx.lineTo(35, headY - 32);
+        ctx.lineTo(44, headY - 10);
+        ctx.fill();
+
+        // Lightning Cyan Mane
+        ctx.strokeStyle = c.lightning || '#00f5d4';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(60, headY + 5);
+        ctx.lineTo(85, headY + 12);
+        ctx.stroke();
+
+        // Glowing Dragon Eye
+        ctx.fillStyle = '#ffd166';
+        ctx.beginPath();
+        ctx.arc(62, headY - 4, 4, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'boss_trench_serpent': {
+        // 🪐 5. Abyss Trench Leviathan Serpent
+        ctx.fillStyle = c.body || '#10002b';
+        ctx.strokeStyle = c.rune || '#c77dff';
+        ctx.lineWidth = 2.5;
+
+        for (let seg = 0; seg < 7; seg++) {
+          const sx = 45 - seg * 22;
+          const sy = Math.sin(this.animTime * 4 + seg * 0.7) * 16;
+          ctx.beginPath();
+          ctx.ellipse(sx, sy, 20 - seg * 1.6, 16 - seg * 1.3, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+
+        // Spines
+        ctx.fillStyle = c.spine || '#7b2cbf';
+        for (let seg = 0; seg < 6; seg++) {
+          const sx = 40 - seg * 22;
+          const sy = Math.sin(this.animTime * 4 + seg * 0.7) * 16;
+          ctx.beginPath();
+          ctx.moveTo(sx, sy - 14);
+          ctx.lineTo(sx - 8, sy - 28);
+          ctx.lineTo(sx + 4, sy - 14);
+          ctx.fill();
+        }
+
+        // Menacing Crimson Eyes
+        const sHeadY = Math.sin(this.animTime * 4) * 16;
+        ctx.fillStyle = c.eye || '#ff0054';
+        ctx.beginPath();
+        ctx.arc(58, sHeadY - 5, 5, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'boss_crystal_angler': {
+        // 💎 6. Crystal Prismatic Angler
+        ctx.fillStyle = c.body || '#00b4d8';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 48, 30, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Crystal Scale Facets
+        ctx.fillStyle = c.crystal || '#e0aaff';
+        [[-15, -8], [0, 8], [15, -6], [-5, -14], [10, 12]].forEach(([cx, cy]) => {
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - 8);
+          ctx.lineTo(cx + 6, cy);
+          ctx.lineTo(cx, cy + 8);
+          ctx.lineTo(cx - 6, cy);
+          ctx.closePath();
+          ctx.fill();
+        });
+
+        // Giant Lure Antenna & Diamond Star Lamp
+        ctx.strokeStyle = '#48cae4';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(25, -25);
+        ctx.quadraticCurveTo(45, -55, 60, -45);
+        ctx.stroke();
+
+        // Diamond Glowing Lure
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#48cae4';
+        ctx.shadowBlur = 18;
+        ctx.beginPath();
+        ctx.arc(60, -45, 9, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye & Teeth
+        ctx.fillStyle = '#212529';
+        ctx.beginPath();
+        ctx.arc(30, -5, 4, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'boss_magma_turtle': {
+        // 🌋 7. Volcanic Magma Turtle (Molten Shell & Big Flippers)
+        const flipperWagM = Math.sin(this.animTime * 3) * 0.4;
+
+        // Front Magma Flippers
+        ctx.fillStyle = c.body || '#d90429';
+        ctx.save();
+        ctx.translate(18, -20);
+        ctx.rotate(-0.5 + flipperWagM);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 24, 9, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.translate(18, 20);
+        ctx.rotate(0.5 - flipperWagM);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 24, 9, 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Head
+        ctx.fillStyle = c.body || '#d90429';
+        ctx.beginPath();
+        ctx.ellipse(40, 0, 16, 12, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(46, -4, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Volcanic Obsidian Shell
+        ctx.fillStyle = c.shell || '#2b2d42';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 42, 32, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = c.magma || '#ff5400';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Glowing Magma Cracks
+        ctx.fillStyle = c.magma || '#ff5400';
+        [[-15, 0], [15, 0], [0, -14], [0, 14], [0, 0]].forEach(([mx, my]) => {
+          ctx.beginPath();
+          ctx.arc(mx, my, 6, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        break;
+      }
+
+      case 'boss_thunder_manta': {
+        // ⚡ 8. Thunder God Manta Ray (Massive Wings & Lightning Sparks)
+        ctx.fillStyle = c.body || '#03045e';
+        ctx.beginPath();
+        ctx.moveTo(60, 0);
+        ctx.lineTo(-20, -58);
+        ctx.lineTo(-40, 0);
+        ctx.lineTo(-20, 58);
+        ctx.closePath();
+        ctx.fill();
+
+        // Cyan Electric Wing Trim
+        ctx.strokeStyle = c.spark || '#00f5d4';
+        ctx.lineWidth = 3.5;
+        ctx.stroke();
+
+        // Long Electric Whip Tail
+        ctx.beginPath();
+        ctx.moveTo(-40, 0);
+        ctx.lineTo(-95, Math.sin(this.animTime * 6) * 12);
+        ctx.stroke();
+
+        // Thunder Eyes
+        ctx.fillStyle = c.eye || '#ffd166';
+        ctx.beginPath();
+        ctx.arc(38, -14, 4, 0, Math.PI * 2);
+        ctx.arc(38, 14, 4, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'boss_ghost_phantom': {
+        // 👻 9. Cursed Ghost Phantom Fish (Translucent Emerald Spirit)
+        ctx.save();
+        ctx.globalAlpha = 0.85;
+        ctx.fillStyle = c.body || '#06d6a0';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 55, 22, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Ghostly Ribs & Skull
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(32, -2, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(38, -4, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Floating Spirit Wisp Flames
+        ctx.fillStyle = c.flame || '#70e000';
+        for (let i = 0; i < 4; i++) {
+          const fx = -25 - i * 16;
+          const fy = Math.sin(this.animTime * 5 + i) * 12;
+          ctx.beginPath();
+          ctx.arc(fx, fy, 7 - i * 1.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+        break;
+      }
+
+      case 'boss_chronos_whale': {
+        // ⏳ 10. Chronos Time Whale (Golden Gears & Celestial Runes)
+        ctx.fillStyle = c.body || '#ffd166';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 90, 35, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#e85d04';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // White Pearl Belly
+        ctx.fillStyle = c.belly || '#ffe8d6';
+        ctx.beginPath();
+        ctx.ellipse(15, 16, 68, 15, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rotating Time Gear Halo
+        ctx.save();
+        ctx.translate(-5, -6);
+        ctx.rotate(this.animTime * 0.8);
+        ctx.strokeStyle = c.gear || '#d4a373';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, 20, 0, Math.PI * 2);
+        ctx.stroke();
+        for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a) * 18, Math.sin(a) * 18);
+          ctx.lineTo(Math.cos(a) * 26, Math.sin(a) * 26);
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        // Majestic Whale Tail
+        ctx.fillStyle = c.body || '#ffd166';
+        ctx.beginPath();
+        ctx.moveTo(-82, 0);
+        ctx.lineTo(-125, -34 + tailWag * 15);
+        ctx.lineTo(-100, 0);
+        ctx.lineTo(-125, 34 + tailWag * 15);
+        ctx.closePath();
+        ctx.fill();
+
+        // Cyan Chrono Eye
+        ctx.fillStyle = c.eye || '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(65, -8, 5, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
 
       case 'bottle':
         ctx.fillStyle = c.glass || '#a8dadc';

@@ -425,8 +425,8 @@ export class Rod {
         }
 
       } else {
-        // Empty Hook sinking
-        const sinkRate = 45 * sinkSpeedMultiplier;
+        // Empty Hook sinking (Smooth & comfortable for 500m deep dive)
+        const sinkRate = 65 * sinkSpeedMultiplier;
         
         if (isReelingInput) {
           // Reeling hook back up

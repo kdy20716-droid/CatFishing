@@ -23,6 +23,7 @@ export class Aquarium {
     this.tankWidth = 900;
     this.tankHeight = 550;
     this.passiveCoinTimer = 0;
+    this.maxCapacity = 20; // 🌟 Maximum 20 fishes in Aquarium
 
     this.loadFromStorage();
   }
@@ -33,7 +34,7 @@ export class Aquarium {
       if (saved) {
         const data = JSON.parse(saved);
         this.theme = data.theme || 'coral';
-        this.placedFish = Array.isArray(data.placedFish) ? data.placedFish : [];
+        this.placedFish = Array.isArray(data.placedFish) ? data.placedFish.slice(0, this.maxCapacity) : [];
       }
     } catch (e) {
       console.warn("Failed to load aquarium:", e);
@@ -44,7 +45,7 @@ export class Aquarium {
     try {
       const data = {
         theme: this.theme,
-        placedFish: this.placedFish
+        placedFish: this.placedFish.slice(0, this.maxCapacity)
       };
       localStorage.setItem('cozy_cat_aquarium_v1', JSON.stringify(data));
       if (this.onSaveCallback) this.onSaveCallback();
@@ -54,6 +55,9 @@ export class Aquarium {
   }
 
   addFishToAquarium(basketItem) {
+    if (this.placedFish.length >= this.maxCapacity) {
+      return null; // Capacity reached
+    }
     const item = {
       instanceId: 'aq_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
       speciesId: basketItem.speciesId,

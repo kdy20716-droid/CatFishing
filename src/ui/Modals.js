@@ -28,6 +28,7 @@ export class Modals {
     this.fishMarketModal = document.getElementById('fish-market-modal');
     this.nicknameModal = document.getElementById('nickname-modal');
     this.inventoryModal = document.getElementById('inventory-modal');
+    this.pauseModal = document.getElementById('pause-modal');
     this.userDropdownMenu = document.getElementById('user-dropdown-menu');
 
     this.currentShopTab = 'rods';
@@ -38,6 +39,7 @@ export class Modals {
     this.multiTab = 'create'; // 'create' or 'join'
     this.rod = null;
     this.multiplayer = null;
+    this.onPauseChange = null;
 
     this.initEventListeners();
     this.initMultiplayerEvents();
@@ -45,6 +47,7 @@ export class Modals {
     this.initDockMerchantEvents();
     this.initInventoryEvents();
     this.initFishMarketEvents();
+    this.initPauseEvents();
   }
 
   setRod(rod) {
@@ -525,8 +528,107 @@ export class Modals {
     if (this.fishMarketModal) this.fishMarketModal.classList.remove('visible');
     if (this.nicknameModal) this.nicknameModal.classList.remove('visible');
     if (this.inventoryModal) this.inventoryModal.classList.remove('visible');
+    if (this.pauseModal) this.pauseModal.classList.remove('visible');
     if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
     if (this.aquariumUI && !this.aquarium.isOpen) this.aquariumUI.classList.remove('visible');
+    if (this.onPauseChange) this.onPauseChange(false);
+  }
+
+  hasAnyModalOpen() {
+    return (
+      (this.shopModal && this.shopModal.classList.contains('visible')) ||
+      (this.encyclopediaModal && this.encyclopediaModal.classList.contains('visible')) ||
+      (this.guideModal && this.guideModal.classList.contains('visible')) ||
+      (this.authModal && this.authModal.classList.contains('visible')) ||
+      (this.conflictModal && this.conflictModal.classList.contains('visible')) ||
+      (this.multiplayerModal && this.multiplayerModal.classList.contains('visible')) ||
+      (this.wardrobeModal && this.wardrobeModal.classList.contains('visible')) ||
+      (this.dockMerchantModal && this.dockMerchantModal.classList.contains('visible')) ||
+      (this.merchantGuideModal && this.merchantGuideModal.classList.contains('visible')) ||
+      (this.fishMarketModal && this.fishMarketModal.classList.contains('visible')) ||
+      (this.nicknameModal && this.nicknameModal.classList.contains('visible')) ||
+      (this.inventoryModal && this.inventoryModal.classList.contains('visible')) ||
+      (this.pauseModal && this.pauseModal.classList.contains('visible')) ||
+      (this.userDropdownMenu && !this.userDropdownMenu.classList.contains('hidden'))
+    );
+  }
+
+  isPauseOpen() {
+    return this.pauseModal && this.pauseModal.classList.contains('visible');
+  }
+
+  openPauseModal() {
+    this.closeAll();
+    if (this.pauseModal) {
+      this.pauseModal.classList.add('visible');
+      this.updatePauseModalUI();
+    }
+  }
+
+  updatePauseModalUI() {
+    const soundText = document.getElementById('pause-sound-text');
+    if (soundText && this.sound) {
+      soundText.innerText = this.sound.isMuted ? '🎵 사운드 켜기 (현재 음소거)' : '🔇 사운드 끄기 (현재 소리 켜짐)';
+    }
+  }
+
+  initPauseEvents() {
+    // 1. Resume button
+    const btnResume = document.getElementById('btn-pause-resume');
+    if (btnResume) {
+      btnResume.addEventListener('click', () => {
+        this.sound.playClick();
+        this.closeAll();
+        if (this.onPauseChange) this.onPauseChange(false);
+      });
+    }
+
+    // 2. Save progress button
+    const btnSave = document.getElementById('btn-pause-save');
+    if (btnSave) {
+      btnSave.addEventListener('click', async () => {
+        this.sound.playCoin();
+        if (this.cloudSave) {
+          await this.cloudSave.triggerAutoSave();
+        }
+        this.hud.showNotification('💾 게임 진행 상황이 로컬 및 클라우드에 즉시 저장되었습니다!', '✨');
+      });
+    }
+
+    // 3. Sound toggle button
+    const btnSound = document.getElementById('btn-pause-sound');
+    if (btnSound) {
+      btnSound.addEventListener('click', () => {
+        const isMuted = !this.sound.isMuted;
+        this.sound.setMute(isMuted);
+        const topSoundBtn = document.getElementById('btn-sound-toggle');
+        if (topSoundBtn) topSoundBtn.innerHTML = isMuted ? '🔇 뮤트' : '🎵 소리 ON';
+        if (!isMuted && !this.sound.isBgmPlaying) {
+          this.sound.startBgm();
+        }
+        this.sound.playClick();
+        this.updatePauseModalUI();
+        this.hud.showNotification(isMuted ? '🔇 사운드가 음소거되었습니다.' : '🎵 사운드가 켜졌습니다.', isMuted ? '🔇' : '🎵');
+      });
+    }
+
+    // 4. Guide button
+    const btnGuide = document.getElementById('btn-pause-guide');
+    if (btnGuide) {
+      btnGuide.addEventListener('click', () => {
+        this.sound.playClick();
+        this.openGuide();
+      });
+    }
+
+    // 5. Cloud/Auth button
+    const btnCloud = document.getElementById('btn-pause-cloud');
+    if (btnCloud) {
+      btnCloud.addEventListener('click', () => {
+        this.sound.playClick();
+        this.openAuthModal();
+      });
+    }
   }
 
   isEncyclopediaOpen() {
@@ -807,12 +909,21 @@ export class Modals {
       // Aquarium Collect Button
       const btnAqua = card.querySelector('.market-btn-aqua');
       if (btnAqua) {
+        const isAquaFull = this.aquarium.placedFish.length >= (this.aquarium.maxCapacity || 20);
+        if (isAquaFull) {
+          btnAqua.classList.add('disabled');
+          btnAqua.title = '아쿠아리움이 가득 찼습니다 (최대 20마리)';
+        }
         btnAqua.addEventListener('click', () => {
+          if (this.aquarium.placedFish.length >= (this.aquarium.maxCapacity || 20)) {
+            this.hud.showNotification('⚠️ 아쿠아리움이 가득 찼습니다! (최대 20마리)', '🐠');
+            return;
+          }
           if (this.sound && typeof this.sound.playBubble === 'function') this.sound.playBubble();
           const collected = this.economy.removeFishFromBasket(item.basketId);
           if (collected) {
             this.aquarium.addFishToAquarium(collected);
-            this.hud.showNotification(`🐠 ${collected.name}을(를) 아쿠아리움에 수집했습니다!`, '🏠');
+            this.hud.showNotification(`🐠 ${collected.name}을(를) 아쿠아리움에 수집했습니다! (${this.aquarium.placedFish.length}/20)`, '🏠');
             this.renderFishMarketContent();
           }
         });

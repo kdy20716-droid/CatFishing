@@ -23,27 +23,27 @@ export class Environment {
   }
 
   initClouds() {
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 20; i++) {
       this.clouds.push({
-        x: (Math.random() - 0.3) * 3000,
+        x: -800 + Math.random() * 15500,
         y: -180 - Math.random() * 150,
-        speed: 10 + Math.random() * 15,
-        width: 120 + Math.random() * 140,
-        height: 40 + Math.random() * 30
+        speed: 10 + Math.random() * 18,
+        width: 120 + Math.random() * 160,
+        height: 40 + Math.random() * 35
       });
     }
   }
 
   initPlankton() {
-    for (let i = 0; i < 45; i++) {
+    for (let i = 0; i < 180; i++) {
       this.plankton.push({
-        x: (Math.random() - 0.2) * 3200,
-        y: 50 + Math.random() * 2200,
-        size: 1.5 + Math.random() * 2.5,
-        alpha: 0.3 + Math.random() * 0.5,
+        x: -800 + Math.random() * 15500,
+        y: 50 + Math.random() * 10200,
+        size: 1.5 + Math.random() * 3.0,
+        alpha: 0.3 + Math.random() * 0.6,
         pulseSpeed: 1 + Math.random() * 2,
-        driftSpeedX: (Math.random() - 0.5) * 10,
-        driftSpeedY: -5 - Math.random() * 15
+        driftSpeedX: (Math.random() - 0.5) * 12,
+        driftSpeedY: -5 - Math.random() * 18
       });
     }
   }
@@ -79,30 +79,33 @@ export class Environment {
       soundEngine.setTimeOfDay(this.timeOfDay);
     }
 
-    // Update Clouds
+    // Update Clouds across 15000px sky
     this.clouds.forEach(c => {
       c.x += c.speed * dt;
-      if (c.x > 3500) c.x = -800;
+      if (c.x > 15000) c.x = -800;
     });
 
-    // Update Plankton & Dust
+    // Update Plankton & Deep Stardust Dust
     this.plankton.forEach(p => {
       p.x += p.driftSpeedX * dt;
       p.y += p.driftSpeedY * dt;
-      if (p.y < 30) p.y = 2200;
-      if (p.x < -400) p.x = 3400;
-      if (p.x > 3400) p.x = -400;
+      if (p.y < 30) p.y = 10200;
+      if (p.x < -800) p.x = 14500;
+      if (p.x > 14500) p.x = -800;
     });
 
-    // Spawn Bubble occasionally
-    if (Math.random() < 0.35) {
-      this.bubbles.push({
-        x: (Math.random() - 0.2) * 3000,
-        y: 200 + Math.random() * 2000,
-        size: 2 + Math.random() * 4,
-        vy: -40 - Math.random() * 50,
-        vx: (Math.random() - 0.5) * 10
-      });
+    // 🫧 Spawn Bubbles across entire wide ocean (-600 ~ 14500px, 0 ~ 500m depth)
+    if (Math.random() < 0.75) {
+      const bubbleCount = 1 + Math.floor(Math.random() * 3);
+      for (let k = 0; k < bubbleCount; k++) {
+        this.bubbles.push({
+          x: -600 + Math.random() * 15200,
+          y: 150 + Math.random() * 10000,
+          size: 2 + Math.random() * 4.5,
+          vy: -40 - Math.random() * 60,
+          vx: (Math.random() - 0.5) * 12
+        });
+      }
     }
 
     // Update Bubbles
@@ -115,14 +118,14 @@ export class Environment {
       }
     }
 
-    // Shooting Stars at night
-    if (this.timeOfDay === 'night' && Math.random() < 0.012) {
+    // Shooting Stars at night across entire sky
+    if (this.timeOfDay === 'night' && Math.random() < 0.02) {
       this.shootingStars.push({
-        x: Math.random() * 2000,
-        y: -350 - Math.random() * 50,
-        vx: 400 + Math.random() * 200,
-        vy: 200 + Math.random() * 100,
-        life: 0.8
+        x: Math.random() * 14000,
+        y: -350 - Math.random() * 80,
+        vx: 400 + Math.random() * 250,
+        vy: 200 + Math.random() * 120,
+        life: 0.85
       });
     }
 
@@ -703,20 +706,23 @@ export class Environment {
     // Underwater Sun Rays (God Rays) near surface (0 ~ 800px)
     if (this.timeOfDay !== 'night') {
       ctx.save();
-      const rayCount = 8;
-      for (let i = 0; i < rayCount; i++) {
-        const rx = 300 + i * 350 + Math.sin(this.animTime * 0.8 + i) * 80;
-        const rayGrad = ctx.createLinearGradient(rx, oceanTop, rx + 180, oceanTop + 800);
-        rayGrad.addColorStop(0, 'rgba(255, 255, 255, 0.20)');
-        rayGrad.addColorStop(0.6, 'rgba(255, 255, 255, 0.05)');
+      const raySpacing = 360;
+      const startRayX = Math.floor((bounds.left - 200) / raySpacing) * raySpacing;
+      const endRayX = bounds.right + 200;
+
+      for (let rx = startRayX; rx <= endRayX; rx += raySpacing) {
+        const animX = rx + Math.sin(this.animTime * 0.8 + rx * 0.005) * 60;
+        const rayGrad = ctx.createLinearGradient(animX, oceanTop, animX + 180, oceanTop + 800);
+        rayGrad.addColorStop(0, 'rgba(255, 255, 255, 0.18)');
+        rayGrad.addColorStop(0.6, 'rgba(255, 255, 255, 0.04)');
         rayGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
 
         ctx.fillStyle = rayGrad;
         ctx.beginPath();
-        ctx.moveTo(rx - 40, oceanTop);
-        ctx.lineTo(rx + 90, oceanTop);
-        ctx.lineTo(rx + 260, oceanTop + 800);
-        ctx.lineTo(rx + 50, oceanTop + 800);
+        ctx.moveTo(animX - 40, oceanTop);
+        ctx.lineTo(animX + 90, oceanTop);
+        ctx.lineTo(animX + 260, oceanTop + 800);
+        ctx.lineTo(animX + 50, oceanTop + 800);
         ctx.closePath();
         ctx.fill();
       }
@@ -805,27 +811,33 @@ export class Environment {
     ctx.closePath();
     ctx.fill();
 
-    // Ancient Sunken Atlantis Temple Columns
-    const templeX = 2200;
-    const templeY = seabedY - 40;
-    ctx.fillStyle = '#1e1b18';
-    ctx.strokeStyle = '#ffd166';
-    ctx.lineWidth = 2;
-    for (let col = -3; col <= 3; col++) {
-      const cx = templeX + col * 75;
-      ctx.fillRect(cx, templeY - 120, 24, 130);
-      ctx.strokeRect(cx, templeY - 120, 24, 130);
-    }
-    // Temple Arch
-    ctx.fillStyle = '#ffd166';
-    ctx.fillRect(templeX - 250, templeY - 145, 520, 25);
+    // Ancient Sunken Atlantis Temple Columns & Ruins across seabed
+    [2200, 6200, 10500].forEach(templeX => {
+      const templeY = seabedY - 40;
+      ctx.fillStyle = '#1e1b18';
+      ctx.strokeStyle = '#ffd166';
+      ctx.lineWidth = 2;
+      for (let col = -3; col <= 3; col++) {
+        const cx = templeX + col * 75;
+        ctx.fillRect(cx, templeY - 120, 24, 130);
+        ctx.strokeRect(cx, templeY - 120, 24, 130);
+      }
+      // Temple Arch
+      ctx.fillStyle = '#ffd166';
+      ctx.fillRect(templeX - 250, templeY - 145, 520, 25);
+    });
 
-    // Glowing Bioluminescent Crystals on Seabed
-    for (let i = 0; i < 35; i++) {
-      const cx = bounds.left + i * 220 + 80;
+    // Glowing Bioluminescent Crystals on Seabed (Full Bounds Width)
+    const crystalSpacing = 200;
+    const startCrystalX = Math.floor(bounds.left / crystalSpacing) * crystalSpacing + 60;
+    const endCrystalX = bounds.right + 100;
+
+    let cIdx = 0;
+    for (let cx = startCrystalX; cx <= endCrystalX; cx += crystalSpacing) {
+      cIdx++;
       const cy = seabedY + 5;
       const glow = ctx.createRadialGradient(cx, cy - 25, 2, cx, cy - 25, 45);
-      glow.addColorStop(0, i % 2 === 0 ? 'rgba(0, 245, 212, 0.8)' : 'rgba(255, 0, 127, 0.8)');
+      glow.addColorStop(0, cIdx % 2 === 0 ? 'rgba(0, 245, 212, 0.8)' : 'rgba(255, 0, 127, 0.8)');
       glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx.fillStyle = glow;
       ctx.beginPath();
@@ -833,7 +845,7 @@ export class Environment {
       ctx.fill();
 
       // Crystal Polygon
-      ctx.fillStyle = i % 2 === 0 ? '#00f5d4' : '#ff007f';
+      ctx.fillStyle = cIdx % 2 === 0 ? '#00f5d4' : '#ff007f';
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.lineTo(cx - 8, cy - 35);
