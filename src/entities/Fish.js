@@ -161,7 +161,10 @@ export class Fish {
         isAttractive = true;
       }
     } else {
-      if (this.data.favBait.includes(currentBaitId)) {
+      // 🍞 Bread Crumbs can catch all surface & shallow fish up to 25m!
+      if (currentBaitId === 'bread' && (this.data.minDepth <= 25 || this.data.zone === 'shallow')) {
+        isAttractive = true;
+      } else if (this.data.favBait.includes(currentBaitId)) {
         isAttractive = true;
       }
     }
@@ -851,5 +854,46 @@ export class Fish {
         ctx.fill();
         break;
     }
+  }
+
+  /**
+   * Static renderer for Fish Encyclopedia previews
+   */
+  static drawPreview(canvas, species, isDiscovered = true) {
+    if (!canvas || !species) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+
+    // Scaling based on species size to fit preview canvas
+    let scale = 1.35;
+    if (species.drawType === 'leviathan' || species.drawType === 'megalodon' || species.drawType === 'oarfish') {
+      scale = 0.55;
+    } else if (species.drawType === 'coelacanth' || species.drawType === 'sunfish' || species.drawType === 'whale_shark') {
+      scale = 0.75;
+    } else if (species.drawType === 'bream' || species.drawType === 'mackerel' || species.drawType === 'squid') {
+      scale = 1.05;
+    }
+
+    ctx.scale(scale, scale);
+
+    if (!isDiscovered) {
+      // Silhouette shadow for undiscovered species
+      ctx.filter = 'brightness(0) opacity(0.35)';
+    }
+
+    // Mock fish instance for renderSpecies
+    const mockFish = new Fish(species, 0, 0);
+    mockFish.animTime = 0.8;
+    mockFish.tailSpeed = 0.5;
+    mockFish.renderSpecies(ctx, species.drawType || 'anchovy');
+
+    ctx.restore();
   }
 }

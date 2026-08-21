@@ -3,6 +3,7 @@
  */
 import { RODS, BOATS, BAITS, HATS, PASSIVE_UPGRADES, CAT_SKINS } from '../systems/Economy.js';
 import { FISH_SPECIES } from '../systems/Encyclopedia.js';
+import { Fish } from '../entities/Fish.js';
 import { getBaitIconSvg } from './BaitIcons.js';
 
 export class Modals {
@@ -916,9 +917,12 @@ export class Modals {
       card.className = `encyclo-card ${isDiscovered ? 'unlocked' : 'locked'} rarity-${species.rarity}`;
 
       if (isDiscovered) {
-        const shinyTag = record.shinyCount > 0 ? `<div style="color: #ffd166; font-weight: 800; margin-top: 4px;">✨ 이로치 발견: ${record.shinyCount}회</div>` : '';
+        const shinyTag = record.shinyCount > 0 ? `<div class="shiny-discovery-tag">✨ 이로치 발견: ${record.shinyCount}회</div>` : '';
         card.innerHTML = `
           <div class="encyclo-badge">${species.zone.toUpperCase()}</div>
+          <div class="encyclo-preview-wrapper">
+            <canvas class="encyclo-fish-canvas" width="140" height="80"></canvas>
+          </div>
           <div class="encyclo-title">${species.name}</div>
           <div class="encyclo-eng">${species.engName}</div>
           <div class="encyclo-details">
@@ -933,6 +937,9 @@ export class Modals {
       } else {
         card.innerHTML = `
           <div class="encyclo-badge">${species.zone.toUpperCase()}</div>
+          <div class="encyclo-preview-wrapper locked-preview">
+            <canvas class="encyclo-fish-canvas" width="140" height="80"></canvas>
+          </div>
           <div class="encyclo-title mystery-title">???</div>
           <div class="encyclo-eng">미지의 생명체</div>
           <div class="encyclo-details">
@@ -941,6 +948,12 @@ export class Modals {
           </div>
           <div class="encyclo-hint">이 수심대에서 적절한 미끼로 낚아보세요! (✨ 이로치 출현 가능)</div>
         `;
+      }
+
+      // Draw dynamic fish preview
+      const canvas = card.querySelector('.encyclo-fish-canvas');
+      if (canvas) {
+        Fish.drawPreview(canvas, species, isDiscovered);
       }
 
       container.appendChild(card);
