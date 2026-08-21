@@ -53,24 +53,24 @@
             <span class="auth-text">로그인</span>
           </button>
 
-          <div id="user-profile-pill" class="user-profile-pill hidden" title="계정 정보 및 클라우드 동기화 관리">
+          <div id="user-profile-pill" class="user-profile-pill hidden" title="계정 정보 및 닉네임/클라우드 관리">
             <img id="user-avatar" class="user-avatar" src="assets/favicon.svg" alt="Avatar" />
             <div class="user-info-text">
               <span id="user-name" class="user-name">냥이 집사</span>
               <span id="cloud-sync-status" class="sync-status">☁️ 동기화됨</span>
             </div>
-            <button id="btn-user-menu" class="user-menu-arrow">▼</button>
+            <span class="user-menu-arrow">▼</span>
+          </div>
 
-            <!-- User Dropdown Menu -->
-            <div id="user-dropdown-menu" class="user-dropdown-menu hidden">
-              <div class="dropdown-header">
-                <div id="dropdown-user-email" class="dropdown-email">user@email.com</div>
-              </div>
-              <div class="dropdown-item sync-info-item">☁️ 자동 클라우드 동기화 켜짐</div>
-              <div class="dropdown-divider"></div>
-              <button id="btn-change-nickname" class="dropdown-item">✏️ 닉네임 변경</button>
-              <button id="btn-auth-logout" class="dropdown-item text-danger">🚪 로그아웃</button>
+          <!-- User Dropdown Menu -->
+          <div id="user-dropdown-menu" class="user-dropdown-menu hidden">
+            <div class="dropdown-header">
+              <div id="dropdown-user-email" class="dropdown-email">user@email.com</div>
             </div>
+            <div class="dropdown-item sync-info-item">☁️ 자동 클라우드 동기화 켜짐</div>
+            <div class="dropdown-divider"></div>
+            <button id="btn-change-nickname" class="dropdown-item">✏️ 닉네임 변경</button>
+            <button id="btn-auth-logout" class="dropdown-item text-danger">🚪 로그아웃</button>
           </div>
         </div>
       </div>

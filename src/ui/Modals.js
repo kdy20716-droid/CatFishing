@@ -25,6 +25,7 @@ export class Modals {
     this.wardrobeModal = document.getElementById('wardrobe-modal');
     this.dockMerchantModal = document.getElementById('dock-merchant-modal');
     this.fishMarketModal = document.getElementById('fish-market-modal');
+    this.nicknameModal = document.getElementById('nickname-modal');
     this.inventoryModal = document.getElementById('inventory-modal');
     this.userDropdownMenu = document.getElementById('user-dropdown-menu');
 
@@ -95,10 +96,6 @@ export class Modals {
     const userProfilePill = document.getElementById('user-profile-pill');
     if (userProfilePill) {
       userProfilePill.addEventListener('click', (e) => {
-        // If clicking inside dropdown itself, let buttons handle their events
-        if (this.userDropdownMenu && this.userDropdownMenu.contains(e.target)) {
-          return;
-        }
         e.stopPropagation();
         this.sound.playClick();
         if (this.userDropdownMenu) {
@@ -107,29 +104,27 @@ export class Modals {
       });
     }
 
+    // Close dropdown on outside click
     window.addEventListener('click', (e) => {
-      if (this.userDropdownMenu && !this.userDropdownMenu.contains(e.target) && (!userProfilePill || !userProfilePill.contains(e.target))) {
-        this.userDropdownMenu.classList.add('hidden');
+      if (this.userDropdownMenu && !this.userDropdownMenu.classList.contains('hidden')) {
+        if (!this.userDropdownMenu.contains(e.target) && (!userProfilePill || !userProfilePill.contains(e.target))) {
+          this.userDropdownMenu.classList.add('hidden');
+        }
       }
     });
 
     // Nickname Change Button & Modal
     const btnChangeNickname = document.getElementById('btn-change-nickname');
-    const nicknameModal = document.getElementById('nickname-modal');
     const inputNicknameNew = document.getElementById('input-nickname-new');
     const btnNicknameSave = document.getElementById('btn-nickname-save');
     const btnNicknameCancel = document.getElementById('btn-nickname-cancel');
 
-    if (btnChangeNickname && nicknameModal) {
+    if (btnChangeNickname) {
       btnChangeNickname.addEventListener('click', (e) => {
         e.stopPropagation();
         this.sound.playClick();
         if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
-        
-        const currentName = this.cloudSave?.currentUser?.displayName || (this.multiplayer ? this.multiplayer.playerName : '냥이 집사');
-        if (inputNicknameNew) inputNicknameNew.value = currentName;
-        nicknameModal.classList.add('visible');
-        setTimeout(() => inputNicknameNew?.focus(), 50);
+        this.openNicknameModal();
       });
     }
 
@@ -147,7 +142,7 @@ export class Modals {
         this.multiplayer.playerName = newName;
         this.multiplayer.updateMultiplayerUI();
       }
-      if (nicknameModal) nicknameModal.classList.remove('visible');
+      if (this.nicknameModal) this.nicknameModal.classList.remove('visible');
       this.hud.showNotification(`🎉 닉네임이 [${newName}] (으)로 변경되었습니다!`, '✏️');
     };
 
@@ -162,7 +157,7 @@ export class Modals {
     if (btnNicknameCancel) {
       btnNicknameCancel.addEventListener('click', () => {
         this.sound.playClick();
-        if (nicknameModal) nicknameModal.classList.remove('visible');
+        if (this.nicknameModal) this.nicknameModal.classList.remove('visible');
       });
     }
 
@@ -671,6 +666,22 @@ export class Modals {
         this.closeAll();
         this.hud.showNotification('🌊 신나는 바다 낚시를 떠납니다! 좋은 어획되세요!', '⛵');
       });
+    }
+  }
+
+  openNicknameModal() {
+    this.closeAll();
+    if (this.nicknameModal) {
+      this.sound.playClick();
+      const inputNicknameNew = document.getElementById('input-nickname-new');
+      const currentName = this.cloudSave?.currentUser?.displayName 
+        || localStorage.getItem('cozy_cat_player_nickname') 
+        || (this.multiplayer ? this.multiplayer.playerName : '냥이 집사');
+      if (inputNicknameNew) {
+        inputNicknameNew.value = currentName;
+      }
+      this.nicknameModal.classList.add('visible');
+      setTimeout(() => inputNicknameNew?.focus(), 50);
     }
   }
 
