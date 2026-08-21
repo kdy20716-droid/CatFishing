@@ -30,12 +30,22 @@ export class Input {
     this.initListeners();
   }
 
+  isTypingInInput(target) {
+    const active = target || document.activeElement;
+    if (!active) return false;
+    const tag = active.tagName ? active.tagName.toLowerCase() : '';
+    return tag === 'input' || tag === 'textarea' || active.isContentEditable;
+  }
+
   initListeners() {
     window.addEventListener('keydown', (e) => {
+      // If typing in any input field or textarea, ignore game controls & shortcuts!
+      if (this.isTypingInInput(e.target)) {
+        return;
+      }
+
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
-        if (!['input', 'textarea'].includes(e.target.tagName.toLowerCase())) {
-          e.preventDefault();
-        }
+        e.preventDefault();
       }
       if (!this.keys[e.code]) {
         this.keysJustPressed[e.code] = true;
@@ -45,6 +55,10 @@ export class Input {
     });
 
     window.addEventListener('keyup', (e) => {
+      if (this.isTypingInInput(e.target)) {
+        return;
+      }
+
       this.keys[e.code] = false;
       this.emit('keyup', e.code);
     });

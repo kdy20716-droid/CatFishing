@@ -236,6 +236,12 @@ class Game {
 
     // Keyboard Shortcuts
     this.input.on('keydown', (code) => {
+      // Double safety check: If user is typing in any input, do not trigger shortcuts
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
+        return;
+      }
+
       if (this.aquarium.isOpen) {
         if (code === 'Escape') {
           this.aquarium.close();
