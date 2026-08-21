@@ -913,13 +913,54 @@ export class Fish {
         }
         break;
 
-      case 'crab':
-        ctx.fillStyle = c.shell || '#6c584c';
+      case 'crab': {
+        // 🦀 Ancient Horseshoe Crab (고대 투구게)
+        ctx.save();
+        // 1. Crawling Legs under shell
+        ctx.strokeStyle = c.belly || '#8d6e63';
+        ctx.lineWidth = 2;
+        [-8, -2, 4, 10].forEach(lx => {
+          const legWag = Math.sin(this.animTime * 6 + lx) * 3;
+          ctx.beginPath();
+          ctx.moveTo(lx, 6);
+          ctx.lineTo(lx - 4, 12 + legWag);
+          ctx.moveTo(lx, -6);
+          ctx.lineTo(lx - 4, -12 - legWag);
+          ctx.stroke();
+        });
+
+        // 2. Long Spike Telson Tail
+        ctx.strokeStyle = c.tail || '#4a3b32';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.arc(0, 0, 16, Math.PI * 0.5, Math.PI * 1.5, true);
+        ctx.moveTo(-12, 0);
+        ctx.lineTo(-34, Math.sin(this.animTime * 4) * 4);
+        ctx.stroke();
+
+        // 3. Horseshoe Dome Carapace Shell
+        ctx.fillStyle = c.shell || '#6c584c';
+        ctx.strokeStyle = '#4a3b32';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(4, 0, 16, -Math.PI * 0.45, Math.PI * 0.45, false);
+        ctx.lineTo(-12, 12);
+        ctx.lineTo(-8, 0);
+        ctx.lineTo(-12, -12);
         ctx.closePath();
         ctx.fill();
+        ctx.stroke();
+
+        // 4. Glowing Blue Blood Ancient Runes / Eyes
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(8, -6, 1.8, 0, Math.PI * 2);
+        ctx.arc(8, 6, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
         break;
+      }
 
       case 'coelacanth':
         // Living Fossil Coelacanth with armored scales and lobed fins
@@ -1651,12 +1692,70 @@ export class Fish {
         break;
       }
 
-      case 'bottle':
-        ctx.fillStyle = c.glass || '#a8dadc';
+      case 'bottle': {
+        // 🍾 Vintage Message in a Bottle (유리병 편지)
+        ctx.save();
+        const floatTilt = Math.sin(this.animTime * 2.5) * 0.12;
+        ctx.rotate(floatTilt);
+
+        // 1. Transparent Glass Bottle Body (유리병 몸통)
+        ctx.fillStyle = c.glass || 'rgba(168, 218, 220, 0.75)';
+        ctx.strokeStyle = '#457b9d';
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.roundRect(-12, -6, 24, 12, 4);
+        ctx.roundRect(-22, -12, 32, 24, 6);
         ctx.fill();
+        ctx.stroke();
+
+        // 2. Rolled Secret Letter Scroll with Ribbon (편지 두루마리)
+        ctx.fillStyle = c.paper || '#fefae0';
+        ctx.strokeStyle = '#d4a373';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(-16, -6, 20, 12, 3);
+        ctx.fill();
+        ctx.stroke();
+
+        // Red Ribbon around scroll
+        ctx.fillStyle = '#e63946';
+        ctx.fillRect(-8, -6, 4, 12);
+
+        // 3. Narrow Bottle Neck (잘록한 병목)
+        ctx.fillStyle = c.glass || 'rgba(168, 218, 220, 0.75)';
+        ctx.strokeStyle = '#457b9d';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(10, -6, 12, 12, 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Bottle Rim / Lip
+        ctx.beginPath();
+        ctx.roundRect(20, -8, 4, 16, 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // 4. Brown Cork Stopper (코르크 마개)
+        ctx.fillStyle = c.cork || '#bc6c25';
+        ctx.strokeStyle = '#8c4815';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(22, -5, 8, 10, 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // 5. Glossy Glass Shine Highlight Reflection (유리병 반사광)
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+        ctx.beginPath();
+        ctx.roundRect(-18, -9, 24, 3, 1.5);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(-14, 6, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
         break;
+      }
 
       default:
         ctx.fillStyle = '#adb5bd';
