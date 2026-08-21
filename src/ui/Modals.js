@@ -347,11 +347,25 @@ export class Modals {
   }
 
   initMultiplayerEvents() {
-    // Top Bar Open Button
+    // Top Bar Open Button & Active Room Badge
     const btnMultiOpen = document.getElementById('btn-open-multiplayer');
     if (btnMultiOpen) {
       btnMultiOpen.addEventListener('click', () => {
         this.sound.playClick();
+        this.openMultiplayerModal();
+      });
+    }
+
+    const topBarMultiBadge = document.getElementById('topbar-multi-badge');
+    if (topBarMultiBadge) {
+      topBarMultiBadge.addEventListener('click', async () => {
+        this.sound.playClick();
+        if (this.multiplayer && this.multiplayer.roomId) {
+          try {
+            await navigator.clipboard.writeText(this.multiplayer.roomId);
+            this.hud.showNotification(`📋 방 번호 [${this.multiplayer.roomId}] 복사 완료!`, '✨');
+          } catch (e) {}
+        }
         this.openMultiplayerModal();
       });
     }

@@ -1,9 +1,9 @@
 /**
  * HUD & In-Game UI Overlay Manager
  */
-import { BAITS } from '../systems/Economy.js?v=2.6.0';
-import { Fish } from '../entities/Fish.js?v=2.6.0';
-import { getBaitIconSvg } from './BaitIcons.js?v=2.6.0';
+import { BAITS } from '../systems/Economy.js?v=2.9.0';
+import { Fish } from '../entities/Fish.js?v=2.9.0';
+import { getBaitIconSvg } from './BaitIcons.js?v=2.9.0';
 
 export class HUD {
   constructor(economy, encyclopedia, soundEngine, environment = null) {

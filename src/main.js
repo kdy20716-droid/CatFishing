@@ -1,21 +1,21 @@
 /**
  * Master Game Controller & Loop
  */
-import { Vector2 } from './engine/Vector.js?v=2.6.0';
-import { Camera } from './engine/Camera.js?v=2.6.0';
-import { Input } from './engine/Input.js?v=2.6.0';
-import { SoundEngine } from './audio.js?v=2.6.0';
-import { Economy } from './systems/Economy.js?v=2.6.0';
-import { Encyclopedia, FISH_SPECIES } from './systems/Encyclopedia.js?v=2.6.0';
-import { Environment } from './systems/Environment.js?v=2.6.0';
-import { Aquarium } from './systems/Aquarium.js?v=2.6.0';
-import { Cat } from './entities/Cat.js?v=2.6.0';
-import { Rod } from './entities/Rod.js?v=2.6.0';
-import { Fish } from './entities/Fish.js?v=2.6.0';
-import { HUD } from './ui/HUD.js?v=2.6.0';
-import { Modals } from './ui/Modals.js?v=2.6.0';
-import { CloudSave } from './systems/CloudSave.js?v=2.6.0';
-import { Multiplayer } from './systems/Multiplayer.js?v=2.6.0';
+import { Vector2 } from './engine/Vector.js?v=2.9.0';
+import { Camera } from './engine/Camera.js?v=2.9.0';
+import { Input } from './engine/Input.js?v=2.9.0';
+import { SoundEngine } from './audio.js?v=2.9.0';
+import { Economy } from './systems/Economy.js?v=2.9.0';
+import { Encyclopedia, FISH_SPECIES } from './systems/Encyclopedia.js?v=2.9.0';
+import { Environment } from './systems/Environment.js?v=2.9.0';
+import { Aquarium } from './systems/Aquarium.js?v=2.9.0';
+import { Cat } from './entities/Cat.js?v=2.9.0';
+import { Rod } from './entities/Rod.js?v=2.9.0';
+import { Fish } from './entities/Fish.js?v=2.9.0';
+import { HUD } from './ui/HUD.js?v=2.9.0';
+import { Modals } from './ui/Modals.js?v=2.9.0';
+import { CloudSave } from './systems/CloudSave.js?v=2.9.0';
+import { Multiplayer } from './systems/Multiplayer.js?v=2.9.0';
 
 class Game {
   constructor() {
@@ -89,26 +89,35 @@ class Game {
   }
 
   spawnSingleFish() {
-    // Choose species based on weighted rarity and depth
-    const luckMult = this.economy.getLuckMultiplier();
-    
-    // Rarity weights
-    const roll = Math.random();
-    let targetRarity = 'common';
-    if (roll < 0.03 * luckMult) targetRarity = 'mythic';
-    else if (roll < 0.09 * luckMult) targetRarity = 'legendary';
-    else if (roll < 0.22 * luckMult) targetRarity = 'epic';
-    else if (roll < 0.48 * luckMult) targetRarity = 'rare';
-    else if (roll < 0.72) targetRarity = 'uncommon';
+    // 👑 1. Boss Fish Spawn Rate strictly fixed at 1.0% (10종의 거대 보스 물고기)
+    let chosen = null;
+    const bossRoll = Math.random();
+    const bossSpecies = FISH_SPECIES.filter(f => f.isBoss);
+    const regularSpecies = FISH_SPECIES.filter(f => !f.isBoss);
 
-    const candidates = FISH_SPECIES.filter(f => f.rarity === targetRarity);
-    const chosen = candidates.length > 0 
-      ? candidates[Math.floor(Math.random() * candidates.length)] 
-      : FISH_SPECIES[Math.floor(Math.random() * FISH_SPECIES.length)];
+    if (bossRoll < 0.01 && bossSpecies.length > 0) {
+      // 👑 Exactly 1% Boss Spawn Rate
+      chosen = bossSpecies[Math.floor(Math.random() * bossSpecies.length)];
+    } else {
+      // 🐟 99% Regular Fish Spawn by weighted rarity
+      const luckMult = this.economy.getLuckMultiplier();
+      const roll = Math.random();
+      let targetRarity = 'common';
+      if (roll < 0.03 * luckMult) targetRarity = 'mythic';
+      else if (roll < 0.09 * luckMult) targetRarity = 'legendary';
+      else if (roll < 0.22 * luckMult) targetRarity = 'epic';
+      else if (roll < 0.48 * luckMult) targetRarity = 'rare';
+      else if (roll < 0.72) targetRarity = 'uncommon';
+
+      const candidates = regularSpecies.filter(f => f.rarity === targetRarity);
+      chosen = candidates.length > 0 
+        ? candidates[Math.floor(Math.random() * candidates.length)] 
+        : regularSpecies[Math.floor(Math.random() * regularSpecies.length)];
+    }
 
     const speciesIndex = FISH_SPECIES.indexOf(chosen);
     const totalSpecies = Math.max(1, FISH_SPECIES.length - 1);
-    const depthProgress = Math.max(0, Math.min(1, speciesIndex / totalSpecies)); // 0.0 (도감 상단 표층) ~ 1.0 (도감 하단 초심연)
+    const depthProgress = Math.max(0, Math.min(1, speciesIndex / totalSpecies));
 
     // 🌊 도감 아래로 내려갈수록 오른쪽 먼 바다(X: 1800 ~ 5200px)에서 집중 출현
     // 🏡 도감 위쪽 표층/근해 어종은 부두막 근처(X: -300 ~ 1400px)에서 집중 출현

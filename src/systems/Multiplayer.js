@@ -615,7 +615,7 @@ export class Multiplayer {
     }
   }
 
-  draw(ctx, localCat = null) {
+  draw(ctx, localCat = null, localRod = null) {
     // 1. Draw My Chat Bubble if active
     if (localCat && this.myChatBubble && this.myChatBubble.timer > 0) {
       this.drawChatBubble(ctx, localCat.pos.x, localCat.pos.y - 75, this.myChatBubble.text, true);
@@ -811,7 +811,12 @@ export class Multiplayer {
       const totalMembers = this.otherPlayers.size + 1;
       if (memberCountEl) memberCountEl.innerText = `${totalMembers}명`;
       if (topBarMultiBadge) {
-        topBarMultiBadge.innerText = `방: ${this.roomId} (${totalMembers}명)`;
+        const textSpan = topBarMultiBadge.querySelector('.topbar-room-text');
+        if (textSpan) {
+          textSpan.innerHTML = `방: <b>${this.roomId}</b> (${totalMembers}명) 📋`;
+        } else {
+          topBarMultiBadge.innerText = `방: ${this.roomId} (${totalMembers}명)`;
+        }
         topBarMultiBadge.classList.remove('hidden');
       }
 

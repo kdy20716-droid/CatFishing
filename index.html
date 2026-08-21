@@ -6,7 +6,7 @@
   <title>🐾 냥이의 바다 낚시 힐링 여행 (Cozy Cat Fishing)</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="shortcut icon" href="assets/favicon.svg">
-  <link rel="stylesheet" href="style.css?v=2.7.0">
+  <link rel="stylesheet" href="style.css?v=3.1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Gothic:wght@400;700;800&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
@@ -41,6 +41,11 @@
 
       <div class="hud-right">
         <button id="btn-sound-toggle" class="hud-btn" data-tooltip="소리 ON/OFF [O]">🎵 소리 ON</button>
+        <!-- Active Multiplayer Room Badge (방 개설/입장 시 상단에 상시 표시) -->
+        <button id="topbar-multi-badge" class="hud-btn multi-active-badge hidden" title="클릭하여 방 코드 복사 및 멀티플레이 관리">
+          <span class="multi-dot online"></span>
+          <span id="topbar-room-text" class="topbar-room-text">🌐 방: ABCD12 (1명)</span>
+        </button>
         <button id="btn-open-multiplayer" class="hud-btn multi-btn" data-tooltip="멀티플레이 [I]">🌐 멀티플레이</button>
         <button id="btn-open-inventory" class="hud-btn inv-btn" data-tooltip="내 인벤토리 [E]">🎒 인벤토리</button>
         <button id="btn-open-encyclopedia" class="hud-btn encyclo-btn" data-tooltip="물고기 도감 [U]">📖 도감</button>
@@ -76,15 +81,15 @@
       </div>
     </header>
 
+    <!-- ⬅️ Screen Left Edge Dock Distance Indicator (화면 맨 왼쪽 모서리 밀착 부두막 방향/거리 탭) -->
+    <div id="dock-distance-indicator" class="dock-distance-pill hidden">
+      <span class="dock-dist-arrow">⬅️</span>
+      <span class="dock-dist-icon">🏪</span>
+      <span class="dock-dist-text">부두막 <b>0m</b></span>
+    </div>
+
     <!-- Center Floating Displays (Depth, Tension, Cast Charge) -->
     <div id="center-hud">
-      <!-- ⬅️ Left Dock Distance Indicator (부두막 방향 & 거리 알림) -->
-      <div id="dock-distance-indicator" class="dock-distance-pill hidden">
-        <span class="dock-dist-arrow">⬅️</span>
-        <span class="dock-dist-icon">🏪</span>
-        <span class="dock-dist-text">부두막 <b>0m</b></span>
-      </div>
-
       <!-- Depth Indicator -->
       <div id="hud-depth" class="depth-badge">수심 0.0m</div>
 
@@ -733,6 +738,6 @@
   </div>
 
   <!-- Entry Script (with cache-busting query) -->
-  <script type="module" src="src/main.js?v=2.6.0"></script>
+  <script type="module" src="src/main.js?v=3.1.0"></script>
 </body>
 </html>

@@ -3177,35 +3177,38 @@ html, body {
 }
 
 /* =========================================================
-   ⬅️ Left Dock Distance Indicator (부두막 방향 & 거리 알림)
+   ⬅️ Left Edge Dock Distance Indicator (화면 맨 왼쪽 모서리 완벽 밀착 & 쾌적한 높이)
    ========================================================= */
 .dock-distance-pill {
-  position: fixed;
-  left: 20px;
-  top: 140px;
-  background: rgba(15, 23, 42, 0.88);
+  position: fixed !important;
+  left: 0px !important;
+  top: 38% !important;
+  transform: translateY(-50%) !important;
+  margin: 0 !important;
+  background: rgba(15, 23, 42, 0.92);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 2px solid #f59e0b;
-  border-radius: var(--radius-pill);
-  padding: 8px 16px;
+  border-left: none !important;
+  border-radius: 0 24px 24px 0 !important;
+  padding: 10px 16px 10px 12px;
   display: flex;
   align-items: center;
   gap: 8px;
   color: #f8fafc;
   font-size: 14px;
   font-weight: 700;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5), 0 0 14px rgba(245, 158, 11, 0.35);
-  z-index: 100;
+  box-shadow: 4px 0 22px rgba(0, 0, 0, 0.6), 0 0 18px rgba(245, 158, 11, 0.45);
+  z-index: 1000 !important;
   pointer-events: none;
   transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   animation: dock-pulse 2.2s infinite ease-in-out;
 }
 
 .dock-distance-pill.hidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(-35px);
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateY(-50%) translateX(-100%) !important;
 }
 
 @keyframes dock-pulse {
@@ -3231,4 +3234,50 @@ html, body {
   color: #fbbf24;
   font-weight: 800;
   margin-left: 2px;
+}
+
+/* =========================================================
+   🌐 Top Bar Multiplayer Active Room Badge
+   ========================================================= */
+.multi-active-badge {
+  background: linear-gradient(135deg, rgba(6, 95, 70, 0.88), rgba(4, 120, 87, 0.95)) !important;
+  color: #a7f3d0 !important;
+  border: 1.5px solid #34d399 !important;
+  font-weight: 800 !important;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.45);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  animation: multi-badge-glow 2.5s infinite ease-in-out;
+}
+
+.multi-active-badge:hover {
+  background: linear-gradient(135deg, rgba(4, 120, 87, 0.95), rgba(5, 150, 105, 1)) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 0 18px rgba(52, 211, 153, 0.7);
+}
+
+.multi-active-badge.hidden {
+  display: none !important;
+}
+
+@keyframes multi-badge-glow {
+  0%, 100% { box-shadow: 0 0 12px rgba(52, 211, 153, 0.45); }
+  50% { box-shadow: 0 0 20px rgba(52, 211, 153, 0.85); }
+}
+
+.multi-dot.online {
+  width: 8px;
+  height: 8px;
+  background-color: #34d399;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #34d399;
+}
+
+.topbar-room-text {
+  font-family: var(--font-main);
+  font-size: 13px;
+  color: #ffffff;
 }
