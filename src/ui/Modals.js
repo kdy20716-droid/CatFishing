@@ -1,10 +1,10 @@
 /**
  * Interactive Modals (Shop, Fish Encyclopedia, Aquarium Controls, Settings, Guide)
  */
-import { RODS, BOATS, BAITS, HATS, PASSIVE_UPGRADES, CAT_SKINS } from '../systems/Economy.js?v=5.7.0';
-import { FISH_SPECIES } from '../systems/Encyclopedia.js?v=5.7.0';
-import { Fish } from '../entities/Fish.js?v=5.7.0';
-import { getBaitIconSvg } from './BaitIcons.js?v=5.7.0';
+import { RODS, BOATS, BAITS, HATS, PASSIVE_UPGRADES, CAT_SKINS } from '../systems/Economy.js?v=5.9.0';
+import { FISH_SPECIES } from '../systems/Encyclopedia.js?v=5.9.0';
+import { Fish } from '../entities/Fish.js?v=5.9.0';
+import { getBaitIconSvg } from './BaitIcons.js?v=5.9.0';
 
 export class Modals {
   constructor(economy, encyclopedia, aquarium, soundEngine, hud, cloudSave = null) {

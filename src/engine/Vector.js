@@ -67,6 +67,10 @@ export class Vector2 {
     return Math.sqrt(dx * dx + dy * dy);
   }
 
+  distanceTo(v) {
+    return this.dist(v);
+  }
+
   normalize() {
     const m = this.mag();
     if (m !== 0) {

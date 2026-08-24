@@ -1,21 +1,21 @@
 /**
  * Master Game Controller & Loop
  */
-import { Vector2 } from './engine/Vector.js?v=5.7.0';
-import { Camera } from './engine/Camera.js?v=5.7.0';
-import { Input } from './engine/Input.js?v=5.7.0';
-import { SoundEngine } from './audio.js?v=5.7.0';
-import { Economy } from './systems/Economy.js?v=5.7.0';
-import { Encyclopedia, FISH_SPECIES } from './systems/Encyclopedia.js?v=5.7.0';
-import { Environment } from './systems/Environment.js?v=5.7.0';
-import { Aquarium } from './systems/Aquarium.js?v=5.7.0';
-import { Cat } from './entities/Cat.js?v=5.7.0';
-import { Rod } from './entities/Rod.js?v=5.7.0';
-import { Fish } from './entities/Fish.js?v=5.7.0';
-import { HUD } from './ui/HUD.js?v=5.7.0';
-import { Modals } from './ui/Modals.js?v=5.7.0';
-import { CloudSave } from './systems/CloudSave.js?v=5.7.0';
-import { Multiplayer } from './systems/Multiplayer.js?v=5.7.0';
+import { Vector2 } from './engine/Vector.js?v=5.9.0';
+import { Camera } from './engine/Camera.js?v=5.9.0';
+import { Input } from './engine/Input.js?v=5.9.0';
+import { SoundEngine } from './audio.js?v=5.9.0';
+import { Economy } from './systems/Economy.js?v=5.9.0';
+import { Encyclopedia, FISH_SPECIES } from './systems/Encyclopedia.js?v=5.9.0';
+import { Environment } from './systems/Environment.js?v=5.9.0';
+import { Aquarium } from './systems/Aquarium.js?v=5.9.0';
+import { Cat } from './entities/Cat.js?v=5.9.0';
+import { Rod } from './entities/Rod.js?v=5.9.0';
+import { Fish } from './entities/Fish.js?v=5.9.0';
+import { HUD } from './ui/HUD.js?v=5.9.0';
+import { Modals } from './ui/Modals.js?v=5.9.0';
+import { CloudSave } from './systems/CloudSave.js?v=5.9.0';
+import { Multiplayer } from './systems/Multiplayer.js?v=5.9.0';
 
 class Game {
   constructor() {
@@ -664,7 +664,7 @@ class Game {
     // 3. Highlight Detected Fishes inside radius
     const maxDetectDist = sonarRadius;
     this.fishList.forEach(fish => {
-      const dist = origin.distanceTo(fish.pos);
+      const dist = origin.dist ? origin.dist(fish.pos) : Math.hypot(origin.x - fish.pos.x, origin.y - fish.pos.y);
       if (dist <= maxDetectDist) {
         // Draw Sonar Ping Marker around fish
         ctx.save();
@@ -705,7 +705,7 @@ class Game {
     const originWorld = isSubmerged ? this.rod.hookPos : this.cat.pos;
 
     // Distance in meters
-    const distWorld = originWorld.distanceTo(boss.pos);
+    const distWorld = originWorld.dist ? originWorld.dist(boss.pos) : Math.hypot(originWorld.x - boss.pos.x, originWorld.y - boss.pos.y);
     const distM = Math.round(distWorld / 20);
 
     // Convert to Screen coordinates
