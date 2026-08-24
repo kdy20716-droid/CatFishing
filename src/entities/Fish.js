@@ -164,6 +164,18 @@ export class Fish {
     }
   }
 
+  get isNonLiving() {
+    const type = this.data.drawType || this.data.id;
+    return (
+      type === 'chest' || 
+      type === 'bottle' || 
+      type === 'relic' || 
+      this.data.id === 'sunken_chest' || 
+      this.data.id === 'message_bottle' || 
+      this.data.id === 'ancient_relic'
+    );
+  }
+
   checkBaitInterest(hook) {
     if (!hook || !hook.isSubmerged) return;
 
@@ -173,8 +185,11 @@ export class Fish {
 
     let isAttractive = false;
 
-    // 💖 1. 환상의 현혹 페로몬 활성화 시 반경 내 모든 물고기 즉시 매혹
-    if (hook.isAllureActive) {
+    // 🎁 0. 보물상자, 유리병 편지, 고대 유물 등 무생물 오브젝트는 기본 미끼(식빵) 포함 모든 미끼에 100% 걸림!
+    if (this.isNonLiving) {
+      isAttractive = true;
+    } else if (hook.isAllureActive) {
+      // 💖 1. 환상의 현혹 페로몬 활성화 시 반경 내 모든 물고기 즉시 매혹
       isAttractive = true;
     } else if (isLiveBait && liveBaitData) {
       if (this.data.favBait.includes('live_small') && liveBaitData.baitSize === 'small') {
@@ -299,6 +314,18 @@ export class Fish {
       return;
     }
 
+    // 🎁 보물상자, 유리병 편지, 고대 유물 등 무생물 오브젝트: 생물이 아니므로 쪼기 시늉/도망 없이 닿는 즉시 100% 바늘에 걸림!
+    if (this.isNonLiving) {
+      if (dist < 46) {
+        hook.attachFish(this, this.targetSlot);
+        this.state = 'HOOKED';
+        this.isInspecting = false;
+      } else {
+        this.pos.add(Vector2.mult(dir, 26 * dt));
+      }
+      return;
+    }
+
     // 🎣 미끼 앞 도달 전: 미끼 쪽으로 헤엄쳐 다가감
     if (dist > 32) {
       this.isInspecting = false;
@@ -391,7 +418,10 @@ export class Fish {
       this.pos.y = Math.min(15070, targetSlotPos.y + Math.sin(this.animTime * 6) * 2);
     }
 
-    this.animTime += dt * 3;
+    this.animTime += dt * (this.isNonLiving ? 0.5 : 3);
+
+    // 🎁 무생물 오브젝트(보물상자, 유리병, 유물)는 힘싸움 및 줄 풀림 탈출 없음
+    if (this.isNonLiving) return;
 
     // --- Struggle, Tiring, and Slack-Line Escape Dynamics ---
     if (this.hasStruggleGauge) {

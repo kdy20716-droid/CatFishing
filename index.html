@@ -6,7 +6,7 @@
   <title>🐾 냥이의 바다 낚시 힐링 여행 (Cozy Cat Fishing)</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="shortcut icon" href="assets/favicon.svg">
-  <link rel="stylesheet" href="style.css?v=5.6.0">
+  <link rel="stylesheet" href="style.css?v=5.7.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Gothic:wght@400;700;800&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
@@ -209,7 +209,7 @@
             <option value="night_glow">🌌 심해 야광 오로라 테마</option>
             <option value="ancient">🏛️ 고대 아틀란티스 신전 테마</option>
           </select>
-          <button id="btn-aqua-manage" class="btn-aqua-manage">🐠 물고기 관리/꺼내기 (<span id="aqua-fish-count">0</span>/20)</button>
+          <button id="btn-aqua-manage" class="btn-aqua-manage">🐠 수조 물고기 관리 / 판매 (<span id="aqua-fish-count">0</span>/20)</button>
           <button id="btn-aqua-feed" class="btn-aqua">🥐 밥주기 <span id="aqua-feed-badge" class="feed-badge ready">💰 골드 보상</span></button>
           <button id="btn-aqua-collect" class="btn-aqua-gold">💰 코인 모두 수거</button>
           <button id="btn-aqua-exit" class="btn-aqua-exit">🌊 낚시터로 돌아가기</button>
@@ -218,15 +218,18 @@
       <div class="aqua-subtext">✨ 화면을 클릭하여 먹이를 줄 수 있습니다. <strong>(💰 골드 보상은 10분에 1회 지급)</strong></div>
     </div>
 
-    <!-- Aquarium Fish Management Modal (수조 물고기 확인 및 꺼내기) -->
+    <!-- Aquarium Fish Management & Instant Sell Modal (수조 물고기 확인 및 즉시 판매) -->
     <div id="aquarium-manage-modal" class="modal-backdrop">
       <div class="modal-window aqua-manage-window" style="max-width: 680px; width: 95%;">
         <div class="modal-header">
-          <h2>🐠 아쿠아리움 수조 관리 (<span id="aqua-manage-count">0</span>/20마리)</h2>
+          <h2>🐠 수조 물고기 관리 & 즉시 판매 (<span id="aqua-manage-count">0</span>/20마리)</h2>
           <button class="modal-close-btn">&times;</button>
         </div>
-        <div class="aqua-manage-sub">
-          수조에서 헤엄치고 있는 물고기 목록입니다. 원치 않는 물고기는 언제든 꺼내어 인벤토리 가방으로 회수할 수 있습니다.
+        <div class="aqua-manage-sub-bar">
+          <div class="aqua-manage-sub">
+            수조에서 헤엄치고 있는 물고기 목록입니다. 언제든 즉시 판매하여 골드를 획득할 수 있습니다.
+          </div>
+          <button id="btn-aqua-sell-all" class="btn-aqua-sell-all">💰 수조 물고기 모두 판매</button>
         </div>
         <div id="aqua-manage-fish-list" class="aqua-manage-grid">
           <!-- Injected via Modals.js -->
@@ -874,6 +877,6 @@
   </div>
 
   <!-- Entry Script (with cache-busting query) -->
-  <script type="module" src="src/main.js?v=5.6.0"></script>
+  <script type="module" src="src/main.js?v=5.7.0"></script>
 </body>
 </html>

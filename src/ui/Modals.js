@@ -1,10 +1,10 @@
 /**
  * Interactive Modals (Shop, Fish Encyclopedia, Aquarium Controls, Settings, Guide)
  */
-import { RODS, BOATS, BAITS, HATS, PASSIVE_UPGRADES, CAT_SKINS } from '../systems/Economy.js?v=5.6.0';
-import { FISH_SPECIES } from '../systems/Encyclopedia.js?v=5.6.0';
-import { Fish } from '../entities/Fish.js?v=5.6.0';
-import { getBaitIconSvg } from './BaitIcons.js?v=5.6.0';
+import { RODS, BOATS, BAITS, HATS, PASSIVE_UPGRADES, CAT_SKINS } from '../systems/Economy.js?v=5.7.0';
+import { FISH_SPECIES } from '../systems/Encyclopedia.js?v=5.7.0';
+import { Fish } from '../entities/Fish.js?v=5.7.0';
+import { getBaitIconSvg } from './BaitIcons.js?v=5.7.0';
 
 export class Modals {
   constructor(economy, encyclopedia, aquarium, soundEngine, hud, cloudSave = null) {
@@ -1543,6 +1543,7 @@ export class Modals {
   renderAquariumManageContent() {
     const container = document.getElementById('aqua-manage-fish-list');
     const countEl = document.getElementById('aqua-manage-count');
+    const btnSellAll = document.getElementById('btn-aqua-sell-all');
     if (!container) return;
 
     container.innerHTML = '';
@@ -1550,6 +1551,29 @@ export class Modals {
     if (countEl) countEl.innerText = fishList.length;
 
     this.updateAquariumBadge();
+
+    // Setup Sell All Button
+    if (btnSellAll) {
+      let totalValue = 0;
+      fishList.forEach(f => {
+        const sp = this.encyclopedia.getFishData(f.speciesId);
+        if (sp) totalValue += Math.round(sp.basePrice * (f.isShiny ? 3.0 : 1.0));
+      });
+
+      btnSellAll.innerText = `💰 수조 물고기 모두 판매 (+${totalValue.toLocaleString()} G)`;
+      btnSellAll.disabled = fishList.length === 0;
+
+      // Replace click handler cleanly
+      btnSellAll.onclick = () => {
+        if (fishList.length === 0) return;
+        this.sound.playCoin();
+        const res = this.aquarium.sellAllFishFromAquarium();
+        if (res && res.count > 0) {
+          this.hud.showNotification(`💰 수조의 물고기 ${res.count}마리를 모두 판매하여 +${res.totalGold.toLocaleString()} G를 획득했습니다!`, '🪙');
+          this.renderAquariumManageContent();
+        }
+      };
+    }
 
     if (fishList.length === 0) {
       container.innerHTML = `
@@ -1564,6 +1588,7 @@ export class Modals {
 
     fishList.forEach(item => {
       const species = this.encyclopedia.getFishData(item.speciesId);
+      const price = species ? Math.round(species.basePrice * (item.isShiny ? 3.0 : 1.0)) : 100;
       const card = document.createElement('div');
       card.className = `aqua-fish-card ${item.isShiny ? 'is-shiny' : ''}`;
       card.innerHTML = `
@@ -1575,10 +1600,11 @@ export class Modals {
           <div class="aqua-card-name">${item.name}</div>
           <div class="aqua-card-size">크기: <strong>${item.sizeCm.toFixed(1)} cm</strong></div>
           <div class="aqua-card-rarity">${species ? species.rarity.toUpperCase() : 'FISH'}</div>
+          <div class="aqua-card-price">판매가: <strong>+${price.toLocaleString()} G</strong></div>
         </div>
         <div class="aqua-card-actions">
-          <button class="btn-aqua-remove-fish" data-instance-id="${item.instanceId}" title="수조에서 꺼내어 인벤토리 가방으로 회수합니다.">
-            🧺 가방으로 꺼내기
+          <button class="btn-aqua-sell-fish" data-instance-id="${item.instanceId}" title="수조에서 이 물고기를 즉시 판매하여 골드를 획득합니다.">
+            💰 바로 판매 (+${price.toLocaleString()} G)
           </button>
         </div>
       `;
@@ -1589,14 +1615,14 @@ export class Modals {
         Fish.drawPreview(canvas, species, true, item.isShiny);
       }
 
-      // Remove / Withdraw Button
-      const btnRemove = card.querySelector('.btn-aqua-remove-fish');
-      if (btnRemove) {
-        btnRemove.addEventListener('click', () => {
-          this.sound.playClick();
-          const removed = this.aquarium.removeFishFromAquarium(item.instanceId, true);
-          if (removed) {
-            this.hud.showNotification(`🧺 [${removed.name}]을(를) 수조에서 꺼내어 가방으로 회수했습니다!`, '🐟');
+      // Sell Fish Button
+      const btnSell = card.querySelector('.btn-aqua-sell-fish');
+      if (btnSell) {
+        btnSell.addEventListener('click', () => {
+          this.sound.playCoin();
+          const result = this.aquarium.sellFishFromAquarium(item.instanceId);
+          if (result) {
+            this.hud.showNotification(`💰 [${result.fish.name}]을(를) 즉시 판매하여 +${result.price.toLocaleString()} G를 획득했습니다!`, '🪙');
             this.renderAquariumManageContent();
           }
         });

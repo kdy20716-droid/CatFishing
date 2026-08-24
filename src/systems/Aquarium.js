@@ -91,6 +91,57 @@ export class Aquarium {
   }
 
   /**
+   * 💰 수조에서 물고기 즉시 판매하기 (골드 즉시 지급 및 수조에서 제거)
+   */
+  sellFishFromAquarium(instanceId) {
+    const idx = this.placedFish.findIndex(f => f.instanceId === instanceId);
+    if (idx === -1) return null;
+
+    const [removed] = this.placedFish.splice(idx, 1);
+    const species = this.encyclopedia.getFishData(removed.speciesId);
+    let price = 0;
+    if (species) {
+      price = Math.round(species.basePrice * (removed.isShiny ? 3.0 : 1.0));
+    }
+
+    if (this.economy) {
+      this.economy.addGold(price);
+    }
+
+    this.saveToStorage();
+    if (this.isOpen) this.populateTank();
+    return { fish: removed, price };
+  }
+
+  /**
+   * 💰 수조의 모든 물고기 한 번에 일괄 판매하기
+   */
+  sellAllFishFromAquarium() {
+    if (this.placedFish.length === 0) return { count: 0, totalGold: 0 };
+
+    let totalGold = 0;
+    const count = this.placedFish.length;
+
+    this.placedFish.forEach(removed => {
+      const species = this.encyclopedia.getFishData(removed.speciesId);
+      let price = 0;
+      if (species) {
+        price = Math.round(species.basePrice * (removed.isShiny ? 3.0 : 1.0));
+      }
+      totalGold += price;
+    });
+
+    this.placedFish = [];
+    if (this.economy) {
+      this.economy.addGold(totalGold);
+    }
+
+    this.saveToStorage();
+    if (this.isOpen) this.populateTank();
+    return { count, totalGold };
+  }
+
+  /**
    * 🧺 수조에서 물고기 꺼내기 (인벤토리 어획 바구니로 안전하게 회수)
    */
   removeFishFromAquarium(instanceId, returnToBasket = true) {
@@ -100,22 +151,29 @@ export class Aquarium {
     const [removed] = this.placedFish.splice(idx, 1);
 
     if (returnToBasket && this.economy) {
+      const species = this.encyclopedia.getFishData(removed.speciesId);
+      let price = 0;
+      let exp = 20;
+      if (species) {
+        price = Math.round(species.basePrice * (removed.isShiny ? 3.0 : 1.0));
+        exp = species.baseExp || 20;
+      }
       const basketItem = {
         basketId: 'fish_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
         speciesId: removed.speciesId,
         name: removed.name,
+        engName: species ? species.engName : removed.name,
+        zone: species ? species.zone : 'shallow',
+        rarity: species ? species.rarity : 'common',
         isShiny: !!removed.isShiny,
         sizeCm: removed.sizeCm,
-        price: 0, // Recalculated by species
-        exp: 0,
+        price: price,
+        exp: exp,
         caughtAt: Date.now()
       };
-      const species = this.encyclopedia.getFishData(removed.speciesId);
-      if (species) {
-        basketItem.price = Math.round(species.basePrice * (removed.isShiny ? 2.5 : 1.0));
-        basketItem.exp = species.baseExp || 20;
+      if (Array.isArray(this.economy.caughtFishBasket)) {
+        this.economy.caughtFishBasket.unshift(basketItem);
       }
-      this.economy.fishBasket.push(basketItem);
       this.economy.saveToStorage();
     }
 

@@ -3448,11 +3448,46 @@ html, body {
   color: #f8fafc;
 }
 
+.aqua-manage-sub-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
 .aqua-manage-sub {
   font-size: 13px;
   color: #94a3b8;
-  margin-bottom: 16px;
   line-height: 1.5;
+  flex: 1;
+  min-width: 200px;
+}
+
+.btn-aqua-sell-all {
+  background: linear-gradient(135deg, #eab308, #ca8a04);
+  color: #0f172a;
+  border: 1.5px solid #fde047;
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(234, 179, 8, 0.35);
+  transition: all 0.2s ease;
+}
+
+.btn-aqua-sell-all:hover:not(:disabled) {
+  background: linear-gradient(135deg, #facc15, #eab308);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(234, 179, 8, 0.5);
+}
+
+.btn-aqua-sell-all:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .aqua-manage-grid {
@@ -3539,26 +3574,34 @@ html, body {
   font-size: 10px;
   font-weight: 800;
   color: #fbbf24;
+  margin-top: 1px;
+}
+
+.aqua-card-price {
+  font-size: 12px;
+  color: #fcd34d;
+  font-weight: 700;
   margin-top: 2px;
 }
 
-.btn-aqua-remove-fish {
-  background: linear-gradient(135deg, #e11d48, #be123c);
+.btn-aqua-sell-fish {
+  background: linear-gradient(135deg, #10b981, #059669);
   color: #ffffff;
-  border: none;
+  border: 1px solid #34d399;
   border-radius: var(--radius-sm);
-  padding: 6px 10px;
+  padding: 7px 12px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.4);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
   transition: all 0.15s ease;
 }
 
-.btn-aqua-remove-fish:hover {
-  background: linear-gradient(135deg, #f43f5e, #e11d48);
-  transform: scale(1.04);
+.btn-aqua-sell-fish:hover {
+  background: linear-gradient(135deg, #34d399, #10b981);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.6);
 }
 
 .aqua-empty-state {
