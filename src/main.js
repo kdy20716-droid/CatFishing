@@ -1,21 +1,21 @@
 /**
  * Master Game Controller & Loop
  */
-import { Vector2 } from './engine/Vector.js?v=7.3.0';
-import { Camera } from './engine/Camera.js?v=7.3.0';
-import { Input } from './engine/Input.js?v=7.3.0';
-import { SoundEngine } from './audio.js?v=7.3.0';
-import { Economy } from './systems/Economy.js?v=7.3.0';
-import { Encyclopedia, FISH_SPECIES } from './systems/Encyclopedia.js?v=7.3.0';
-import { Environment } from './systems/Environment.js?v=7.3.0';
-import { Aquarium } from './systems/Aquarium.js?v=7.3.0';
-import { Cat } from './entities/Cat.js?v=7.3.0';
-import { Rod } from './entities/Rod.js?v=7.3.0';
-import { Fish } from './entities/Fish.js?v=7.3.0';
-import { HUD } from './ui/HUD.js?v=7.3.0';
-import { Modals } from './ui/Modals.js?v=7.3.0';
-import { CloudSave } from './systems/CloudSave.js?v=7.3.0';
-import { Multiplayer } from './systems/Multiplayer.js?v=7.3.0';
+import { Vector2 } from './engine/Vector.js?v=7.4.0';
+import { Camera } from './engine/Camera.js?v=7.4.0';
+import { Input } from './engine/Input.js?v=7.4.0';
+import { SoundEngine } from './audio.js?v=7.4.0';
+import { Economy } from './systems/Economy.js?v=7.4.0';
+import { Encyclopedia, FISH_SPECIES } from './systems/Encyclopedia.js?v=7.4.0';
+import { Environment } from './systems/Environment.js?v=7.4.0';
+import { Aquarium } from './systems/Aquarium.js?v=7.4.0';
+import { Cat } from './entities/Cat.js?v=7.4.0';
+import { Rod } from './entities/Rod.js?v=7.4.0';
+import { Fish } from './entities/Fish.js?v=7.4.0';
+import { HUD } from './ui/HUD.js?v=7.4.0';
+import { Modals } from './ui/Modals.js?v=7.4.0';
+import { CloudSave } from './systems/CloudSave.js?v=7.4.0';
+import { Multiplayer } from './systems/Multiplayer.js?v=7.4.0';
 
 class Game {
   constructor() {
@@ -74,6 +74,9 @@ class Game {
     // Hook inputs & buttons
     this.initUIButtons();
     this.initInputHandlers();
+
+    // Init collapsible panel toggles, clock dock, bait peekup
+    this.hud.initPanelToggles();
 
     // Auto-save fish population on page unload/refresh
     window.addEventListener('beforeunload', () => {

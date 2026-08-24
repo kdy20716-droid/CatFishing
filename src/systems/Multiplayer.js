@@ -49,9 +49,11 @@ export class Multiplayer {
     this.messages = [];
     this.myChatBubble = { text: '', timer: 0 };
 
-    // Sync throttle
+    // Sync throttle & Quota saving
     this.lastSyncTime = 0;
-    this.syncInterval = 0.10; // Send updates every 100ms for ultra-smooth movement
+    this.syncInterval = 0.35; // Send updates every 350ms (optimized for Spark quota)
+    this.isQuotaExhausted = false;
+    this.lastSentPayload = '';
 
     this.initChatWidget();
 
@@ -420,6 +422,34 @@ export class Multiplayer {
       if (pEntry) {
         pEntry.chatBubble = { text: msg.text, timer: 5.0 };
       }
+    } else if (msg.type === 'PLAYER_STATE' && msg.playerData) {
+      const pData = msg.playerData;
+      if (pData.id === this.playerId) return;
+      let pEntry = this.otherPlayers.get(pData.id);
+      if (!pEntry) {
+        const fakeEconomy = {
+          getCurrentBoat: () => BOATS.find(b => b.id === pData.boatId) || BOATS[0] || { drawType: 'raft', speed: 80, maxTravelX: 1600 },
+          getCurrentRod: () => RODS.find(r => r.id === pData.rodId) || RODS[0] || { color: '#faedcd' },
+          getCurrentCatSkin: () => CAT_SKINS.find(s => s.id === (pData.catSkinId || 'skin_orange')) || CAT_SKINS[0],
+          getCurrentHat: () => HATS.find(h => h.id === (pData.hatId || 'hat_none')) || HATS[0] || { drawType: 'none' }
+        };
+        const rCat = new Cat(fakeEconomy);
+        rCat.pos.set(pData.x || 250, pData.y || 0);
+        pEntry = {
+          data: pData,
+          remoteCat: rCat,
+          targetX: pData.x || 250,
+          targetY: pData.y || 0,
+          lastSeen: Date.now(),
+          chatBubble: { text: '', timer: 0 }
+        };
+        this.otherPlayers.set(pData.id, pEntry);
+      } else {
+        pEntry.data = pData;
+        pEntry.targetX = pData.x || 250;
+        pEntry.targetY = pData.y || 0;
+        pEntry.lastSeen = Date.now();
+      }
     }
   }
 
@@ -587,32 +617,55 @@ export class Multiplayer {
   }
 
   async syncMyState(cat, rod, economy) {
+    if (!this.roomId || !this.isConnected) return;
+
+    const payloadObj = {
+      id: this.playerId,
+      name: this.playerName,
+      lastSeen: Date.now(),
+      x: Math.round(cat.pos.x * 10) / 10,
+      y: Math.round(cat.pos.y * 10) / 10,
+      facing: cat.facing,
+      state: cat.state,
+      rodId: economy.currentRodId,
+      boatId: economy.currentBoatId,
+      hatId: economy.currentHatId,
+      catSkinId: economy.catSkinId,
+      hookCount: economy.hookCount,
+      rodState: rod.state,
+      isSubmerged: rod.isSubmerged,
+      hookPos: rod.state !== 'READY' ? { x: Math.round(rod.hookPos.x), y: Math.round(rod.hookPos.y) } : null,
+      bobberPos: rod.state === 'FISHING' ? { x: Math.round(rod.bobberPos.x), y: Math.round(rod.bobberPos.y) } : null,
+      currentBaitId: rod.currentBaitId
+    };
+
+    // Always send over local BroadcastChannel for zero-latency local tabs
+    if (this.broadcastChannel) {
+      this.broadcastChannel.postMessage({
+        type: 'PLAYER_STATE',
+        roomId: this.roomId,
+        playerData: payloadObj
+      });
+    }
+
+    // Skip Firestore write if quota exceeded
+    if (this.isQuotaExhausted) return;
+
+    // Dirty check: only send to Firestore if something meaningful changed
+    const payloadSignature = `${payloadObj.x}_${payloadObj.y}_${payloadObj.state}_${payloadObj.rodState}_${payloadObj.isSubmerged}`;
+    if (payloadSignature === this.lastSentPayload) return;
+    this.lastSentPayload = payloadSignature;
+
     const db = this.getDb();
-    if (!db || !this.roomId || !this.isConnected) return;
+    if (!db) return;
 
     try {
       const playerRef = doc(db, 'cozy_fishing_rooms', this.roomId, 'players', this.playerId);
-      await setDoc(playerRef, {
-        id: this.playerId,
-        name: this.playerName,
-        lastSeen: Date.now(),
-        x: Math.round(cat.pos.x * 10) / 10,
-        y: Math.round(cat.pos.y * 10) / 10,
-        facing: cat.facing,
-        state: cat.state,
-        rodId: economy.currentRodId,
-        boatId: economy.currentBoatId,
-        hatId: economy.currentHatId,
-        catSkinId: economy.catSkinId,
-        hookCount: economy.hookCount,
-        rodState: rod.state,
-        isSubmerged: rod.isSubmerged,
-        hookPos: rod.state !== 'READY' ? { x: Math.round(rod.hookPos.x), y: Math.round(rod.hookPos.y) } : null,
-        bobberPos: rod.state === 'FISHING' ? { x: Math.round(rod.bobberPos.x), y: Math.round(rod.bobberPos.y) } : null,
-        currentBaitId: rod.currentBaitId
-      }, { merge: true });
+      await setDoc(playerRef, payloadObj, { merge: true });
     } catch (e) {
-      // Ignore background sync errors
+      if (e.code === 'resource-exhausted' || (e.message && e.message.includes('Quota exceeded'))) {
+        this.isQuotaExhausted = true;
+      }
     }
   }
 

@@ -6,7 +6,7 @@
   <title>🐾 냥이의 바다 낚시 힐링 여행 (Cozy Cat Fishing)</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="shortcut icon" href="assets/favicon.svg">
-  <link rel="stylesheet" href="style.css?v=7.3.0">
+  <link rel="stylesheet" href="style.css?v=7.4.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Gothic:wght@400;700;800&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
@@ -18,8 +18,9 @@
 
     <!-- Top Floating HUD -->
     <header id="hud-top">
-      <div class="hud-left">
-        <div class="game-logo">
+      <!-- 🐾 Left HUD Panel (클릭 시 발바닥만 남기고 스르륵 접힘) -->
+      <div class="hud-left" id="hud-left-panel">
+        <div class="game-logo" id="btn-toggle-left-panel" title="클릭하여 UI 접기/펼치기">
           <span class="logo-icon">🐾</span>
           <span class="logo-text">냥이의 낚시 여행</span>
         </div>
@@ -33,23 +34,27 @@
             <div id="hud-exp-fill" class="exp-bar-fill"></div>
           </div>
         </div>
-        <div id="hud-time-dial" class="hud-stat-pill time-pill" title="평화롭게 흐르는 바다의 시간">
-          <span id="hud-time-icon" class="pill-icon">☀️</span>
-          <span id="hud-time-text" class="pill-val">낮 ☀️</span>
-        </div>
       </div>
 
-      <div class="hud-right">
-        <button id="btn-sound-modal-open" class="hud-btn sound-btn" data-tooltip="사운드 & 볼륨 설정 [O]">🔊 사운드</button>
-        <!-- Active Multiplayer Room Badge (방 개설/입장 시 상단에 상시 표시) -->
-        <button id="topbar-multi-badge" class="hud-btn multi-active-badge hidden" title="클릭하여 방 코드 복사 및 멀티플레이 관리">
-          <span class="multi-dot online"></span>
-          <span id="topbar-room-text" class="topbar-room-text">🌐 방: ABCD12 (1명)</span>
-        </button>
-        <button id="btn-open-multiplayer" class="hud-btn multi-btn" data-tooltip="멀티플레이 [I]">🌐 멀티플레이</button>
-        <button id="btn-open-inventory" class="hud-btn inv-btn" data-tooltip="내 인벤토리 [E]">🎒 인벤토리</button>
-        <button id="btn-open-encyclopedia" class="hud-btn encyclo-btn" data-tooltip="물고기 도감 [U]">📖 도감</button>
-        <button id="btn-open-guide" class="hud-btn icon-btn" data-tooltip="조작 가이드 [H]">❓</button>
+      <!-- 👑 Right HUD Panel (화살표 클릭 시 메뉴가 스르륵 접혀 프로필만 표시) -->
+      <div class="hud-right" id="hud-right-panel">
+        <!-- 접기/펼치기 화살표 버튼 -->
+        <button id="btn-collapse-right" class="hud-panel-arrow-btn" title="메뉴 접기">›</button>
+        <button id="btn-expand-right" class="hud-panel-arrow-btn hidden" title="메뉴 펼치기">‹</button>
+
+        <!-- 접히는 메뉴 영역 -->
+        <div class="hud-right-menu" id="hud-right-menu">
+          <button id="btn-sound-modal-open" class="hud-btn sound-btn" data-tooltip="사운드 & 볼륨 설정 [O]">🔊 사운드</button>
+          <!-- Active Multiplayer Room Badge (방 개설/입장 시 상단에 상시 표시) -->
+          <button id="topbar-multi-badge" class="hud-btn multi-active-badge hidden" title="클릭하여 방 코드 복사 및 멀티플레이 관리">
+            <span class="multi-dot online"></span>
+            <span id="topbar-room-text" class="topbar-room-text">🌐 방: ABCD12 (1명)</span>
+          </button>
+          <button id="btn-open-multiplayer" class="hud-btn multi-btn" data-tooltip="멀티플레이 [I]">🌐 멀티플레이</button>
+          <button id="btn-open-inventory" class="hud-btn inv-btn" data-tooltip="내 인벤토리 [E]">🎒 인벤토리</button>
+          <button id="btn-open-encyclopedia" class="hud-btn encyclo-btn" data-tooltip="물고기 도감 [U]">📖 도감</button>
+          <button id="btn-open-guide" class="hud-btn icon-btn" data-tooltip="조작 가이드 [H]">❓</button>
+        </div>
 
         <!-- Top-Right Firebase Account & Cloud Save Widget -->
         <div id="auth-hud-container" class="auth-hud-container">
@@ -104,6 +109,79 @@
       </div>
     </header>
 
+    <!-- 🕐 돈스타브 스타일 원형 미니 시계 위젯 2개 (사계절 & 24시간: 4분할 테두리 + 시침) -->
+    <div id="clock-widgets-container" class="clock-widgets-container">
+      <!-- 🌸 사계절 시계 (봄/여름/가을/겨울 4분할) -->
+      <div id="season-clock-widget" class="clock-widget" title="계절 시계 (클릭하여 상단 고정 토글)">
+        <div class="clock-dial season-dial">
+          <svg class="clock-svg" viewBox="0 0 64 64" width="60" height="60">
+            <!-- Background Dial -->
+            <circle cx="32" cy="32" r="27" class="clock-bg" />
+            
+            <!-- 4 Season Border Arcs (봄, 여름, 가을, 겨울) -->
+            <!-- 1. 봄 (0°~90° / 12시~3시) -->
+            <path d="M 32 6 A 26 26 0 0 1 58 32" class="season-quad-arc spring-arc" />
+            <!-- 2. 여름 (90°~180° / 3시~6시) -->
+            <path d="M 58 32 A 26 26 0 0 1 32 58" class="season-quad-arc summer-arc" />
+            <!-- 3. 가을 (180°~270° / 6시~9시) -->
+            <path d="M 32 58 A 26 26 0 0 1 6 32" class="season-quad-arc autumn-arc" />
+            <!-- 4. 겨울 (270°~360° / 9시~12시) -->
+            <path d="M 6 32 A 26 26 0 0 1 32 6" class="season-quad-arc winter-arc" />
+
+            <!-- Quadrant Divider Ticks -->
+            <line x1="32" y1="7" x2="32" y2="13" class="clock-tick" />
+            <line x1="51" y1="32" x2="57" y2="32" class="clock-tick" />
+            <line x1="32" y1="51" x2="32" y2="57" class="clock-tick" />
+            <line x1="7" y1="32" x2="13" y2="32" class="clock-tick" />
+
+            <!-- Center Watermark Icon -->
+            <text x="32" y="38" text-anchor="middle" class="clock-center-icon" id="season-icon-text">🌸</text>
+
+            <!-- Season Hand (시침) -->
+            <line id="season-hand" x1="32" y1="32" x2="32" y2="12" class="clock-hand season-hand" />
+            <circle id="season-hand-tip" cx="32" cy="12" r="3" class="clock-hand-tip season-tip" />
+            <circle cx="32" cy="32" r="4" class="clock-center-dot" />
+          </svg>
+        </div>
+        <span class="clock-title-badge" id="season-label-text">🌸 봄</span>
+      </div>
+
+      <!-- 🕐 24시간 시계 (아침/점심/노을/새벽 4분할) -->
+      <div id="time-clock-widget" class="clock-widget" title="24시간 시계 (클릭하여 상단 고정 토글)">
+        <div class="clock-dial time-dial">
+          <svg class="clock-svg" viewBox="0 0 64 64" width="60" height="60">
+            <!-- Background Dial -->
+            <circle cx="32" cy="32" r="27" class="clock-bg" />
+
+            <!-- 4 Time Border Arcs (아침, 점심, 노을, 새벽) -->
+            <!-- 1. 아침 (0°~90° / 12시~3시) -->
+            <path d="M 32 6 A 26 26 0 0 1 58 32" class="time-quad-arc morning-arc" />
+            <!-- 2. 점심 (90°~180° / 3시~6시) -->
+            <path d="M 58 32 A 26 26 0 0 1 32 58" class="time-quad-arc day-arc" />
+            <!-- 3. 노을 (180°~270° / 6시~9시) -->
+            <path d="M 32 58 A 26 26 0 0 1 6 32" class="time-quad-arc sunset-arc" />
+            <!-- 4. 새벽 (270°~360° / 9시~12시) -->
+            <path d="M 6 32 A 26 26 0 0 1 32 6" class="time-quad-arc night-arc" />
+
+            <!-- Quadrant Divider Ticks -->
+            <line x1="32" y1="7" x2="32" y2="13" class="clock-tick" />
+            <line x1="51" y1="32" x2="57" y2="32" class="clock-tick" />
+            <line x1="32" y1="51" x2="32" y2="57" class="clock-tick" />
+            <line x1="7" y1="32" x2="13" y2="32" class="clock-tick" />
+
+            <!-- Center Watermark Icon -->
+            <text x="32" y="38" text-anchor="middle" class="clock-center-icon" id="time-icon-text">☀️</text>
+
+            <!-- Time Hand (시침) -->
+            <line id="time-hand" x1="32" y1="32" x2="32" y2="12" class="clock-hand time-hand" />
+            <circle id="time-hand-tip" cx="32" cy="12" r="3" class="clock-hand-tip time-tip" />
+            <circle cx="32" cy="32" r="4" class="clock-center-dot" />
+          </svg>
+        </div>
+        <span class="clock-title-badge" id="time-label-text">☀️ 아침</span>
+      </div>
+    </div>
+
     <!-- ⬅️ Screen Left Edge Dock Distance Indicator (화면 맨 왼쪽 모서리 밀착 부두막 방향/거리 탭) -->
     <div id="dock-distance-indicator" class="dock-distance-pill hidden">
       <span class="dock-dist-arrow">⬅️</span>
@@ -149,8 +227,8 @@
         </div>
       </div>
 
-      <!-- Bottom Main Bar with Active Bait Trigger -->
-      <div class="bottom-bar-main">
+      <!-- Bottom Main Bar with Active Bait Trigger (절반 박힌 뷰업 UI) -->
+      <div class="bottom-bar-main" id="bottom-bar-main">
         <button id="btn-toggle-bait-drawer" class="active-bait-pill" title="미끼 및 아이템 선택창 열기/닫기">
           <span class="bait-pill-label">장착 장비:</span>
           <span id="active-bait-icon" class="active-icon">🍞</span>
@@ -158,15 +236,6 @@
           <span id="active-bait-count" class="active-count">(무제한)</span>
           <span class="bait-pill-arrow">▲ 미끼/아이템</span>
         </button>
-        <div class="controls-hint">
-          <span>💡 <strong>[홀드]</strong> 캐스팅/릴링</span>
-          <span><strong>[A / D]</strong> 이동</span>
-          <span><strong>[E]</strong> 🎒 가방</span>
-          <span><strong>[U]</strong> 📖 도감</span>
-          <span><strong>[I]</strong> 🌐 멀티</span>
-          <span><strong>[O]</strong> 🎵 소리</span>
-          <span><strong>[R]</strong> 🏪 상점</span>
-        </div>
       </div>
     </footer>
 
@@ -937,6 +1006,6 @@
   </div>
 
   <!-- Entry Script (with cache-busting query) -->
-  <script type="module" src="src/main.js?v=7.3.0"></script>
+  <script type="module" src="src/main.js?v=7.4.0"></script>
 </body>
 </html>

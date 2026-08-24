@@ -4,9 +4,14 @@
 
 export class Environment {
   constructor() {
-    this.timeOfDay = 'day'; // 'day', 'sunset', 'night'
-    this.timeProgress = 0.15; // 0.0 to 1.0 (Day: 0.0~0.4, Sunset: 0.4~0.65, Night: 0.65~1.0)
-    this.cycleSpeed = 0.001; // Smooth natural cycle (~16.6 minutes for full day/night cycle)
+        this.timeOfDay = 'day'; // 'day', 'sunset', 'night'
+    this.timeProgress = 0.0; // 0.0 to 1.0 (4 quadrants: 0~0.25 아침, 0.25~0.5 점심, 0.5~0.75 노을, 0.75~1.0 새벽)
+    this.cycleSpeed = 1.0 / 720; // 12 minutes full cycle (3 minutes per phase / 90 degrees)
+
+    // Season system (120 minutes full annual cycle: 30 minutes per season / 90 degrees)
+    this.seasonProgress = 0.0; // 0~1 maps to spring→summer→autumn→winter
+    this.season = 'spring';
+    this.seasonSpeed = 1.0 / 7200; // 120 minutes full cycle (30 minutes per season) // Approx 1hr+ per full season cycle
 
     this.waterSurfaceY = 0;
     this.animTime = 0;
@@ -42,6 +47,10 @@ export class Environment {
           else if (this.timeProgress < 0.65) this.timeOfDay = 'sunset';
           else this.timeOfDay = 'night';
         }
+        if (typeof data.seasonProgress === 'number' && !isNaN(data.seasonProgress)) {
+          this.seasonProgress = Math.max(0, Math.min(1, data.seasonProgress));
+          this._updateSeason();
+        }
       }
     } catch (e) {
       console.warn("Failed to load environment time state:", e);
@@ -52,10 +61,34 @@ export class Environment {
     try {
       const data = {
         timeProgress: this.timeProgress,
-        timeOfDay: this.timeOfDay
+        timeOfDay: this.timeOfDay,
+        seasonProgress: this.seasonProgress,
+        season: this.season
       };
       localStorage.setItem('cozy_cat_environment_time_v1', JSON.stringify(data));
     } catch (e) {}
+  }
+
+    /** Sync this.season from this.seasonProgress (30min / 90deg per season) */
+  _updateSeason() {
+    if (this.seasonProgress < 0.25) this.season = 'spring';
+    else if (this.seasonProgress < 0.5) this.season = 'summer';
+    else if (this.seasonProgress < 0.75) this.season = 'autumn';
+    else this.season = 'winter';
+  }
+
+  /** Returns season display info */
+  getSeasonInfo() {
+    const icons = { spring: '🌸', summer: '☀️', autumn: '🍂', winter: '❄️' };
+    const labels = { spring: '봄', summer: '여름', autumn: '가을', winter: '겨울' };
+    const colors = { spring: '#34d399', summer: '#fb923c', autumn: '#d97706', winter: '#60a5fa' };
+    return {
+      season: this.season,
+      icon: icons[this.season] || '🌸',
+      label: labels[this.season] || '봄',
+      color: colors[this.season] || '#34d399',
+      progress: this.seasonProgress
+    };
   }
 
   initClouds() {
@@ -84,21 +117,24 @@ export class Environment {
     }
   }
 
-  getTimeInfo() {
-    let phase = '낮 ☀️';
-    let icon = '☀️';
-    if (this.timeProgress >= 0.38 && this.timeProgress < 0.65) {
-      phase = '노을 🌅';
-      icon = '🌅';
-    } else if (this.timeProgress >= 0.65 || this.timeProgress < 0.08) {
-      phase = '밤 🌌';
-      icon = '🌌';
+    getTimeInfo() {
+    // 4 Quadrants: 0~0.25 (0~3min) 아침, 0.25~0.5 (3~6min) 점심, 0.5~0.75 (6~9min) 노을, 0.75~1.0 (9~12min) 새벽
+    let phase, icon, color;
+    if (this.timeProgress < 0.25) {
+      phase = '아침'; icon = '☀️'; color = '#fbbf24'; this.timeOfDay = 'day';
+    } else if (this.timeProgress < 0.50) {
+      phase = '점심'; icon = '🌤️'; color = '#38bdf8'; this.timeOfDay = 'day';
+    } else if (this.timeProgress < 0.75) {
+      phase = '노을'; icon = '🌅'; color = '#f97316'; this.timeOfDay = 'sunset';
+    } else {
+      phase = '새벽'; icon = '🌙'; color = '#818cf8'; this.timeOfDay = 'night';
     }
     return {
       progress: this.timeProgress,
       timeOfDay: this.timeOfDay,
       phase,
-      icon
+      icon,
+      color
     };
   }
 
@@ -110,6 +146,10 @@ export class Environment {
     if (this.timeProgress < 0.38) this.timeOfDay = 'day';
     else if (this.timeProgress < 0.65) this.timeOfDay = 'sunset';
     else this.timeOfDay = 'night';
+
+    // Season progress (much slower)
+    this.seasonProgress = (this.seasonProgress + this.seasonSpeed * dt) % 1.0;
+    this._updateSeason();
 
     if (soundEngine) {
       soundEngine.setTimeOfDay(this.timeOfDay);

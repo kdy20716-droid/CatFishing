@@ -99,28 +99,45 @@ html, body {
   right: 20px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   pointer-events: none;
   z-index: 10;
 }
 
-.hud-left, .hud-right {
+/* Left HUD Panel (Collapsible to paw icon) */
+.hud-left {
   display: flex;
   align-items: center;
   gap: 10px;
+  height: 42px;
   pointer-events: auto;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Wooden Logo Badge */
-.game-logo {
+.hud-left .game-logo {
+  cursor: pointer;
+  user-select: none;
   display: flex;
   align-items: center;
   gap: 8px;
   background: linear-gradient(180deg, #fffdf5 0%, #fefae0 100%);
   padding: 6px 18px;
+  height: 40px;
+  box-sizing: border-box;
   border-radius: var(--radius-pill);
   border: 3px solid var(--wood-light);
   box-shadow: 0 4px 0 var(--wood-shadow), 0 8px 16px rgba(0,0,0,0.2);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex-shrink: 0;
+}
+
+.hud-left .game-logo:hover {
+  transform: scale(1.05);
+  border-color: #ff85a1;
+}
+
+.hud-left .game-logo:active {
+  transform: scale(0.95);
 }
 
 .logo-icon {
@@ -133,13 +150,127 @@ html, body {
   50% { transform: translateY(-3px) rotate(-6deg); }
 }
 
-.logo-text {
+.hud-left .logo-text {
   font-family: var(--font-cute);
   font-size: 24px;
   font-weight: 700;
   color: #d90429;
   letter-spacing: -0.5px;
   text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.8);
+  transition: max-width 0.3s ease, opacity 0.25s ease, margin 0.3s ease;
+  max-width: 220px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.hud-left .hud-stat-pill {
+  transition: max-width 0.35s ease, opacity 0.25s ease, transform 0.35s ease, margin 0.35s ease, padding 0.35s ease;
+  max-width: 240px;
+  height: 40px;
+  box-sizing: border-box;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* Left Panel Collapsed state */
+.hud-left.collapsed .logo-text {
+  max-width: 0;
+  opacity: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.hud-left.collapsed .game-logo {
+  padding: 6px 12px;
+  border-radius: 50%;
+}
+
+.hud-left.collapsed .hud-stat-pill {
+  max-width: 0;
+  opacity: 0;
+  margin: 0;
+  padding: 0;
+  border-width: 0;
+  transform: translateX(-30px);
+  pointer-events: none;
+}
+
+/* Right HUD Panel (Collapsible with toggle arrow) */
+.hud-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  pointer-events: auto;
+}
+
+.hud-right-menu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 2px;
+  transition: max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, transform 0.35s ease;
+  max-width: 650px;
+  overflow: hidden;
+}
+
+.hud-btn {
+  height: 40px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hud-panel-arrow-btn {
+  width: 38px;
+  height: 40px;
+  box-sizing: border-box;
+  border-radius: var(--radius-pill);
+  border: 3px solid var(--wood-light);
+  background: linear-gradient(180deg, #fffdf5 0%, #fefae0 100%);
+  color: var(--wood-dark);
+  font-family: var(--font-main);
+  font-weight: 900;
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 0 var(--wood-shadow), 0 6px 12px rgba(0,0,0,0.15);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex-shrink: 0;
+}
+
+.hud-panel-arrow-btn:hover {
+  transform: scale(1.08);
+  background: linear-gradient(180deg, #ffffff 0%, #fff0f3 100%);
+  border-color: #ff85a1;
+}
+
+.hud-panel-arrow-btn:active {
+  transform: scale(0.94);
+}
+
+/* Right Panel Collapsed State */
+.hud-right.collapsed .hud-right-menu {
+  max-width: 0;
+  opacity: 0;
+  transform: translateX(30px);
+  pointer-events: none;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.hud-right.collapsed #btn-collapse-right {
+  display: none !important;
+}
+
+.hud-right.collapsed #btn-expand-right {
+  display: flex !important;
 }
 
 /* Stat Pills */
@@ -397,19 +528,208 @@ html, body {
 }
 
 /* =========================================================
-   Bottom Tackle Box (Expandable Bait Drawer & Dock Pill)
+   Bottom Tackle Box (Peekup Equipment Widget)
    ========================================================= */
 #hud-bottom {
   position: absolute;
-  bottom: 16px;
+  bottom: 0;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 0;
   z-index: 15;
   pointer-events: none;
+}
+
+/* ─────────────────────────────────────────────────────────
+   Active Bait Pill — "peek" state: half-buried at bottom
+   ─────────────────────────────────────────────────────── */
+.bottom-bar-main {
+  pointer-events: auto;
+  transform: translateY(calc(100% - 24px)); /* half-buried */
+  opacity: 0.6;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.22s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.bottom-bar-main:hover,
+.bottom-bar-main.peek-open {
+  transform: translateY(-8px);
+  opacity: 1;
+}
+
+/* Active Bait Pill Trigger Button */
+.active-bait-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, #ffffff 0%, #fefae0 100%);
+  padding: 8px 22px;
+  border-radius: 24px 24px 0 0;
+  border: 3px solid var(--wood-mid);
+  border-bottom: none;
+  box-shadow: 0 -4px 0 var(--wood-shadow), 0 -8px 20px rgba(0,0,0,0.2);
+  cursor: pointer;
+  font-family: var(--font-main);
+  transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.active-bait-pill:hover {
+  border-color: #ff85a1;
+}
+
+.active-bait-pill:active {
+  transform: translateY(2px);
+}
+
+/* ─────────────────────────────────────────────────────────
+   Clock Widgets (Don't Starve style) — 4-Quadrant Border & Hand
+   ─────────────────────────────────────────────────────── */
+.clock-widgets-container {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  z-index: 25;
+  pointer-events: none;
+}
+
+.clock-widget {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+  transform: translateY(-46%);
+  opacity: 0.55;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+}
+
+.clock-widget:hover {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.clock-widget.clock-docked {
+  transform: translateY(12px);
+  opacity: 1;
+}
+
+.clock-dial {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffdf7 40%, #fcf7e8 78%, #e2ceb1 100%);
+  border: 3.5px solid #6b4423;
+  box-shadow: 0 4px 0 #4a2c11, 0 8px 20px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.clock-bg {
+  fill: #faf6eb;
+  stroke: #d8c3a5;
+  stroke-width: 1.2;
+}
+
+/* 4 Season Border Arcs */
+.season-quad-arc {
+  fill: none;
+  stroke-width: 5;
+  stroke-linecap: butt;
+}
+
+.spring-arc { stroke: #34d399; }  /* 봄: 화사한 새싹 초록 */
+.summer-arc { stroke: #fb923c; }  /* 여름: 따뜻한 썸머 오렌지 */
+.autumn-arc { stroke: #d97706; }  /* 가을: 깊은 단풍빛 브라운 */
+.winter-arc { stroke: #60a5fa; }  /* 겨울: 얼음빛 스카이 블루 */
+
+/* 4 Time Border Arcs */
+.time-quad-arc {
+  fill: none;
+  stroke-width: 5;
+  stroke-linecap: butt;
+}
+
+.morning-arc { stroke: #fbbf24; } /* 아침: 밝은 아침 햇살 노랑 */
+.day-arc     { stroke: #38bdf8; } /* 점심: 맑고 푸른 점심 하늘 */
+.sunset-arc  { stroke: #f97316; } /* 노을: 붉게 물든 저녁 노을 */
+.night-arc   { stroke: #818cf8; } /* 새벽: 별빛 가득한 짙은 밤 */
+
+/* Quadrant Ticks */
+.clock-tick {
+  stroke: #6b4423;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+.clock-center-icon {
+  font-size: 22px;
+  dominant-baseline: central;
+  opacity: 0.35;
+}
+
+/* Antique Clock Hands */
+.clock-hand {
+  stroke-linecap: round;
+  transition: all 0.15s ease-out;
+}
+
+.season-hand {
+  stroke: #4a2c11;
+  stroke-width: 3.8;
+}
+
+.time-hand {
+  stroke: #4a2c11;
+  stroke-width: 3.8;
+}
+
+.clock-hand-tip {
+  transition: all 0.15s ease-out;
+}
+
+.season-tip {
+  fill: #d90429;
+  stroke: #4a2c11;
+  stroke-width: 1.5;
+}
+
+.time-tip {
+  fill: #f59e0b;
+  stroke: #4a2c11;
+  stroke-width: 1.5;
+}
+
+.clock-center-dot {
+  fill: #6b4423;
+  stroke: #fefae0;
+  stroke-width: 1.5;
+}
+
+.clock-title-badge {
+  font-family: var(--font-cute);
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  background: rgba(74, 44, 17, 0.9);
+  padding: 2px 10px;
+  border-radius: 12px;
+  border: 1.5px solid #d4a373;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
 }
 
 /* Expandable Bait Drawer (Slides up when clicked) */
@@ -2085,9 +2405,11 @@ html, body {
   display: flex;
   align-items: center;
   gap: 8px;
+  height: 40px;
+  box-sizing: border-box;
   background: linear-gradient(180deg, #ffffff 0%, #fdfbf7 100%);
-  border: 2.5px solid var(--wood-light);
-  padding: 4px 12px 4px 6px;
+  border: 3px solid var(--wood-light);
+  padding: 0 12px 0 6px;
   border-radius: var(--radius-pill);
   box-shadow: 0 4px 0 var(--wood-shadow), 0 8px 14px rgba(0,0,0,0.15);
   cursor: pointer;

@@ -1,9 +1,9 @@
 /**
  * HUD & In-Game UI Overlay Manager
  */
-import { BAITS } from '../systems/Economy.js?v=7.3.0';
-import { Fish } from '../entities/Fish.js?v=7.3.0';
-import { getBaitIconSvg } from './BaitIcons.js?v=7.3.0';
+import { BAITS } from '../systems/Economy.js?v=7.4.0';
+import { Fish } from '../entities/Fish.js?v=7.4.0';
+import { getBaitIconSvg } from './BaitIcons.js?v=7.4.0';
 
 export class HUD {
   constructor(economy, encyclopedia, soundEngine, environment = null) {
@@ -361,13 +361,9 @@ export class HUD {
       }
     }
 
-    // 6. Update Time Dial Widget
+    // 6. Update Clock Widgets (Season + Time)
     if (environment) {
-      const timeInfo = environment.getTimeInfo();
-      const timeIconEl = document.getElementById('hud-time-icon');
-      const timeTextEl = document.getElementById('hud-time-text');
-      if (timeIconEl) timeIconEl.innerText = timeInfo.icon;
-      if (timeTextEl) timeTextEl.innerText = timeInfo.phase;
+      this._updateClockWidgets(environment);
     }
 
     // 7. ⬅️ Update Dock Distance Indicator (부두막 방향 & 거리 알림: 50m 초과 시 표시, 50m 이내 접근 시 숨김)
@@ -632,5 +628,121 @@ export class HUD {
       notif.classList.add('fade-out');
       setTimeout(() => notif.remove(), 400);
     }, 2500);
+  }
+
+  // Clock widget SVG arc helper + updater
+  _describeArc(cx, cy, r, startAngle, endAngle) {
+    const toRad = (deg) => (deg - 90) * Math.PI / 180;
+    const s = toRad(startAngle);
+    const e = toRad(endAngle);
+    const x1 = cx + r * Math.cos(s);
+    const y1 = cy + r * Math.sin(s);
+    const x2 = cx + r * Math.cos(e);
+    const y2 = cy + r * Math.sin(e);
+    const large = (endAngle - startAngle) > 180 ? 1 : 0;
+    return `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`;
+  }
+
+  _updateClockWidgets(environment) {
+    // 1. Season Clock (4 Quadrants: 0° 봄, 90° 여름, 180° 가을, 270° 겨울)
+    const seasonInfo = environment.getSeasonInfo();
+    const seasonIconText = document.getElementById('season-icon-text');
+    const seasonLabelText = document.getElementById('season-label-text');
+    const seasonHand = document.getElementById('season-hand');
+    const seasonHandTip = document.getElementById('season-hand-tip');
+
+    if (seasonIconText) seasonIconText.textContent = seasonInfo.icon;
+    if (seasonLabelText) seasonLabelText.textContent = `${seasonInfo.icon} ${seasonInfo.label}`;
+
+    // Rotate Season Hand (0 ~ 360 deg)
+    if (seasonHand && seasonHandTip) {
+      const seasonDeg = seasonInfo.progress * 360;
+      const rad = seasonDeg * Math.PI / 180;
+      const hx = 32 + 20 * Math.sin(rad);
+      const hy = 32 - 20 * Math.cos(rad);
+      seasonHand.setAttribute('x2', hx.toFixed(1));
+      seasonHand.setAttribute('y2', hy.toFixed(1));
+      seasonHandTip.setAttribute('cx', hx.toFixed(1));
+      seasonHandTip.setAttribute('cy', hy.toFixed(1));
+    }
+
+    // 2. 24h Time Clock (4 Quadrants: 0° 아침, 90° 점심, 180° 노을, 270° 새벽)
+    const timeInfo = environment.getTimeInfo();
+    const timeIconText = document.getElementById('time-icon-text');
+    const timeLabelText = document.getElementById('time-label-text');
+    const timeHand = document.getElementById('time-hand');
+    const timeHandTip = document.getElementById('time-hand-tip');
+
+    if (timeIconText) timeIconText.textContent = timeInfo.icon;
+    if (timeLabelText) timeLabelText.textContent = `${timeInfo.icon} ${timeInfo.phase}`;
+
+    // Rotate Time Hand (0 ~ 360 deg)
+    if (timeHand && timeHandTip) {
+      const timeDeg = timeInfo.progress * 360;
+      const rad = timeDeg * Math.PI / 180;
+      const hx = 32 + 20 * Math.sin(rad);
+      const hy = 32 - 20 * Math.cos(rad);
+      timeHand.setAttribute('x2', hx.toFixed(1));
+      timeHand.setAttribute('y2', hy.toFixed(1));
+      timeHandTip.setAttribute('cx', hx.toFixed(1));
+      timeHandTip.setAttribute('cy', hy.toFixed(1));
+    }
+  }
+
+  initPanelToggles() {
+    // Left panel: click logo to toggle collapse
+    const leftPanel = document.getElementById('hud-left-panel');
+    const leftToggleBtn = document.getElementById('btn-toggle-left-panel');
+    if (leftToggleBtn && leftPanel) {
+      leftToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        leftPanel.classList.toggle('collapsed');
+      });
+    }
+
+    // Right panel: collapse / expand buttons
+    const rightPanel = document.getElementById('hud-right-panel');
+    const collapseBtn = document.getElementById('btn-collapse-right');
+    const expandBtn = document.getElementById('btn-expand-right');
+    if (collapseBtn && expandBtn && rightPanel) {
+      collapseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        rightPanel.classList.add('collapsed');
+      });
+      expandBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        rightPanel.classList.remove('collapsed');
+      });
+    }
+
+    // Clock widgets: click to toggle docked/undocked on top center
+    const seasonClock = document.getElementById('season-clock-widget');
+    const timeClock = document.getElementById('time-clock-widget');
+    const toggleClocksDock = () => {
+      const isDocked = seasonClock?.classList.contains('clock-docked');
+      if (isDocked) {
+        seasonClock?.classList.remove('clock-docked');
+        timeClock?.classList.remove('clock-docked');
+      } else {
+        seasonClock?.classList.add('clock-docked');
+        timeClock?.classList.add('clock-docked');
+      }
+    };
+    if (seasonClock) seasonClock.addEventListener('click', toggleClocksDock);
+    if (timeClock) timeClock.addEventListener('click', toggleClocksDock);
+
+    // Bait pill peekup: keep expanded when bait drawer is open
+    const baitDrawer = document.getElementById('bait-drawer');
+    const bottomBar = document.querySelector('.bottom-bar-main');
+    if (baitDrawer && bottomBar) {
+      const observer = new MutationObserver(() => {
+        if (baitDrawer.classList.contains('open')) {
+          bottomBar.classList.add('peek-open');
+        } else {
+          bottomBar.classList.remove('peek-open');
+        }
+      });
+      observer.observe(baitDrawer, { attributes: true, attributeFilter: ['class'] });
+    }
   }
 }

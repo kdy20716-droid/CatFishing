@@ -53,6 +53,8 @@ export class CloudSave {
     this.isInitialized = false;
     this.isSyncing = false;
     this.lastSavedTime = null;
+    this.isQuotaExhausted = false;
+    this.quotaNotified = false;
 
     // Debounce timer for auto cloud saves
     this.saveDebounceTimer = null;
@@ -474,8 +476,8 @@ export class CloudSave {
     // 1. Save to localStorage backup
     localStorage.setItem(`cozy_cat_cloud_save_${this.currentUser.uid}`, JSON.stringify(saveData));
 
-    // 2. Save to Firestore if available
-    if (this.db && !this.currentUser.isSimulated) {
+    // 2. Save to Firestore if available and quota not exceeded
+    if (this.db && !this.currentUser.isSimulated && !this.isQuotaExhausted) {
       try {
         const cleanPayload = JSON.parse(JSON.stringify(saveData));
         const userDocRef = doc(this.db, 'users', this.currentUser.uid, 'saveData', 'slot1');
@@ -485,7 +487,16 @@ export class CloudSave {
         }, { merge: true });
         console.log("☁️ Firestore Cloud Auto-Save successful!");
       } catch (e) {
-        console.warn("Firestore save fallback to local cloud slot:", e.message);
+        if (e.code === 'resource-exhausted' || (e.message && e.message.includes('Quota exceeded'))) {
+          this.isQuotaExhausted = true;
+          console.warn("⚠️ Firebase Daily Quota Exceeded. Safely operating in Local-Storage mode.");
+          if (!this.quotaNotified && this.hud) {
+            this.quotaNotified = true;
+            this.hud.showNotification('☁️ 일일 Firebase 무료 할당량이 소진되어 로컬 백업 모드로 안전하게 저장 중입니다.', '💾');
+          }
+        } else {
+          console.warn("Firestore save fallback to local cloud slot:", e.message);
+        }
       }
     }
 
