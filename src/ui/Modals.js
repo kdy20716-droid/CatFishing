@@ -1,10 +1,10 @@
 /**
  * Interactive Modals (Shop, Fish Encyclopedia, Aquarium Controls, Settings, Guide)
  */
-import { RODS, BOATS, BAITS, HATS, PASSIVE_UPGRADES, CAT_SKINS } from '../systems/Economy.js?v=6.2.0';
-import { FISH_SPECIES } from '../systems/Encyclopedia.js?v=6.2.0';
-import { Fish } from '../entities/Fish.js?v=6.2.0';
-import { getBaitIconSvg } from './BaitIcons.js?v=6.2.0';
+import { RODS, BOATS, BAITS, HATS, PASSIVE_UPGRADES, CAT_SKINS } from '../systems/Economy.js?v=6.8.0';
+import { FISH_SPECIES } from '../systems/Encyclopedia.js?v=6.8.0';
+import { Fish } from '../entities/Fish.js?v=6.8.0';
+import { getBaitIconSvg } from './BaitIcons.js?v=6.8.0';
 
 export class Modals {
   constructor(economy, encyclopedia, aquarium, soundEngine, hud, cloudSave = null) {
@@ -142,14 +142,32 @@ export class Modals {
         return;
       }
       this.sound.playCoin();
-      if (this.cloudSave) {
-        await this.cloudSave.updateNickname(newName);
-      }
+
+      // 모달창 즉시 닫기
+      if (this.nicknameModal) this.nicknameModal.classList.remove('visible');
+      if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
+
+      // 로컬 스토리지 즉시 동기화
+      localStorage.setItem('cozy_cat_player_nickname', newName);
+
+      // 멀티플레이어 닉네임 즉시 갱신
       if (this.multiplayer) {
         this.multiplayer.playerName = newName;
         this.multiplayer.updateMultiplayerUI();
       }
-      if (this.nicknameModal) this.nicknameModal.classList.remove('visible');
+
+      // 우측 상단 프로필 뱃지 닉네임 텍스트 즉시 갱신
+      const userNameEl = document.getElementById('user-name');
+      if (userNameEl) userNameEl.innerText = newName;
+
+      try {
+        if (this.cloudSave) {
+          await this.cloudSave.updateNickname(newName);
+        }
+      } catch (e) {
+        console.warn("Cloud nickname sync failed:", e);
+      }
+
       this.hud.showNotification(`🎉 닉네임이 [${newName}] (으)로 변경되었습니다!`, '✏️');
     };
 
@@ -1694,6 +1712,10 @@ export class Modals {
 
   renderShopContent() {
     const container = document.getElementById('shop-items-container');
+    const goldEl = document.getElementById('shop-gold-amount');
+    if (goldEl) {
+      goldEl.innerText = `${this.economy.gold.toLocaleString()} G`;
+    }
     if (!container) return;
     container.innerHTML = '';
 

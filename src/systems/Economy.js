@@ -569,6 +569,58 @@ export const CAT_SKINS = [
       innerEar: '#c9184a',
       paw: '#ff4d6d'
     }
+  },
+  {
+    id: 'skin_mint',
+    name: '애플민트 냥이',
+    icon: '🍃',
+    desc: '상큼하고 청량한 민트빛 털과 에메랄드 무늬의 냥이',
+    colors: {
+      body: '#a7f3d0',
+      stripe: '#34d399',
+      belly: '#ecfdf5',
+      innerEar: '#6ee7b7',
+      paw: '#6ee7b7'
+    }
+  },
+  {
+    id: 'skin_black',
+    name: '흑요석 깜냥이',
+    icon: '🐈‍⬛',
+    desc: '윤기 나는 밤하늘 흑단 털을 가진 신비로운 고양이',
+    colors: {
+      body: '#1e293b',
+      stripe: '#0f172a',
+      belly: '#334155',
+      innerEar: '#f43f5e',
+      paw: '#1e293b'
+    }
+  },
+  {
+    id: 'skin_lavender',
+    name: '라벤더 요정 냥이',
+    icon: '💜',
+    desc: '몽환적이고 은은한 파스텔 보랏빛 라벤더 냥이',
+    colors: {
+      body: '#e9d5ff',
+      stripe: '#c084fc',
+      belly: '#faf5ff',
+      innerEar: '#f472b6',
+      paw: '#d8b4fe'
+    }
+  },
+  {
+    id: 'skin_golden',
+    name: '황금 럭셔리 냥이',
+    icon: '👑',
+    desc: '황금빛 샴페인 오라와 부를 부르는 영롱한 냥이',
+    colors: {
+      body: '#fde047',
+      stripe: '#eab308',
+      belly: '#fefce8',
+      innerEar: '#fb7185',
+      paw: '#facc15'
+    }
   }
 ];
 
@@ -588,7 +640,11 @@ export class Economy {
     this.ownedHats = ['hat_none'];
 
     this.catSkinId = 'skin_orange';
-    this.ownedSkins = ['skin_orange', 'skin_mackerel', 'skin_calico', 'skin_tuxedo', 'skin_siamese', 'skin_white', 'skin_pink'];
+    this.ownedSkins = [
+      'skin_orange', 'skin_mackerel', 'skin_calico', 'skin_tuxedo', 
+      'skin_siamese', 'skin_white', 'skin_pink', 'skin_mint', 
+      'skin_black', 'skin_lavender', 'skin_golden'
+    ];
 
     this.currentBaitId = 'bread';
     this.useRocket = false;
@@ -635,9 +691,11 @@ export class Economy {
         this.currentBoatId = data.currentBoatId || 'boat_raft';
         this.ownedBoats = data.ownedBoats || ['boat_raft'];
         this.currentHatId = data.currentHatId || 'hat_none';
-        this.ownedHats = data.ownedHats || ['hat_none'];
         this.catSkinId = data.catSkinId || 'skin_orange';
-        this.ownedSkins = data.ownedSkins || ['skin_orange', 'skin_mackerel', 'skin_calico', 'skin_tuxedo', 'skin_siamese', 'skin_white', 'skin_pink'];
+        const allSkinIds = CAT_SKINS.map(s => s.id);
+        this.ownedSkins = Array.isArray(data.ownedSkins)
+          ? Array.from(new Set([...data.ownedSkins, ...allSkinIds]))
+          : allSkinIds;
         this.currentBaitId = data.currentBaitId || 'bread';
         this.useRocket = data.useRocket || false;
         this.hookCount = data.hookCount || 1;

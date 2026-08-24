@@ -44,7 +44,7 @@ export class Input {
         return;
       }
 
-      if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+      if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code) || e.key === 'Tab') {
         e.preventDefault();
       }
       if (!this.keys[e.code]) {
@@ -152,6 +152,10 @@ export class Input {
 
   isReeling() {
     return this.isMouseDown || this.keys['Space'] || this.keys['KeyW'] || this.keys['ArrowUp'];
+  }
+
+  isKeyHeld(code) {
+    return !!this.keys[code];
   }
 
   isKeyJustPressed(code) {

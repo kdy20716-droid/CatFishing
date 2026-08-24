@@ -616,7 +616,7 @@ export class Multiplayer {
     }
   }
 
-  draw(ctx, localCat = null, localRod = null) {
+  draw(ctx, localCat = null, localRod = null, showMyNametag = false) {
     // 1. Draw My Chat Bubble if active
     if (localCat && this.myChatBubble && this.myChatBubble.timer > 0) {
       this.drawChatBubble(ctx, localCat.pos.x, localCat.pos.y - 75, this.myChatBubble.text, true);
@@ -716,8 +716,8 @@ export class Multiplayer {
       }
     });
 
-    // 3. Draw My Hook Name Tag when depth >= 25m (Multiplayer only)
-    if (localCat && localRod && localRod.state === 'FISHING' && localRod.isSubmerged) {
+    // 3. Draw My Hook Name Tag when depth >= 25m (Only when Tab key / nametag timer is active)
+    if (showMyNametag && localCat && localRod && localRod.state === 'FISHING' && localRod.isSubmerged) {
       const myDepthMeters = (localRod.hookPos.y - localCat.waterY) / 20;
       if (myDepthMeters >= 25) {
         this.drawHookNameTag(ctx, localRod.hookPos.x, localRod.hookPos.y - 12, `${this.playerName} (나)`, true);

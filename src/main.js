@@ -1,21 +1,21 @@
 /**
  * Master Game Controller & Loop
  */
-import { Vector2 } from './engine/Vector.js?v=6.2.0';
-import { Camera } from './engine/Camera.js?v=6.2.0';
-import { Input } from './engine/Input.js?v=6.2.0';
-import { SoundEngine } from './audio.js?v=6.2.0';
-import { Economy } from './systems/Economy.js?v=6.2.0';
-import { Encyclopedia, FISH_SPECIES } from './systems/Encyclopedia.js?v=6.2.0';
-import { Environment } from './systems/Environment.js?v=6.2.0';
-import { Aquarium } from './systems/Aquarium.js?v=6.2.0';
-import { Cat } from './entities/Cat.js?v=6.2.0';
-import { Rod } from './entities/Rod.js?v=6.2.0';
-import { Fish } from './entities/Fish.js?v=6.2.0';
-import { HUD } from './ui/HUD.js?v=6.2.0';
-import { Modals } from './ui/Modals.js?v=6.2.0';
-import { CloudSave } from './systems/CloudSave.js?v=6.2.0';
-import { Multiplayer } from './systems/Multiplayer.js?v=6.2.0';
+import { Vector2 } from './engine/Vector.js?v=6.8.0';
+import { Camera } from './engine/Camera.js?v=6.8.0';
+import { Input } from './engine/Input.js?v=6.8.0';
+import { SoundEngine } from './audio.js?v=6.8.0';
+import { Economy } from './systems/Economy.js?v=6.8.0';
+import { Encyclopedia, FISH_SPECIES } from './systems/Encyclopedia.js?v=6.8.0';
+import { Environment } from './systems/Environment.js?v=6.8.0';
+import { Aquarium } from './systems/Aquarium.js?v=6.8.0';
+import { Cat } from './entities/Cat.js?v=6.8.0';
+import { Rod } from './entities/Rod.js?v=6.8.0';
+import { Fish } from './entities/Fish.js?v=6.8.0';
+import { HUD } from './ui/HUD.js?v=6.8.0';
+import { Modals } from './ui/Modals.js?v=6.8.0';
+import { CloudSave } from './systems/CloudSave.js?v=6.8.0';
+import { Multiplayer } from './systems/Multiplayer.js?v=6.8.0';
 
 class Game {
   constructor() {
@@ -63,6 +63,7 @@ class Game {
 
     this.hasTriggeredDockMerchant = false;
     this.fishSaveTimer = 0;
+    this.tabNametagTimer = 0;
 
     // Initial camera placement (focus on cat's persisted position)
     this.camera.pos.set(this.cat.pos.x, this.cat.pos.y);
@@ -413,6 +414,11 @@ class Game {
         return;
       }
 
+      // 🏷️ [Tab] 키: 내 머리 위 닉네임 일시 표시 (3.5초)
+      if (code === 'Tab') {
+        this.tabNametagTimer = 3.5;
+      }
+
       // 🎒 [E] 키: 내 인벤토리 (가방) 열기 / 닫기 토글
       if (code === 'KeyE') {
         this.modals.toggleInventory();
@@ -518,6 +524,9 @@ class Game {
 
   update(dt) {
     this.input.update(dt);
+    if (this.tabNametagTimer > 0) {
+      this.tabNametagTimer -= dt;
+    }
     this.environment.update(dt, this.sound);
 
     // Notify player on night arrival (Shiny Fever Time!)
@@ -628,15 +637,16 @@ class Game {
     this.drawSonarEffect(this.ctx, bounds);
 
     // 6. Draw Other Remote Players & Chat Bubbles
+    const showMyNametag = this.input.isKeyHeld('Tab') || this.tabNametagTimer > 0;
     if (this.multiplayer) {
-      this.multiplayer.draw(this.ctx, this.cat, this.rod);
+      this.multiplayer.draw(this.ctx, this.cat, this.rod, showMyNametag);
     }
 
-    // 7. Draw Local Cat & Boat (with active player nickname tag)
+    // 7. Draw Local Cat & Boat (Only show local nickname tag when Tab is pressed / active)
     const localPlayerName = this.cloudSave?.currentUser?.displayName 
       || localStorage.getItem('cozy_cat_player_nickname') 
       || (this.multiplayer ? this.multiplayer.playerName : '냥이 집사');
-    this.cat.draw(this.ctx, localPlayerName);
+    this.cat.draw(this.ctx, showMyNametag ? localPlayerName : null);
 
     // 8. Draw Local Fishing Line, Bobber & Hook
     this.rod.draw(this.ctx, this.cat);

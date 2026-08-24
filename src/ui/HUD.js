@@ -1,9 +1,9 @@
 /**
  * HUD & In-Game UI Overlay Manager
  */
-import { BAITS } from '../systems/Economy.js?v=6.2.0';
-import { Fish } from '../entities/Fish.js?v=6.2.0';
-import { getBaitIconSvg } from './BaitIcons.js?v=6.2.0';
+import { BAITS } from '../systems/Economy.js?v=6.8.0';
+import { Fish } from '../entities/Fish.js?v=6.8.0';
+import { getBaitIconSvg } from './BaitIcons.js?v=6.8.0';
 
 export class HUD {
   constructor(economy, encyclopedia, soundEngine, environment = null) {
@@ -312,15 +312,16 @@ export class HUD {
     });
     this.updateActiveBaitPill();
 
-    // 3. Update Depth Display (0m ~ 500m+)
+    // 3. Update Depth Display (0m ~ 750m)
     if (this.depthDisplay) {
       if (rod.state === 'FISHING' && rod.isSubmerged) {
         const depthMeters = Math.max(0, Math.round((rod.hookPos.y - rod.waterY) / 20 * 10) / 10);
         let zoneText = '표층 바다 🌊';
         if (depthMeters >= 30 && depthMeters < 100) zoneText = '중층 바다 🐬';
         else if (depthMeters >= 100 && depthMeters < 250) zoneText = '심해 어둠층 🔦';
-        else if (depthMeters >= 250 && depthMeters < 400) zoneText = '심연의 해구 🪐';
-        else if (depthMeters >= 400) zoneText = '미지의 초심연 👑';
+        else if (depthMeters >= 250 && depthMeters < 450) zoneText = '심연의 해구 🪐';
+        else if (depthMeters >= 450 && depthMeters < 650) zoneText = '미지의 초심연 🌌';
+        else if (depthMeters >= 650) zoneText = '태초의 해저 바닥 👑';
 
         this.depthDisplay.innerHTML = `수심 <strong>${depthMeters.toFixed(1)}m</strong> <small>(${zoneText})</small>`;
         this.depthDisplay.classList.add('visible');

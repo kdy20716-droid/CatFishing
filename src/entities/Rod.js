@@ -585,13 +585,13 @@ export class Rod {
   updateHookSlots() {
     this.hooks.forEach(h => {
       h.pos.x = this.hookPos.x + h.offsetX;
-      h.pos.y = Math.min(10080, this.hookPos.y + h.offsetY);
+      h.pos.y = Math.min(15080, this.hookPos.y + h.offsetY);
       if (h.hookedFish) {
         const mouthOffset = (typeof h.hookedFish.getMouthOffset === 'function') 
           ? h.hookedFish.getMouthOffset() 
           : 20;
         h.hookedFish.pos.x = h.pos.x - h.hookedFish.facing * mouthOffset;
-        h.hookedFish.pos.y = Math.min(10070, h.pos.y);
+        h.hookedFish.pos.y = Math.min(15070, h.pos.y);
       }
     });
   }
