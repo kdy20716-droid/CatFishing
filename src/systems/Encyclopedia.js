@@ -999,6 +999,11 @@ export class Encyclopedia {
     return FISH_SPECIES.find(f => f.id === fishId);
   }
 
+  isDiscovered(fishId) {
+    if (!fishId || !this.records) return false;
+    return Boolean(this.records[fishId] && this.records[fishId].caughtCount > 0);
+  }
+
   getRecord(fishId) {
     return this.records[fishId] || { caughtCount: 0, shinyCount: 0, maxSize: 0, firstCaughtDate: null };
   }

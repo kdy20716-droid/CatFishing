@@ -863,6 +863,24 @@
       </div>
     </div>
 
+        <!-- 🎁 Coupon Result Modal (지급 완료 / 잘못된 코드 안내 모달) -->
+    <div id="coupon-result-modal" class="modal-backdrop">
+      <div class="modal-window auth-window" style="max-width: 380px; text-align: center; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">
+        <div class="modal-header" id="coupon-result-header" style="background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%); justify-content: center; padding: 14px 18px;">
+          <h2 id="coupon-result-title" style="color: #92400e; font-size: 18px; margin: 0;">🎉 보상 지급 완료!</h2>
+        </div>
+        <div class="auth-content" style="padding: 24px 20px; background: #fffdf5;">
+          <div id="coupon-result-icon" style="font-size: 52px; margin-bottom: 12px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));">💰</div>
+          <div id="coupon-result-msg" style="font-size: 15px; font-weight: 700; color: #1e293b; line-height: 1.6; margin-bottom: 22px;">
+            골드가 지급되었습니다!
+          </div>
+          <button id="btn-coupon-result-ok" class="btn-primary" style="width: 100%; padding: 11px; font-size: 15px; font-weight: 800; border-radius: 12px; background: linear-gradient(180deg, #f59e0b, #d97706); border-color: #b45309; box-shadow: 0 4px 0 #b45309;">
+            확인
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Wardrobe (Cat Skin & Hat Customization) Modal -->
     <div id="wardrobe-modal" class="modal-backdrop">
       <div class="modal-window wardrobe-window">

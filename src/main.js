@@ -710,7 +710,7 @@ class Game {
 
         // Depth & distance text tag
         const distM = Math.round(dist / 20);
-        const isDiscovered = this.encyclopedia.isDiscovered(fish.data.id);
+        const isDiscovered = (this.encyclopedia && typeof this.encyclopedia.isDiscovered === 'function') ? this.encyclopedia.isDiscovered(fish.data.id) : Boolean(this.encyclopedia?.records?.[fish.data.id]?.caughtCount > 0);
         const displayName = isDiscovered ? fish.data.name : '???';
 
         ctx.font = 'bold 11px sans-serif';
@@ -742,7 +742,7 @@ class Game {
     const distWorld = originWorld.dist ? originWorld.dist(boss.pos) : Math.hypot(originWorld.x - boss.pos.x, originWorld.y - boss.pos.y);
     const distM = Math.round(distWorld / 20);
 
-    const isBossDiscovered = this.encyclopedia.isDiscovered(boss.data.id);
+    const isBossDiscovered = (this.encyclopedia && typeof this.encyclopedia.isDiscovered === 'function') ? this.encyclopedia.isDiscovered(boss.data.id) : Boolean(this.encyclopedia?.records?.[boss.data.id]?.caughtCount > 0);
     const bossDisplayName = isBossDiscovered ? boss.data.name : '???';
 
     // Convert to Screen coordinates

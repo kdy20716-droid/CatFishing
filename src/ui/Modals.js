@@ -30,6 +30,7 @@ export class Modals {
     this.fishMarketModal = document.getElementById('fish-market-modal');
     this.nicknameModal = document.getElementById('nickname-modal');
     this.couponModal = document.getElementById('coupon-modal');
+    this.couponResultModal = document.getElementById('coupon-result-modal');
     this.inventoryModal = document.getElementById('inventory-modal');
     this.pauseModal = document.getElementById('pause-modal');
     this.userDropdownMenu = document.getElementById('user-dropdown-menu');
@@ -187,17 +188,49 @@ export class Modals {
       });
     }
 
-    // 🎟️ Secret Code / Coupon Modal Listeners (SHA-256 Hash Validation)
+        // 🎟️ Secret Code / Coupon Modal Listeners (SHA-256 Hash Validation)
     const btnOpenCoupon = document.getElementById('btn-open-coupon-modal');
     const inputCouponCode = document.getElementById('input-coupon-code');
     const btnCouponSubmit = document.getElementById('btn-coupon-submit');
     const btnCouponCancel = document.getElementById('btn-coupon-cancel');
     const couponMsg = document.getElementById('coupon-message');
+    const btnResultOk = document.getElementById('btn-coupon-result-ok');
+
+    const showCouponResult = (isSuccess, title, msg, icon = '🎁') => {
+      const modal = document.getElementById('coupon-result-modal');
+      const headerEl = document.getElementById('coupon-result-header');
+      const titleEl = document.getElementById('coupon-result-title');
+      const iconEl = document.getElementById('coupon-result-icon');
+      const msgEl = document.getElementById('coupon-result-msg');
+      const okBtn = document.getElementById('btn-coupon-result-ok');
+
+      if (titleEl) titleEl.innerText = title;
+      if (iconEl) iconEl.innerText = icon;
+      if (msgEl) msgEl.innerHTML = msg;
+
+      if (headerEl) {
+        headerEl.style.background = isSuccess 
+          ? 'linear-gradient(180deg, #fef3c7 0%, #fde68a 100%)' 
+          : 'linear-gradient(180deg, #ffe4e6 0%, #fecdd3 100%)';
+      }
+      if (titleEl) {
+        titleEl.style.color = isSuccess ? '#92400e' : '#9f1239';
+      }
+      if (okBtn) {
+        okBtn.style.background = isSuccess 
+          ? 'linear-gradient(180deg, #f59e0b, #d97706)' 
+          : 'linear-gradient(180deg, #e11d48, #be123c)';
+        okBtn.style.borderColor = isSuccess ? '#b45309' : '#9f1239';
+        okBtn.style.boxShadow = isSuccess ? '0 4px 0 #b45309' : '0 4px 0 #881337';
+      }
+
+      if (modal) modal.classList.add('visible');
+    };
 
     if (btnOpenCoupon) {
       btnOpenCoupon.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.sound.playClick();
+        this.sound?.playClick?.();
         if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
         this.openCouponModal();
       });
@@ -215,21 +248,23 @@ export class Modals {
     const handleCouponSubmit = async () => {
       const inputVal = inputCouponCode ? inputCouponCode.value.trim() : '';
       if (!inputVal) {
-        if (couponMsg) {
-          couponMsg.innerText = '⚠️ 코드를 입력해주세요!';
-          couponMsg.style.color = '#e11d48';
-          couponMsg.style.display = 'block';
-        }
+        this.sound?.playClick?.();
+        if (this.couponModal) this.couponModal.classList.remove('visible');
+    const resultModal = document.getElementById('coupon-result-modal');
+    if (resultModal) resultModal.classList.remove('visible');
+        showCouponResult(false, '⚠️ 코드 미입력', '코드를 입력해주세요!', '📝');
         return;
       }
 
-      // SHA-256 해시 단방향 암호화 비교 (소스코드 평문 노출 완전 차단!)
+      // SHA-256 단방향 해시 검증
       const inputHash = await sha256Hex(inputVal);
       const secretHash = 'efa92c0adbbc1f4b33b035b31a3cd6ce219f2ed805f179c3c0807cd860700824';
 
       if (inputHash === secretHash) {
-        this.sound.playLevelUp();
-        this.sound.playCoin();
+        if (this.sound) {
+          if (typeof this.sound.playLevelUp === 'function') this.sound.playLevelUp();
+          else if (typeof this.sound.playCoin === 'function') this.sound.playCoin();
+        }
         
         // 💰 7,777만 골드 (77,777,777 G) 즉시 지급!
         const rewardAmount = 77777777;
@@ -241,14 +276,30 @@ export class Modals {
         if (inputCouponCode) inputCouponCode.value = '';
         if (couponMsg) couponMsg.style.display = 'none';
 
-        this.hud.showNotification(`🎉 [코드 보상] ${rewardAmount.toLocaleString()} G 골드가 지급되었습니다! 🪙✨`, '🎁');
-      } else {
-        this.sound.playClick();
-        if (couponMsg) {
-          couponMsg.innerText = '❌ 유효하지 않은 코드입니다. 다시 확인해주세요.';
-          couponMsg.style.color = '#e11d48';
-          couponMsg.style.display = 'block';
+        // 🎉 성공 모달 띄우기!
+        showCouponResult(
+          true, 
+          '🎉 보상 지급 완료!', 
+          `대박 선물!<br><strong style="color: #d97706; font-size: 20px;">${rewardAmount.toLocaleString()} G</strong> 골드가 지급되었습니다! 🪙✨`, 
+          '💰'
+        );
+
+        if (this.hud) {
+          this.hud.showNotification(`🎉 [코드 보상] ${rewardAmount.toLocaleString()} G 골드가 지급되었습니다! 🪙✨`, '🎁');
         }
+      } else {
+        this.sound?.playClick?.();
+        if (this.couponModal) this.couponModal.classList.remove('visible');
+        if (inputCouponCode) inputCouponCode.value = '';
+        if (couponMsg) couponMsg.style.display = 'none';
+
+        // ❌ 실패 모달 띄우기!
+        showCouponResult(
+          false, 
+          '❌ 잘못된 코드입니다', 
+          '입력하신 코드가 올바르지 않습니다.<br>선물 코드를 다시 확인해주세요!', 
+          '⚠️'
+        );
       }
     };
 
@@ -260,8 +311,15 @@ export class Modals {
     }
     if (btnCouponCancel) {
       btnCouponCancel.addEventListener('click', () => {
-        this.sound.playClick();
+        this.sound?.playClick?.();
         if (this.couponModal) this.couponModal.classList.remove('visible');
+      });
+    }
+    if (btnResultOk) {
+      btnResultOk.addEventListener('click', () => {
+        this.sound?.playClick?.();
+        const modal = document.getElementById('coupon-result-modal');
+        if (modal) modal.classList.remove('visible');
       });
     }
 
@@ -1153,6 +1211,7 @@ export class Modals {
     this.closeAll();
     if (!this.couponModal) {
       this.couponModal = document.getElementById('coupon-modal');
+    this.couponResultModal = document.getElementById('coupon-result-modal');
     }
     if (this.couponModal) {
       this.sound.playClick();
