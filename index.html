@@ -6,7 +6,7 @@
   <title>🐾 냥이의 바다 낚시 힐링 여행 (Cozy Cat Fishing)</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="shortcut icon" href="assets/favicon.svg">
-  <link rel="stylesheet" href="style.css?v=3.9.0">
+  <link rel="stylesheet" href="style.css?v=5.6.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Gothic:wght@400;700;800&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
@@ -85,6 +85,14 @@
               <span>구글 계정 연동하기</span>
             </button>
 
+            <!-- ☁️ Manual Cloud Save & Load Actions -->
+            <button id="btn-cloud-manual-save" class="dropdown-item">
+              <span>☁️ 현재 기록 클라우드 백업</span>
+            </button>
+            <button id="btn-cloud-manual-load" class="dropdown-item">
+              <span>📥 클라우드 기록 불러오기</span>
+            </button>
+
             <div class="dropdown-divider"></div>
             <button id="btn-change-nickname" class="dropdown-item">✏️ 닉네임 변경</button>
             <button id="btn-auth-logout" class="dropdown-item text-danger">🚪 로그아웃 / 계정 전환</button>
@@ -161,6 +169,24 @@
 
     <!-- Floating Notifications / Toasts -->
     <div id="floating-notifications"></div>
+
+    <!-- 🛑 / 💖 / 💣 Right-Bottom Floating Action Widget (화면 우측 하단 찌 액션 동그라미) -->
+    <div id="right-action-widget" class="right-action-widget hidden">
+      <button id="right-action-btn" class="right-action-btn" title="우클릭 시 액션 발동">
+        <div id="right-action-icon" class="right-action-icon">🛑</div>
+        <div id="right-action-label" class="right-action-label">STOP</div>
+        <div id="right-action-count" class="right-action-count hidden">x0</div>
+        <!-- Right Click Mouse Indicator Badge at Bottom-Right Corner -->
+        <div class="mouse-right-badge" title="마우스 우클릭으로 작동">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none">
+            <rect x="5" y="2" width="14" height="20" rx="7" stroke="#ffffff" stroke-width="2" fill="#0f172a"/>
+            <line x1="12" y1="2" x2="12" y2="10" stroke="#ffffff" stroke-width="1.5"/>
+            <path d="M12 2 H12 C15.866 2 19 5.134 19 9 V10 H12 V2 Z" fill="#ff007f"/>
+          </svg>
+          <span class="badge-text">우클릭</span>
+        </div>
+      </button>
+    </div>
 
     <!-- In-Game Realtime Chat Overlay (Left-Bottom) -->
     <div id="ingame-chat-container" class="ingame-chat-container">
@@ -848,6 +874,6 @@
   </div>
 
   <!-- Entry Script (with cache-busting query) -->
-  <script type="module" src="src/main.js?v=3.9.0"></script>
+  <script type="module" src="src/main.js?v=5.6.0"></script>
 </body>
 </html>

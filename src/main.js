@@ -1,21 +1,21 @@
 /**
  * Master Game Controller & Loop
  */
-import { Vector2 } from './engine/Vector.js?v=3.9.0';
-import { Camera } from './engine/Camera.js?v=3.9.0';
-import { Input } from './engine/Input.js?v=3.9.0';
-import { SoundEngine } from './audio.js?v=3.9.0';
-import { Economy } from './systems/Economy.js?v=3.9.0';
-import { Encyclopedia, FISH_SPECIES } from './systems/Encyclopedia.js?v=3.9.0';
-import { Environment } from './systems/Environment.js?v=3.9.0';
-import { Aquarium } from './systems/Aquarium.js?v=3.9.0';
-import { Cat } from './entities/Cat.js?v=3.9.0';
-import { Rod } from './entities/Rod.js?v=3.9.0';
-import { Fish } from './entities/Fish.js?v=3.9.0';
-import { HUD } from './ui/HUD.js?v=3.9.0';
-import { Modals } from './ui/Modals.js?v=3.9.0';
-import { CloudSave } from './systems/CloudSave.js?v=3.9.0';
-import { Multiplayer } from './systems/Multiplayer.js?v=3.9.0';
+import { Vector2 } from './engine/Vector.js?v=5.6.0';
+import { Camera } from './engine/Camera.js?v=5.6.0';
+import { Input } from './engine/Input.js?v=5.6.0';
+import { SoundEngine } from './audio.js?v=5.6.0';
+import { Economy } from './systems/Economy.js?v=5.6.0';
+import { Encyclopedia, FISH_SPECIES } from './systems/Encyclopedia.js?v=5.6.0';
+import { Environment } from './systems/Environment.js?v=5.6.0';
+import { Aquarium } from './systems/Aquarium.js?v=5.6.0';
+import { Cat } from './entities/Cat.js?v=5.6.0';
+import { Rod } from './entities/Rod.js?v=5.6.0';
+import { Fish } from './entities/Fish.js?v=5.6.0';
+import { HUD } from './ui/HUD.js?v=5.6.0';
+import { Modals } from './ui/Modals.js?v=5.6.0';
+import { CloudSave } from './systems/CloudSave.js?v=5.6.0';
+import { Multiplayer } from './systems/Multiplayer.js?v=5.6.0';
 
 class Game {
   constructor() {
@@ -23,9 +23,13 @@ class Game {
     this.ctx = this.canvas.getContext('2d');
 
     this.lastTime = 0;
-    this.maxFishCount = 240; // Dense, lively ocean across entire 14,000px wide & 500m deep waters!
+    this.maxFishCount = 280; // Dense, lively ocean across entire 32,000px wide & 750m deep waters!
     this.fishList = [];
     this.prevTimeOfDay = 'day';
+
+    // 👑 Boss Director (10~15분 주기 보스 출현 타이머)
+    this.bossSpawnTimer = 0;
+    this.bossSpawnCooldown = 600 + Math.random() * 300; // 600s ~ 900s (10~15 minutes)
 
     this.init();
   }
@@ -150,18 +154,19 @@ class Game {
     }
   }
 
-  spawnSingleFish() {
-    // 👑 1. Boss Fish Spawn Rate strictly fixed at 1.0% (10종의 거대 보스 물고기)
+  spawnSingleFish(forceBoss = false) {
     let chosen = null;
-    const bossRoll = Math.random();
     const bossSpecies = FISH_SPECIES.filter(f => f.isBoss);
     const regularSpecies = FISH_SPECIES.filter(f => !f.isBoss);
 
-    if (bossRoll < 0.01 && bossSpecies.length > 0) {
-      // 👑 Exactly 1% Boss Spawn Rate
+    const bossChance = this.economy.getBossChance(); // 👑 기본 0.1% (0.001) + 행운 배율
+    const rollBoss = Math.random();
+
+    if ((forceBoss || rollBoss < bossChance) && bossSpecies.length > 0) {
+      // 👑 10대 전설 신화 보스 소환 (0.1% * 행운 배율)
       chosen = bossSpecies[Math.floor(Math.random() * bossSpecies.length)];
     } else {
-      // 🐟 99% Regular Fish Spawn by weighted rarity
+      // 🐟 일반/희귀/에픽/전설 물고기 (행운 가중치 적용)
       const luckMult = this.economy.getLuckMultiplier();
       const roll = Math.random();
       let targetRarity = 'common';
@@ -181,47 +186,45 @@ class Game {
     const totalSpecies = Math.max(1, FISH_SPECIES.length - 1);
     const depthProgress = Math.max(0, Math.min(1, speciesIndex / totalSpecies));
 
-    // 🌊 도감 아래로 내려갈수록 오른쪽 먼 바다(X: 1800 ~ 5200px)에서 집중 출현
-    // 🏡 도감 위쪽 표층/근해 어종은 부두막 근처(X: -300 ~ 1400px)에서 집중 출현
-    // 🌊 14,000px 광활한 바다 전역에 표층, 중층, 심해, 초심연 물고기들을 골고루 풍성하게 분산 배치!
+    // 🌊 가로 32,000px & 수심 750m(15,000px) 광활한 바다 전역에 골고루 분산 배치!
     let minSpawnX, maxSpawnX;
     let minSwimX, maxSwimX;
 
     if (chosen.isBoss) {
-      // 👑 10 Giant Boss Fishes: STRICTLY X >= 500 across deep ocean (500 ~ 13,800px)
-      minSpawnX = Math.max(500, chosen.minX || 500);
-      maxSpawnX = 13800;
-      minSwimX = 450;
-      maxSwimX = 14200;
+      // 👑 10대 신화 보스: 도감에 지정된 minX ~ maxX 구역에서 서식
+      minSpawnX = chosen.minX || 2500;
+      maxSpawnX = chosen.maxX || 31500;
+      minSwimX = Math.max(450, minSpawnX - 400);
+      maxSwimX = Math.min(32000, maxSpawnX + 400);
     } else if (depthProgress < 0.25) {
-      // 1. 도감 상단 (표층/초근해: 멸치, 구피, 흰동가리, 복어, 해파리 등) - 부두막부터 원양 끝까지 골고루!
+      // 1. 표층/초근해 (0~30m: 멸치, 구피, 흰동가리, 복어 등)
       minSpawnX = -350;
-      maxSpawnX = 13800;
-      minSwimX = -500;
-      maxSwimX = 14200;
+      maxSpawnX = 31500;
+      minSwimX = -600;
+      maxSwimX = 32000;
     } else if (depthProgress < 0.50) {
-      // 2. 도감 중층 (참돔, 고등어, 꽁치, 날치, 바다거북, 오징어 등) - 부두막 인근부터 원양 끝까지 골고루!
-      minSpawnX = 150;
-      maxSpawnX = 13800;
+      // 2. 중층 (30~100m: 참돔, 고등어, 꽁치, 날치, 바다거북 등)
+      minSpawnX = 200;
+      maxSpawnX = 31500;
       minSwimX = 0;
-      maxSwimX = 14200;
+      maxSwimX = 32000;
     } else if (depthProgress < 0.75) {
-      // 3. 도감 심해 어둠층 (갈치, 초롱아귀, 문어, 톱상어, 투구게 등)
-      minSpawnX = 400;
-      maxSpawnX = 13800;
-      minSwimX = 300;
-      maxSwimX = 14200;
-    } else {
-      // 4. 도감 최하단 심연/전설 어종 (대왕 산갈치, 덤보문어, 실러캔스, 별빛고래, 크라켄, 코스믹 거북 등)
+      // 3. 심해 어둠층 (100~250m: 갈치, 초롱아귀, 문어, 톱상어 등)
       minSpawnX = 600;
-      maxSpawnX = 13800;
-      minSwimX = 450;
-      maxSwimX = 14200;
+      maxSpawnX = 31500;
+      minSwimX = 400;
+      maxSwimX = 32000;
+    } else {
+      // 4. 심연 & 초심연 (250~750m: 대왕 산갈치, 덤보문어, 실러캔스, 별빛고래, 크라켄, 레비아탄 등)
+      minSpawnX = 1200;
+      maxSpawnX = 31500;
+      minSwimX = 800;
+      maxSwimX = 32000;
     }
 
     const startX = minSpawnX + Math.random() * (maxSpawnX - minSpawnX);
-    const minY = chosen.minDepth * 20;
-    const maxY = Math.min(10050, chosen.maxDepth * 20);
+    const minY = (chosen.minDepth || 1) * 20;
+    const maxY = Math.min(15000, (chosen.maxDepth || 750) * 20);
     const startY = minY + Math.random() * (maxY - minY);
 
     // ✨ Shiny (이로치) check (낮: 1.0%, 밤: 3.0%)
@@ -234,6 +237,10 @@ class Game {
       this.camera.shake(12, 0.5);
       this.hud.showNotification(`⚠️ 너무 오래 방치하여 ${f.isBoss ? '👑 보스 ' : (f.isShiny ? '✨ 이로치 ' : '')}${f.data.name}이(가) 도망쳤습니다!`, '💨');
     };
+
+    if (chosen.isBoss && forceBoss && this.hud) {
+      this.hud.showNotification(`👑 저 멀리 심해에서 전설의 신화 보스 '${chosen.name}'이(가) 출현했습니다!`, '⚡');
+    }
 
     this.fishList.push(fish);
   }
@@ -323,26 +330,53 @@ class Game {
       }
     });
 
-    // Right-Click: Underwater Depth Charge Bomb Detonation
-    this.input.on('rightclick', () => {
+    // Right-Click & Action Widget Trigger Handling
+    this.handleRightClickAction = () => {
       if (this.aquarium.isOpen) return;
       if (this.rod.state === 'FISHING' && this.rod.isSubmerged) {
-        const success = this.rod.triggerBomb(this.fishList, (eliminatedFish) => {
-          const idx = this.fishList.indexOf(eliminatedFish);
-          if (idx !== -1) {
-            this.fishList.splice(idx, 1);
-            setTimeout(() => this.spawnSingleFish(), 3000);
+        // 1. Try triggering Allure Pheromone first if owned
+        if ((this.economy.baitInventory['allure'] || 0) > 0) {
+          const success = this.rod.triggerAllure(this.fishList);
+          if (success) {
+            this.camera.shake(8, 0.4);
+            this.hud.showNotification('💖 환상의 현혹 페로몬 발동! 주변 모든 물고기가 미끼로 쇄도합니다!', '✨');
+            this.hud.initBaitBar();
+            return;
           }
-        });
+        }
 
-        if (success) {
-          this.camera.shake(12, 0.55);
-          this.hud.showNotification('💣 콰앙-! 주변 방해 물고기 퇴치 완료!', '💥');
+        // 2. Otherwise try Depth Charge Bomb
+        if ((this.economy.baitInventory['bomb'] || 0) > 0) {
+          const success = this.rod.triggerBomb(this.fishList, (eliminatedFish) => {
+            const idx = this.fishList.indexOf(eliminatedFish);
+            if (idx !== -1) {
+              this.fishList.splice(idx, 1);
+              setTimeout(() => this.spawnSingleFish(), 3000);
+            }
+          });
+
+          if (success) {
+            this.camera.shake(14, 0.6);
+            this.hud.showNotification('💣 콰앙-! 주변 방해 물고기 퇴치 완료!', '💥');
+            this.hud.initBaitBar();
+            return;
+          }
+        }
+
+        // 3. No special item -> Toggle Depth Lock (STOP / RESUME SINKING)
+        const isLocked = this.rod.toggleDepthLock();
+        if (isLocked) {
+          this.sound.playClick();
+          this.hud.showNotification('🛑 찌 침강 정지 (수심 고정)! 마우스 우클릭으로 다시 가라앉힙니다.', '🔒');
         } else {
-          this.hud.showNotification('💣 어군 폭탄이 없습니다! 상점(S)에서 구매하세요.', '⚠️');
+          this.sound.playClick();
+          this.hud.showNotification('▶️ 찌 침강 재개 (아래로 가라앉는 중)', '🌊');
         }
       }
-    });
+    };
+
+    this.input.on('rightclick', () => this.handleRightClickAction());
+    this.hud.onRightActionTrigger = () => this.handleRightClickAction();
 
     // Keyboard Shortcuts (지정된 단축키로 정돈)
     this.input.on('keydown', (code) => {
@@ -443,7 +477,7 @@ class Game {
     if (idx !== -1) {
       this.fishList.splice(idx, 1);
     }
-    this.spawnSingleFish();
+    this.spawnSingleFish(false);
 
     // Auto-sync progress to cloud
     if (this.cloudSave) {
@@ -508,11 +542,11 @@ class Game {
       this.cat.triggerNibble();
     }
 
-    // Update Ocean Fish population across 0m ~ 500m+ and -800 ~ 14,500px wide
-    const oceanBounds = { left: -800, right: 14500, top: 0, bottom: 10800 };
+    // Update Ocean Fish population across 0m ~ 750m+ and -800 ~ 32,000px wide
+    const oceanBounds = { left: -800, right: 32000, top: 0, bottom: 15800 };
     this.fishList.forEach(fish => fish.update(dt, this.rod, oceanBounds, this.cat));
 
-    // Maintain fish count
+    // Maintain lively fish population (0.1% boss chance + luck multiplier on every spawn)
     while (this.fishList.length < this.maxFishCount) {
       this.spawnSingleFish();
     }
@@ -528,7 +562,7 @@ class Game {
     if (this.rod.state === 'FISHING' && this.rod.isSubmerged) {
       // Follow the submerged hook deep underwater with dynamic zoom
       const hookDepth = this.rod.hookPos.y;
-      const zoom = Math.max(0.65, 1.0 - (hookDepth / 10000) * 0.45);
+      const zoom = Math.max(0.60, 1.0 - (hookDepth / 15000) * 0.45);
       this.camera.setTarget(this.rod.hookPos.x, this.rod.hookPos.y + 60, zoom);
     } else {
       // Focus on cat on boat
@@ -572,21 +606,211 @@ class Game {
     // 4. Draw Ocean Fish
     this.fishList.forEach(fish => fish.draw(this.ctx));
 
-    // 5. Draw Other Remote Players & Chat Bubbles
+    // 5. Draw Sonar Waves & Detected Fish Markers
+    this.drawSonarEffect(this.ctx, bounds);
+
+    // 6. Draw Other Remote Players & Chat Bubbles
     if (this.multiplayer) {
       this.multiplayer.draw(this.ctx, this.cat, this.rod);
     }
 
-    // 5. Draw Local Cat & Boat (with active player nickname tag)
+    // 7. Draw Local Cat & Boat (with active player nickname tag)
     const localPlayerName = this.cloudSave?.currentUser?.displayName 
       || localStorage.getItem('cozy_cat_player_nickname') 
       || (this.multiplayer ? this.multiplayer.playerName : '냥이 집사');
     this.cat.draw(this.ctx, localPlayerName);
 
-    // 6. Draw Local Fishing Line, Bobber & Hook
+    // 8. Draw Local Fishing Line, Bobber & Hook
     this.rod.draw(this.ctx, this.cat);
 
     this.camera.restore(this.ctx);
+
+    // 9. Screen Space HUD: Boss Tracking Radar Arrow (for 📡 hat_radar)
+    this.drawBossRadarArrow(this.ctx);
+  }
+
+  drawSonarEffect(ctx, bounds) {
+    const sonarRadius = this.economy.getSonarRadius();
+    if (sonarRadius <= 0) return;
+
+    // Origin: Hook if submerged, otherwise cat
+    const isSubmerged = (this.rod.state === 'FISHING' && this.rod.isSubmerged);
+    const origin = isSubmerged ? this.rod.hookPos : this.cat.pos;
+
+    ctx.save();
+
+    // 1. Draw Sonar Base Range Ring
+    ctx.strokeStyle = 'rgba(0, 245, 212, 0.25)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 8]);
+    ctx.beginPath();
+    ctx.arc(origin.x, origin.y, sonarRadius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 2. Animated Expanding Pulse Waves
+    const now = Date.now() / 1000;
+    for (let i = 0; i < 2; i++) {
+      const phase = (now * 0.65 + i * 0.5) % 1.0;
+      const r = phase * sonarRadius;
+      const alpha = (1 - phase) * 0.45;
+      ctx.strokeStyle = `rgba(0, 245, 212, ${alpha})`;
+      ctx.lineWidth = 3.5 - phase * 2;
+      ctx.beginPath();
+      ctx.arc(origin.x, origin.y, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // 3. Highlight Detected Fishes inside radius
+    const maxDetectDist = sonarRadius;
+    this.fishList.forEach(fish => {
+      const dist = origin.distanceTo(fish.pos);
+      if (dist <= maxDetectDist) {
+        // Draw Sonar Ping Marker around fish
+        ctx.save();
+        ctx.strokeStyle = fish.isBoss ? '#ffd166' : (fish.isShiny ? '#ff007f' : '#00f5d4');
+        ctx.fillStyle = fish.isBoss ? 'rgba(255, 209, 102, 0.2)' : 'rgba(0, 245, 212, 0.15)';
+        ctx.lineWidth = fish.isBoss ? 2.5 : 1.5;
+        
+        ctx.beginPath();
+        ctx.arc(fish.pos.x, fish.pos.y, 24 * (fish.isBoss ? 2.2 : 1.0), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Depth & distance text tag
+        const distM = Math.round(dist / 20);
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = fish.isBoss ? '#ffd166' : '#ffffff';
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 4;
+        const tag = fish.isBoss ? `👑 ${fish.data.name}` : (fish.isShiny ? `✨ ${fish.data.name}` : `${fish.data.name} (${distM}m)`);
+        ctx.fillText(tag, fish.pos.x, fish.pos.y - 28 * (fish.isBoss ? 2.0 : 1.0));
+        ctx.restore();
+      }
+    });
+
+    ctx.restore();
+  }
+
+  drawBossRadarArrow(ctx) {
+    if (this.economy.currentHatId !== 'hat_radar') return;
+
+    // Find any boss in ocean
+    const boss = this.fishList.find(f => f.isBoss);
+    if (!boss) return;
+
+    // Origin: Hook if submerged, otherwise Cat
+    const isSubmerged = (this.rod.state === 'FISHING' && this.rod.isSubmerged);
+    const originWorld = isSubmerged ? this.rod.hookPos : this.cat.pos;
+
+    // Distance in meters
+    const distWorld = originWorld.distanceTo(boss.pos);
+    const distM = Math.round(distWorld / 20);
+
+    // Convert to Screen coordinates
+    const originScreenX = (originWorld.x - this.camera.pos.x) * this.camera.zoom + this.canvas.width / 2;
+    const originScreenY = (originWorld.y - this.camera.pos.y) * this.camera.zoom + this.canvas.height / 2;
+    const bossScreenX = (boss.pos.x - this.camera.pos.x) * this.camera.zoom + this.canvas.width / 2;
+    const bossScreenY = (boss.pos.y - this.camera.pos.y) * this.camera.zoom + this.canvas.height / 2;
+
+    const angle = Math.atan2(bossScreenY - originScreenY, bossScreenX - originScreenX);
+
+    // Check if boss is currently visible inside screen viewport
+    const margin = 65;
+    const isVisibleOnScreen = (
+      bossScreenX >= margin && bossScreenX <= this.canvas.width - margin &&
+      bossScreenY >= margin && bossScreenY <= this.canvas.height - margin
+    );
+
+    ctx.save();
+
+    if (isVisibleOnScreen) {
+      // 🎯 Boss is directly on screen: draw animated Lock-on Crosshair
+      const pulse = 1.0 + Math.sin(Date.now() / 150) * 0.12;
+      ctx.strokeStyle = '#ff0054';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#ff0054';
+      ctx.shadowBlur = 12;
+
+      ctx.beginPath();
+      ctx.arc(bossScreenX, bossScreenY, 50 * pulse, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.shadowColor = 'rgba(0,0,0,0.9)';
+      ctx.shadowBlur = 6;
+      ctx.fillText(`🎯 [TARGET: ${boss.data.name}] ${distM}m`, bossScreenX, bossScreenY - 60 * pulse);
+    } else {
+      // 🧭 Boss is off-screen: Clamp radar arrow to screen perimeter margin
+      const cx = this.canvas.width / 2;
+      const cy = this.canvas.height / 2;
+      const w = (this.canvas.width - margin * 2) / 2;
+      const h = (this.canvas.height - margin * 2) / 2;
+
+      const cosA = Math.cos(angle);
+      const sinA = Math.sin(angle);
+      let tX = cosA !== 0 ? (cosA > 0 ? w / cosA : -w / cosA) : Infinity;
+      let tY = sinA !== 0 ? (sinA > 0 ? h / sinA : -h / sinA) : Infinity;
+      const t = Math.min(Math.abs(tX), Math.abs(tY));
+
+      const arrowX = cx + cosA * t;
+      const arrowY = cy + sinA * t;
+
+      // Draw Glowing Radar Badge on screen edge
+      ctx.translate(arrowX, arrowY);
+      ctx.rotate(angle);
+
+      const pulse = Math.sin(Date.now() / 180) * 3;
+
+      // Neon Pointer Arrow
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+      ctx.strokeStyle = '#00f5d4';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#00f5d4';
+      ctx.shadowBlur = 12;
+
+      ctx.beginPath();
+      ctx.moveTo(24 + pulse, 0);
+      ctx.lineTo(-14 + pulse, -14);
+      ctx.lineTo(-6 + pulse, 0);
+      ctx.lineTo(-14 + pulse, 14);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Reset rotation for text label
+      ctx.rotate(-angle);
+
+      // Distance & Boss Name Pill
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+      ctx.strokeStyle = '#ffd166';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = '#ffd166';
+      ctx.shadowBlur = 8;
+
+      const label = `👑 ${boss.data.name} ${distM}m`;
+      ctx.font = 'bold 12px sans-serif';
+      const textMetrics = ctx.measureText(label);
+      const pillW = textMetrics.width + 22;
+      const pillH = 26;
+      const pillY = (arrowY > this.canvas.height - 75) ? -28 : 28;
+
+      ctx.beginPath();
+      ctx.roundRect(-pillW / 2, pillY - pillH / 2, pillW, pillH, 13);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffd166';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowBlur = 0;
+      ctx.fillText(label, 0, pillY);
+    }
+
+    ctx.restore();
   }
 
   renderAquariumMode() {

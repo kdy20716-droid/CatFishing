@@ -17,8 +17,8 @@ import {
   limit,
   serverTimestamp 
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import { Cat } from '../entities/Cat.js';
-import { CAT_SKINS, HATS, BOATS, RODS } from './Economy.js';
+import { Cat } from '../entities/Cat.js?v=5.0.0';
+import { CAT_SKINS, HATS, BOATS, RODS } from './Economy.js?v=5.0.0';
 
 export class Multiplayer {
   constructor(economy, sound, hud, cloudSave) {

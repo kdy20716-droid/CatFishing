@@ -1,7 +1,7 @@
 /**
  * Cat Character & Boat Rendering & Animation Entity
  */
-import { Vector2 } from '../engine/Vector.js';
+import { Vector2 } from '../engine/Vector.js?v=5.0.0';
 
 export class Cat {
   constructor(economy) {
@@ -235,143 +235,472 @@ export class Cat {
     const type = boat.drawType || 'rowboat';
 
     ctx.save();
+    ctx.scale(this.facing, 1);
 
     if (type === 'raft') {
-      // Wooden Raft
+      // 🪵 1. Wooden Raft (통나무 뗏목)
       ctx.fillStyle = '#8b5a2b';
       ctx.strokeStyle = '#582f0e';
       ctx.lineWidth = 2.5;
 
-      for (let i = -3; i <= 3; i++) {
+      // 5 Heavy Wooden Logs
+      for (let i = -2; i <= 2; i++) {
         ctx.beginPath();
-        ctx.roundRect(i * 14 - 10, -4, 20, 10, 5);
+        ctx.roundRect(i * 18 - 8, -2, 16, 15, 6);
         ctx.fill();
         ctx.stroke();
       }
 
-      // Ropes binding logs
-      ctx.strokeStyle = '#e9d8a6';
+      // Strong Hemp Binding Ropes
+      ctx.strokeStyle = '#fef08a';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(-46, 2);
+      ctx.lineTo(46, 2);
+      ctx.moveTo(-46, 8);
+      ctx.lineTo(46, 8);
+      ctx.stroke();
+
+      // Small wooden flag post at stern
+      ctx.strokeStyle = '#6f4e37';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(-35, -2);
-      ctx.lineTo(35, -2);
+      ctx.moveTo(-36, 0);
+      ctx.lineTo(-36, -24);
+      ctx.stroke();
+
+      // Cozy Triangular Cloth Flag
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.moveTo(-36, -24);
+      ctx.lineTo(-18, -18);
+      ctx.lineTo(-36, -12);
+      ctx.closePath();
+      ctx.fill();
+
+    } else if (type === 'duck') {
+      // 🦆 2. Cozy Yellow Duck Pedal Boat (포근 오리 페달보트)
+      ctx.fillStyle = '#f59e0b';
+      ctx.strokeStyle = '#d97706';
+      ctx.lineWidth = 3;
+
+      // Duck Body Boat Hull
+      ctx.beginPath();
+      ctx.roundRect(-52, -10, 104, 26, 12);
+      ctx.fill();
+      ctx.stroke();
+
+      // Duck Inner Seat Rim
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.roundRect(-35, -12, 55, 8, 4);
+      ctx.fill();
+
+      // Giant Duck Head at Bow
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.arc(46, -20, 16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#d97706';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Cute Duck Beak
+      ctx.fillStyle = '#ea580c';
+      ctx.beginPath();
+      ctx.moveTo(56, -23);
+      ctx.lineTo(76, -18);
+      ctx.lineTo(56, -13);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#c2410c';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Duck Eye `•`
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.arc(50, -23, 3, 0, Math.PI * 2);
+      ctx.fill();
+      // Eye Sparkle
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(49, -24, 1, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Duck Wing on Side
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.ellipse(-8, 0, 18, 9, 0.1, 0, Math.PI * 2);
+      ctx.fill();
       ctx.stroke();
 
     } else if (type === 'rowboat') {
-      // Classic Cozy Rowboat
-      ctx.fillStyle = '#9c6644';
-      ctx.strokeStyle = '#582f0e';
+      // 🚣 3. Classic Cozy Rowboat (낭만 조각배)
+      ctx.fillStyle = '#a16207';
+      ctx.strokeStyle = '#713f12';
       ctx.lineWidth = 3;
 
       ctx.beginPath();
-      ctx.moveTo(-45, -12);
-      ctx.quadraticCurveTo(-20, 12, 0, 14);
-      ctx.quadraticCurveTo(30, 12, 52, -12);
-      ctx.lineTo(40, -12);
-      ctx.quadraticCurveTo(25, 4, 0, 4);
-      ctx.quadraticCurveTo(-25, 4, -38, -12);
+      ctx.moveTo(-54, -10);
+      ctx.quadraticCurveTo(-25, 16, 0, 18);
+      ctx.quadraticCurveTo(35, 16, 62, -10);
+      ctx.lineTo(50, -10);
+      ctx.quadraticCurveTo(30, 8, 0, 8);
+      ctx.quadraticCurveTo(-30, 8, -46, -10);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
 
-      // Boat inner rim
-      ctx.fillStyle = '#b08968';
+      // Boat inner wooden floor
+      ctx.fillStyle = '#ca8a04';
       ctx.beginPath();
-      ctx.ellipse(0, -10, 42, 6, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -6, 48, 7, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
-      // Cozy Lantern at stern
-      ctx.fillStyle = '#212529';
-      ctx.fillRect(-38, -24, 6, 14);
-      // Lantern Warm Glow
-      const glow = ctx.createRadialGradient(-35, -18, 2, -35, -18, 16);
-      glow.addColorStop(0, 'rgba(255, 214, 10, 0.9)');
+      // Wooden Oar (노) Resting on Side
+      ctx.strokeStyle = '#eab308';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-20, -18);
+      ctx.lineTo(24, 16);
+      ctx.stroke();
+      // Oar Paddle
+      ctx.fillStyle = '#ca8a04';
+      ctx.beginPath();
+      ctx.ellipse(24, 16, 5, 10, -0.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Warm Cozy Lantern at Stern
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(-48, -22, 6, 14);
+      const glow = ctx.createRadialGradient(-45, -16, 2, -45, -16, 18);
+      glow.addColorStop(0, 'rgba(255, 214, 10, 0.95)');
       glow.addColorStop(1, 'rgba(255, 214, 10, 0)');
       ctx.fillStyle = glow;
       ctx.beginPath();
-      ctx.arc(-35, -18, 16, 0, Math.PI * 2);
+      ctx.arc(-45, -16, 18, 0, Math.PI * 2);
+      ctx.fill();
+
+    } else if (type === 'motorboat') {
+      // 🚤 4. Speed Motorboat (쾌속 모터보트)
+      ctx.fillStyle = '#ef4444';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3;
+
+      // Sharp streamlined hull
+      ctx.beginPath();
+      ctx.moveTo(-58, -12);
+      ctx.lineTo(-48, 16);
+      ctx.lineTo(46, 16);
+      ctx.lineTo(76, -12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Racing Stripe (White & Navy)
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(-54, -2, 122, 6);
+
+      // Glass Windshield
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.65)';
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(18, -12);
+      ctx.lineTo(36, -26);
+      ctx.lineTo(44, -12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Heavy Outboard Motor at Stern
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.roundRect(-66, -18, 14, 30, 3);
+      ctx.fill();
+      ctx.stroke();
+
+      // Motor Propeller Wake/Bubble
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.beginPath();
+      ctx.arc(-72, 8, 4 + Math.sin(this.animTime * 15) * 2, 0, Math.PI * 2);
+      ctx.fill();
+
+    } else if (type === 'jetski') {
+      // ⚡ 5. Cyber Neon Jet Ski (사이버 네온 제트스키)
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = '#00f5d4';
+      ctx.lineWidth = 3;
+
+      // Aggressive Jet Ski Hull
+      ctx.beginPath();
+      ctx.moveTo(-50, -10);
+      ctx.lineTo(-40, 14);
+      ctx.lineTo(48, 14);
+      ctx.lineTo(74, -8);
+      ctx.lineTo(52, -18);
+      ctx.lineTo(-20, -18);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Neon Magenta Accent Decal
+      ctx.fillStyle = '#ff007f';
+      ctx.beginPath();
+      ctx.moveTo(-35, -8);
+      ctx.lineTo(45, -8);
+      ctx.lineTo(60, -2);
+      ctx.lineTo(-30, -2);
+      ctx.closePath();
+      ctx.fill();
+
+      // Handlebar & Sporty Screen
+      ctx.strokeStyle = '#00f5d4';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(28, -18);
+      ctx.lineTo(34, -30);
+      ctx.lineTo(24, -30);
+      ctx.stroke();
+
+      // High-pressure Jet Spray Wake
+      ctx.fillStyle = 'rgba(0, 245, 212, 0.75)';
+      ctx.beginPath();
+      ctx.arc(-58, 6, 6 + Math.sin(this.animTime * 20) * 3, 0, Math.PI * 2);
+      ctx.arc(-68, 0, 4 + Math.sin(this.animTime * 20) * 2, 0, Math.PI * 2);
+      ctx.fill();
+
+    } else if (type === 'trawler') {
+      // 🚢 6. Oceanic Trawler (원양 트롤러 어선)
+      ctx.fillStyle = '#1e3a8a';
+      ctx.strokeStyle = '#172554';
+      ctx.lineWidth = 3.5;
+
+      // Heavy Steel Oceanic Hull
+      ctx.beginPath();
+      ctx.moveTo(-64, -16);
+      ctx.lineTo(-52, 18);
+      ctx.lineTo(50, 18);
+      ctx.lineTo(82, -16);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Lower Hull Red Waterline
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.moveTo(-52, 6);
+      ctx.lineTo(-52, 18);
+      ctx.lineTo(50, 18);
+      ctx.lineTo(58, 6);
+      ctx.closePath();
+      ctx.fill();
+
+      // Orange Wheelhouse Cabin at Stern
+      ctx.fillStyle = '#ea580c';
+      ctx.fillRect(-50, -42, 32, 28);
+      ctx.strokeStyle = '#9a3412';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-50, -42, 32, 28);
+
+      // Cabin Windows
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(-45, -36, 10, 10);
+      ctx.fillRect(-30, -36, 8, 10);
+
+      // Radar Mast & Rotating Radar
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-34, -42);
+      ctx.lineTo(-34, -58);
+      ctx.stroke();
+
+      const radarRot = Math.sin(this.animTime * 6) * 8;
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(-40 + radarRot, -60, 12, 3);
+
+    } else if (type === 'catamaran') {
+      // ⛵ 7. Sport Twin-Hull Catamaran (쌍동선 스포츠 카타마란)
+      ctx.fillStyle = '#0284c7';
+      ctx.strokeStyle = '#0369a1';
+      ctx.lineWidth = 3;
+
+      // Dual Floats / Hulls
+      // Lower Hull
+      ctx.beginPath();
+      ctx.roundRect(-65, 4, 130, 14, 7);
+      ctx.fill();
+      ctx.stroke();
+
+      // Central Deck Trampoline
+      ctx.fillStyle = '#38bdf8';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(-42, -12, 84, 16, 4);
+      ctx.fill();
+      ctx.stroke();
+
+      // Tall Carbon Fiber Mast
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(8, -12);
+      ctx.lineTo(8, -62);
+      ctx.stroke();
+
+      // Sport Sail (Cyan & White Triangles)
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(8, -58);
+      ctx.lineTo(44, -20);
+      ctx.lineTo(8, -16);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Sail Stripes
+      ctx.fillStyle = '#0ea5e9';
+      ctx.beginPath();
+      ctx.moveTo(8, -46);
+      ctx.lineTo(34, -22);
+      ctx.lineTo(8, -32);
+      ctx.closePath();
       ctx.fill();
 
     } else if (type === 'cruiser') {
-      // Fast Cruiser Boat
-      ctx.fillStyle = '#f8f9fa';
-      ctx.strokeStyle = '#0077b6';
+      // 🛳️ 6. Luxury Yacht Cruiser (럭셔리 요트 크루저)
+      ctx.fillStyle = '#f8fafc';
+      ctx.strokeStyle = '#0284c7';
       ctx.lineWidth = 3;
 
+      // Sleek Monocoque Hull
       ctx.beginPath();
-      ctx.moveTo(-55, -14);
-      ctx.lineTo(-45, 14);
-      ctx.lineTo(35, 14);
-      ctx.lineTo(65, -14);
+      ctx.moveTo(-66, -14);
+      ctx.lineTo(-52, 18);
+      ctx.lineTo(48, 18);
+      ctx.lineTo(84, -14);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
 
-      // Blue stripe
-      ctx.fillStyle = '#0096c7';
-      ctx.fillRect(-50, -4, 105, 6);
+      // Royal Blue & Gold Stripes
+      ctx.fillStyle = '#0369a1';
+      ctx.fillRect(-60, -2, 134, 6);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(-58, 4, 120, 2);
 
-      // Cute Cat Flag
-      ctx.strokeStyle = '#495057';
+      // Deck Sunshade & Cockpit
+      ctx.fillStyle = 'rgba(14, 165, 233, 0.4)';
+      ctx.beginPath();
+      ctx.moveTo(15, -14);
+      ctx.lineTo(40, -30);
+      ctx.lineTo(54, -14);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#0284c7';
+      ctx.stroke();
+
+      // Cat Flag fluttering at Stern
+      ctx.strokeStyle = '#475569';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(-45, -14);
-      ctx.lineTo(-45, -42);
+      ctx.moveTo(-52, -14);
+      ctx.lineTo(-52, -48);
       ctx.stroke();
 
-      // Flag fluttering
-      ctx.fillStyle = '#ff70a6';
+      ctx.fillStyle = '#ec4899';
       ctx.beginPath();
-      ctx.moveTo(-45, -42);
-      ctx.lineTo(-22, -35);
-      ctx.lineTo(-45, -28);
+      ctx.moveTo(-52, -48);
+      ctx.lineTo(-26, -40);
+      ctx.lineTo(-52, -32);
       ctx.closePath();
       ctx.fill();
 
-      // Paw print on flag
+      // Paw on Flag
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(-36, -35, 2.5, 0, Math.PI * 2);
+      ctx.arc(-42, -40, 3, 0, Math.PI * 2);
       ctx.fill();
 
     } else if (type === 'submarine') {
-      // Cute Yellow Cat Submarine
-      ctx.fillStyle = '#ffb703';
-      ctx.strokeStyle = '#fb8500';
-      ctx.lineWidth = 3;
+      // 潜 7. Cat Submarine (고양이 잠수함)
+      ctx.fillStyle = '#eab308';
+      ctx.strokeStyle = '#ca8a04';
+      ctx.lineWidth = 3.5;
 
-      // Sub hull
+      // Submarine Oval Hull
       ctx.beginPath();
-      ctx.roundRect(-55, -16, 110, 32, 16);
+      ctx.roundRect(-66, -18, 132, 36, 18);
       ctx.fill();
       ctx.stroke();
 
-      // Round glass porthole
-      ctx.fillStyle = '#8ecae6';
+      // Porthole Glass Window
+      ctx.fillStyle = '#38bdf8';
       ctx.beginPath();
-      ctx.arc(-15, 0, 10, 0, Math.PI * 2);
+      ctx.arc(-18, 0, 12, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = '#023047';
+      ctx.strokeStyle = '#0369a1';
+      ctx.lineWidth = 2.5;
       ctx.stroke();
 
-      // Cat Ear Periscope
-      ctx.strokeStyle = '#fb8500';
-      ctx.lineWidth = 4;
+      // Cat Ear Periscope Tower
+      ctx.fillStyle = '#ca8a04';
+      ctx.fillRect(-42, -38, 12, 22);
       ctx.beginPath();
-      ctx.moveTo(-35, -16);
-      ctx.lineTo(-35, -36);
-      ctx.lineTo(-20, -36);
-      ctx.stroke();
+      ctx.moveTo(-46, -38);
+      ctx.lineTo(-36, -50);
+      ctx.lineTo(-30, -38);
+      ctx.closePath();
+      ctx.fill();
 
-      // Small propeller at back
-      const propAngle = this.animTime * 12;
+      // Rotating Rear Propeller
+      const propAngle = this.animTime * 14;
       ctx.save();
-      ctx.translate(-60, 0);
+      ctx.translate(-72, 0);
       ctx.rotate(propAngle);
-      ctx.fillStyle = '#343a40';
-      ctx.fillRect(-3, -12, 6, 24);
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(-4, -14, 8, 28);
       ctx.restore();
+
+    } else if (type === 'hyper') {
+      // 🛸 8. Hyper Cosmic Space Skiff (하이퍼 코스믹 비행정)
+      ctx.fillStyle = '#3b0764';
+      ctx.strokeStyle = '#c084fc';
+      ctx.lineWidth = 3.5;
+
+      // Futuristic Saucer Hull
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 72, 20, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Glowing Neon Energy Rings
+      ctx.strokeStyle = '#a855f7';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 60, 12, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Anti-Gravity Plasma Thrusters Pulse
+      const pulse = Math.abs(Math.sin(this.animTime * 10));
+      ctx.fillStyle = `rgba(34, 211, 238, ${0.7 + pulse * 0.3})`;
+      ctx.beginPath();
+      ctx.ellipse(0, 16, 36, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Plasma Particles
+      ctx.fillStyle = '#a5f3fc';
+      ctx.beginPath();
+      ctx.arc(Math.sin(this.animTime * 8) * 20, 20, 3, 0, Math.PI * 2);
+      ctx.arc(Math.cos(this.animTime * 8) * 20, 20, 3, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     ctx.restore();
@@ -762,6 +1091,50 @@ export class Cat {
       ctx.fillStyle = '#e63946';
       ctx.beginPath();
       ctx.arc(0, -4, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+    } else if (type === 'radar') {
+      // 📡 냥냥 레이더 모자 (미니 레이더 안테나 & 회전 스캔 비콘)
+      // Headband Base
+      ctx.fillStyle = '#1e293b';
+      ctx.strokeStyle = '#00f5d4';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(-12, -4, 24, 7, 3);
+      ctx.fill();
+      ctx.stroke();
+
+      // Mini Screen / Center Core
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(0, -1, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#00f5d4';
+      ctx.beginPath();
+      ctx.arc(0, -1, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Antenna Rod
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(0, -4);
+      ctx.lineTo(0, -16);
+      ctx.stroke();
+
+      // Radar Dish / Scanning Arc
+      const scanAngle = (Date.now() / 300) % (Math.PI * 2);
+      ctx.strokeStyle = '#00f5d4';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, -16, 7, scanAngle, scanAngle + Math.PI * 0.9);
+      ctx.stroke();
+
+      // Blinking Top LED Beacon
+      const isBlink = Math.floor(Date.now() / 400) % 2 === 0;
+      ctx.fillStyle = isBlink ? '#ff0054' : '#ffd166';
+      ctx.beginPath();
+      ctx.arc(0, -16, 3, 0, Math.PI * 2);
       ctx.fill();
     }
 

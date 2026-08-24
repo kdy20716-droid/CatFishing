@@ -2,8 +2,8 @@
  * Cozy Personal Aquarium Simulation
  * Relaxing sanctuary where collected fish swim, eat food, and generate passive happiness coins
  */
-import { Fish } from '../entities/Fish.js';
-import { Vector2 } from '../engine/Vector.js';
+import { Fish } from '../entities/Fish.js?v=5.0.0';
+import { Vector2 } from '../engine/Vector.js?v=5.0.0';
 
 export class Aquarium {
   constructor(encyclopedia, economy, soundEngine) {
@@ -289,9 +289,13 @@ export class Aquarium {
             alpha: 1.0
           });
 
-          // 💰 10분에 한 번만 골드 보상 버블 생성!
+          // 💰 10분에 한 번만 골드 보상 버블 생성 (풍요의 분수 업그레이드 배수 적용!)
           if (eatenFlake.givesReward) {
-            const rewardAmt = Math.max(15, Math.round((fish.data.basePrice || 30) * 0.85));
+            const prosperityMult = (this.economy && typeof this.economy.getAquariumProsperityMultiplier === 'function') 
+              ? this.economy.getAquariumProsperityMultiplier() 
+              : 1.0;
+            const baseAmt = Math.max(20, Math.round((fish.data.basePrice || 35) * 1.0));
+            const rewardAmt = Math.round(baseAmt * prosperityMult);
             this.coinBubbles.push({
               pos: fish.pos.clone().add(new Vector2(0, -10)),
               amount: rewardAmt,

@@ -75,6 +75,51 @@ export const BAIT_SVGS = {
     </svg>
   `,
 
+  jelly: `
+    <svg class="custom-bait-svg" viewBox="0 0 32 32" width="26" height="26">
+      <!-- 🔮 Glowing Bioluminescent Plankton Jelly Drop -->
+      <defs>
+        <linearGradient id="jellyGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#c084fc"/>
+          <stop offset="50%" stop-color="#a855f7"/>
+          <stop offset="100%" stop-color="#6b21a8"/>
+        </linearGradient>
+      </defs>
+      <!-- Purple Glow Aura -->
+      <circle cx="16" cy="16" r="13" fill="rgba(168, 85, 247, 0.35)"/>
+      <!-- Glowing Jelly Core -->
+      <path d="M16 6 C9 6, 6 12, 6 17 C6 23, 10 27, 16 27 C22 27, 26 23, 26 17 C26 12, 23 6, 16 6 Z" fill="url(#jellyGrad)" stroke="#581c87" stroke-width="1.8"/>
+      <!-- Inner Bioluminescent Bubbles -->
+      <circle cx="13" cy="14" r="2.5" fill="#f3e8ff"/>
+      <circle cx="19" cy="17" r="2.0" fill="#e9d5ff"/>
+      <circle cx="15" cy="21" r="1.5" fill="#faf5ff"/>
+      <!-- Tiny Sparkle -->
+      <polygon points="16,8 17,10 19,11 17,12 16,14 15,12 13,11 15,10" fill="#ffffff"/>
+    </svg>
+  `,
+
+  pearl: `
+    <svg class="custom-bait-svg" viewBox="0 0 32 32" width="26" height="26">
+      <!-- 🌌 Abyssal Aurora Pearl Shell -->
+      <defs>
+        <radialGradient id="pearlGrad" cx="35%" cy="35%" r="65%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="40%" stop-color="#bae6fd"/>
+          <stop offset="80%" stop-color="#818cf8"/>
+          <stop offset="100%" stop-color="#4338ca"/>
+        </radialGradient>
+      </defs>
+      <!-- Aurora Star Aura -->
+      <circle cx="16" cy="16" r="14" fill="rgba(56, 189, 248, 0.3)"/>
+      <!-- Glowing Pearl Sphere -->
+      <circle cx="16" cy="16" r="10.5" fill="url(#pearlGrad)" stroke="#312e81" stroke-width="1.8"/>
+      <!-- Specular Highlight Shine -->
+      <ellipse cx="12.5" cy="12.5" rx="3.5" ry="2" transform="rotate(-30 12.5 12.5)" fill="#ffffff"/>
+      <!-- Rainbow Ring Flare -->
+      <ellipse cx="16" cy="16" rx="13" ry="5" transform="rotate(25 16 16)" fill="none" stroke="#38bdf8" stroke-width="1.2" opacity="0.75"/>
+    </svg>
+  `,
+
   golden: `
     <svg class="custom-bait-svg" viewBox="0 0 32 32" width="26" height="26">
       <!-- Radiant Golden Royal Krill with Stardust -->
@@ -96,6 +141,27 @@ export const BAIT_SVGS = {
       <polygon points="19,7 21,5 23,7 25,5 27,7 26,10 20,10" fill="#ffd166" stroke="#b25e00" stroke-width="1"/>
       <!-- Ruby Eye -->
       <circle cx="21" cy="12" r="1.5" fill="#d90429"/>
+    </svg>
+  `,
+
+  allure: `
+    <svg class="custom-bait-svg" viewBox="0 0 32 32" width="26" height="26">
+      <!-- 💖 Phantasm Allure Pheromone Flask with Hearts -->
+      <defs>
+        <linearGradient id="allureGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#ff70a6"/>
+          <stop offset="50%" stop-color="#ff007f"/>
+          <stop offset="100%" stop-color="#7000ff"/>
+        </linearGradient>
+      </defs>
+      <!-- Pink Pheromone Aura -->
+      <circle cx="16" cy="16" r="13" fill="rgba(255, 0, 127, 0.35)"/>
+      <!-- Potion Flask Bottle -->
+      <path d="M13 7 L19 7 L19 11 L25 21 C26 23, 25 26, 22 27 L10 27 C7 26, 6 23, 7 21 L13 11 Z" fill="url(#allureGrad)" stroke="#4a044e" stroke-width="1.8"/>
+      <!-- Heart Bubbles floating -->
+      <path d="M16 17 C16 15, 14 14, 13 15 C11 16.5, 16 21, 16 21 C16 21, 21 16.5, 19 15 C18 14, 16 15, 16 17 Z" fill="#ffffff"/>
+      <!-- Sparkle -->
+      <polygon points="26,7 27,9 29,10 27,11 26,13 25,11 23,10 25,9" fill="#ffbe0b"/>
     </svg>
   `,
 

@@ -1,7 +1,7 @@
 /**
  * Smooth Smart Camera for tracking Boat, Line, Hook and Fish
  */
-import { Vector2 } from './Vector.js';
+import { Vector2 } from './Vector.js?v=5.0.0';
 
 export class Camera {
   constructor(viewportWidth, viewportHeight) {
@@ -13,11 +13,11 @@ export class Camera {
     this.targetZoom = 1.0;
     this.lerpSpeed = 0.08;
     
-    // Bounds in world coordinates
+    // Bounds in world coordinates (Expanded for 30,000px ocean width and 750m depth)
     this.minX = -1200;
-    this.maxX = 14500;
-    this.minY = -400; // Above water (sky)
-    this.maxY = 11500; // Deep 500m+ seabed floor
+    this.maxX = 32000;
+    this.minY = -500; // Above water (sky)
+    this.maxY = 16500; // Deep 750m+ seabed floor
 
     // Screen Shake
     this.shakeDuration = 0;

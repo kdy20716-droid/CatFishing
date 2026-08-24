@@ -59,9 +59,9 @@ export class Environment {
   }
 
   initClouds() {
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 40; i++) {
       this.clouds.push({
-        x: -800 + Math.random() * 15500,
+        x: -800 + Math.random() * 32800,
         y: -180 - Math.random() * 150,
         speed: 10 + Math.random() * 18,
         width: 120 + Math.random() * 160,
@@ -71,10 +71,10 @@ export class Environment {
   }
 
   initPlankton() {
-    for (let i = 0; i < 180; i++) {
+    for (let i = 0; i < 350; i++) {
       this.plankton.push({
-        x: -800 + Math.random() * 15500,
-        y: 50 + Math.random() * 10200,
+        x: -800 + Math.random() * 32800,
+        y: 50 + Math.random() * 15200,
         size: 1.5 + Math.random() * 3.0,
         alpha: 0.3 + Math.random() * 0.6,
         pulseSpeed: 1 + Math.random() * 2,
@@ -122,28 +122,28 @@ export class Environment {
       this.saveTimeState();
     }
 
-    // Update Clouds across 15000px sky
+    // Update Clouds across 32,000px sky
     this.clouds.forEach(c => {
       c.x += c.speed * dt;
-      if (c.x > 15000) c.x = -800;
+      if (c.x > 32000) c.x = -800;
     });
 
-    // Update Plankton & Deep Stardust Dust
+    // Update Plankton & Deep Stardust Dust (0m ~ 750m depth)
     this.plankton.forEach(p => {
       p.x += p.driftSpeedX * dt;
       p.y += p.driftSpeedY * dt;
-      if (p.y < 30) p.y = 10200;
-      if (p.x < -800) p.x = 14500;
-      if (p.x > 14500) p.x = -800;
+      if (p.y < 30) p.y = 15200;
+      if (p.x < -800) p.x = 32000;
+      if (p.x > 32000) p.x = -800;
     });
 
-    // 🫧 Spawn Bubbles across entire wide ocean (-600 ~ 14500px, 0 ~ 500m depth)
+    // 🫧 Spawn Bubbles across entire wide ocean (-600 ~ 32000px, 0 ~ 750m depth)
     if (Math.random() < 0.75) {
       const bubbleCount = 1 + Math.floor(Math.random() * 3);
       for (let k = 0; k < bubbleCount; k++) {
         this.bubbles.push({
-          x: -600 + Math.random() * 15200,
-          y: 150 + Math.random() * 10000,
+          x: -600 + Math.random() * 32600,
+          y: 150 + Math.random() * 15000,
           size: 2 + Math.random() * 4.5,
           vy: -40 - Math.random() * 60,
           vx: (Math.random() - 0.5) * 12
@@ -164,7 +164,7 @@ export class Environment {
     // Shooting Stars at night across entire sky
     if (this.timeOfDay === 'night' && Math.random() < 0.02) {
       this.shootingStars.push({
-        x: Math.random() * 14000,
+        x: Math.random() * 31000,
         y: -350 - Math.random() * 80,
         vx: 400 + Math.random() * 250,
         vy: 200 + Math.random() * 120,
@@ -714,33 +714,36 @@ export class Environment {
 
   drawOcean(ctx, bounds) {
     const oceanTop = this.waterSurfaceY;
-    const oceanBottom = 10600; // 500m+ depth (1m = 20px -> 500m = 10000px)
+    const oceanBottom = 15600; // 750m+ depth (1m = 20px -> 750m = 15000px)
 
-    // Multi-Zone Underwater Depth Gradient (0m ~ 500m+)
+    // Multi-Zone Underwater Depth Gradient (0m ~ 750m+)
     const oceanGrad = ctx.createLinearGradient(0, oceanTop, 0, oceanBottom);
 
     if (this.timeOfDay === 'night') {
       oceanGrad.addColorStop(0, '#001845');      // Surface (0m)
-      oceanGrad.addColorStop(0.08, '#023e8a');   // Shallow (30m)
-      oceanGrad.addColorStop(0.22, '#03045e');   // Mid (100m)
-      oceanGrad.addColorStop(0.5, '#10002b');    // Deep (250m)
-      oceanGrad.addColorStop(0.78, '#240046');   // Abyss (400m)
-      oceanGrad.addColorStop(1.0, '#030108');    // Hadal (500m+)
+      oceanGrad.addColorStop(0.06, '#023e8a');   // Shallow (30m)
+      oceanGrad.addColorStop(0.16, '#03045e');   // Mid (100m)
+      oceanGrad.addColorStop(0.35, '#10002b');   // Deep (250m)
+      oceanGrad.addColorStop(0.55, '#240046');   // Abyss (400m)
+      oceanGrad.addColorStop(0.80, '#030108');   // Hadal (600m)
+      oceanGrad.addColorStop(1.0, '#000002');    // Cosmic Seabed (750m+)
     } else if (this.timeOfDay === 'sunset') {
       oceanGrad.addColorStop(0, '#3a86ff');
-      oceanGrad.addColorStop(0.08, '#0077b6');
-      oceanGrad.addColorStop(0.22, '#023e8a');
-      oceanGrad.addColorStop(0.5, '#240046');
-      oceanGrad.addColorStop(0.78, '#3c096c');
-      oceanGrad.addColorStop(1.0, '#0b090a');
+      oceanGrad.addColorStop(0.06, '#0077b6');
+      oceanGrad.addColorStop(0.16, '#023e8a');
+      oceanGrad.addColorStop(0.35, '#240046');
+      oceanGrad.addColorStop(0.55, '#3c096c');
+      oceanGrad.addColorStop(0.80, '#0b090a');
+      oceanGrad.addColorStop(1.0, '#020005');
     } else {
       // Day
       oceanGrad.addColorStop(0, '#48cae4');      // Sparkling Turquoise (0m)
-      oceanGrad.addColorStop(0.08, '#0096c7');   // Aquamarine (30m)
-      oceanGrad.addColorStop(0.22, '#0077b6');   // Sapphire Blue (100m)
-      oceanGrad.addColorStop(0.5, '#03045e');    // Deep Midnight Indigo (250m)
-      oceanGrad.addColorStop(0.78, '#10002b');   // Hadal Cosmic Purple (400m)
-      oceanGrad.addColorStop(1.0, '#020005');    // Outer Abyss Void (500m+)
+      oceanGrad.addColorStop(0.06, '#0096c7');   // Aquamarine (30m)
+      oceanGrad.addColorStop(0.16, '#0077b6');   // Sapphire Blue (100m)
+      oceanGrad.addColorStop(0.35, '#03045e');   // Deep Midnight Indigo (250m)
+      oceanGrad.addColorStop(0.55, '#10002b');   // Hadal Cosmic Purple (400m)
+      oceanGrad.addColorStop(0.80, '#020005');   // Outer Abyss Void (600m)
+      oceanGrad.addColorStop(1.0, '#000002');    // Cosmic Nebula Void (750m+)
     }
 
     ctx.fillStyle = oceanGrad;
@@ -772,14 +775,15 @@ export class Environment {
       ctx.restore();
     }
 
-    // Depth Markers & Zone Headers across 0m ~ 500m
+    // Depth Markers & Zone Headers across 0m ~ 750m
     ctx.save();
     const zoneHeaders = [
       { depth: 5, title: '🌊 [표층 바다 / Shallow Zone 0~30m]', color: '#a0c4ff' },
       { depth: 32, title: '🌅 [중층 바다 / Twilight Zone 30~100m]', color: '#80ffdb' },
       { depth: 105, title: '🌌 [심해 어둠층 / Midnight Zone 100~250m]', color: '#c77dff' },
       { depth: 255, title: '🪐 [심연의 해구 / Abyssal Trench 250~400m]', color: '#ffd166' },
-      { depth: 405, title: '👑 [미지의 초심연 / Hadal Realm 400~500m+]', color: '#ff007f' }
+      { depth: 405, title: '👑 [미지의 초심연 / Hadal Realm 400~600m]', color: '#ff007f' },
+      { depth: 605, title: '✨ [코스믹 네뷸라 해저 지대 / Cosmic Void 600~750m+]', color: '#70e000' }
     ];
 
     zoneHeaders.forEach(zh => {
@@ -789,7 +793,7 @@ export class Environment {
       ctx.fillText(zh.title, bounds.left + 30, zy);
     });
 
-    for (let d = 25; d <= 500; d += 25) {
+    for (let d = 25; d <= 750; d += 25) {
       const y = d * 20;
       ctx.strokeStyle = (d % 100 === 0) ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.09)';
       ctx.lineWidth = (d % 100 === 0) ? 2 : 1;
@@ -830,7 +834,7 @@ export class Environment {
     });
     ctx.restore();
 
-    // Seabed Landscape (Reefs, Corals, Sunken Ruins at 500m)
+    // Seabed Landscape (Reefs, Corals, Sunken Ruins at 750m)
     this.drawSeabed(ctx, bounds);
 
     // Water Surface Waves
@@ -838,24 +842,24 @@ export class Environment {
   }
 
   drawSeabed(ctx, bounds) {
-    const seabedY = 10150; // 500m seabed floor
+    const seabedY = 15150; // 750m+ seabed floor (1m = 20px -> 750m = 15000px)
     ctx.save();
 
     // Sandy/Rocky bottom
-    ctx.fillStyle = '#0a0908';
+    ctx.fillStyle = '#050508';
     ctx.beginPath();
     ctx.moveTo(bounds.left - 200, seabedY);
     for (let x = bounds.left - 200; x <= bounds.right + 200; x += 150) {
       const cy = seabedY + Math.sin(x * 0.005) * 40;
       ctx.lineTo(x, cy);
     }
-    ctx.lineTo(bounds.right + 200, 10700);
-    ctx.lineTo(bounds.left - 200, 10700);
+    ctx.lineTo(bounds.right + 200, 16000);
+    ctx.lineTo(bounds.left - 200, 16000);
     ctx.closePath();
     ctx.fill();
 
     // Ancient Sunken Atlantis Temple Columns & Ruins across seabed
-    [2200, 6200, 10500].forEach(templeX => {
+    [2500, 7500, 14000, 21000, 28000].forEach(templeX => {
       const templeY = seabedY - 40;
       ctx.fillStyle = '#1e1b18';
       ctx.strokeStyle = '#ffd166';

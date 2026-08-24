@@ -894,6 +894,16 @@ html, body {
   max-height: 88vh;
 }
 
+.shop-window {
+  width: 980px;
+  max-width: 95vw;
+  height: 720px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 /* =========================================================
    Dock Merchant Cabin Modal (부두막 쉼터 & 고양이 상점)
    ========================================================= */
@@ -1244,29 +1254,41 @@ html, body {
   background: #faf7f0;
 }
 
-/* Shop Tabs */
+/* Shop Tabs (Single-row 1열 와이드 배치 & 상하좌우 안전 여백으로 버튼 아래 그림자/보더 클리핑 완전 방지) */
 .shop-tabs {
   display: flex;
-  gap: 10px;
-  padding: 14px 24px;
+  gap: 12px;
+  padding: 14px 24px 18px 24px;
   background: #fdfaf3;
   border-bottom: 2px solid #f1e7d0;
-  overflow-x: auto;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  min-height: 72px;
+  box-sizing: border-box;
 }
 
 .shop-tab-btn {
-  background: #fff;
+  flex: 1 1 0px;
+  min-width: 0;
+  height: 42px;
+  background: #ffffff;
   border: 2px solid #dee2e6;
-  padding: 10px 20px;
+  padding: 8px 6px;
   border-radius: var(--radius-pill);
   font-family: var(--font-cute);
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
+  text-align: center;
   box-shadow: 0 3px 0 #ced4da;
-  transition: all 0.18s ease;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .shop-tab-btn:hover {
@@ -1275,10 +1297,15 @@ html, body {
   box-shadow: 0 4px 0 #cbd5e1;
 }
 
+.shop-tab-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 #cbd5e1;
+}
+
 .shop-tab-btn.active {
   background: linear-gradient(180deg, #ff85a1 0%, #ff5d8f 100%);
   border-color: #c9184a;
-  color: #fff;
+  color: #ffffff;
   box-shadow: 0 4px 0 #a01036;
   transform: translateY(-1px);
 }
@@ -1339,7 +1366,19 @@ html, body {
   transform: translateY(-1px);
 }
 
-.shop-grid, .encyclo-grid {
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: #faf7f0;
+  align-content: start;
+}
+
+.encyclo-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 16px;
@@ -1349,7 +1388,22 @@ html, body {
   background: #faf7f0;
 }
 
-.shop-card, .encyclo-card {
+.shop-card {
+  background: #ffffff;
+  border: 2.5px solid #e9ecef;
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 230px;
+  box-shadow: 0 3px 0 #dee2e6;
+  transition: all 0.15s;
+  box-sizing: border-box;
+}
+
+.encyclo-card {
   background: #ffffff;
   border: 2.5px solid #e9ecef;
   border-radius: var(--radius-md);
@@ -2677,58 +2731,94 @@ html, body {
 }
 
 .wardrobe-window {
-  max-width: 680px;
+  width: 860px;
+  max-width: 94vw;
+  height: 640px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .wardrobe-content {
-  padding: 24px;
+  padding: 20px 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   background: #faf7f0;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .wardrobe-tabs {
   display: flex;
-  gap: 10px;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .wardrobe-tab-btn {
   flex: 1;
-  padding: 10px 16px;
+  height: 42px;
+  padding: 8px 16px;
   font-family: var(--font-cute);
   font-size: 15px;
   font-weight: 700;
-  border: 2px solid #e2e8f0;
+  border: 2px solid #dee2e6;
   background: #ffffff;
   color: #64748b;
   border-radius: var(--radius-pill);
   cursor: pointer;
+  box-shadow: 0 3px 0 #ced4da;
   transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wardrobe-tab-btn:hover {
+  transform: translateY(-2px);
+  border-color: #db2777;
+  box-shadow: 0 4px 0 #cbd5e1;
+}
+
+.wardrobe-tab-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 #cbd5e1;
 }
 
 .wardrobe-tab-btn.active {
-  border-color: #db2777;
-  background: #db2777;
+  border-color: #9d174d;
+  background: linear-gradient(180deg, #ec4899 0%, #db2777 100%);
   color: #ffffff;
-  box-shadow: 0 3px 0 #9d174d;
+  box-shadow: 0 4px 0 #9d174d;
+  transform: translateY(-1px);
 }
 
 .wardrobe-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 14px;
-  max-height: 420px;
   overflow-y: auto;
-  padding-right: 4px;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 4px 8px 16px 4px;
+  align-content: start;
 }
 
 .wardrobe-card {
+  background: #ffffff;
+  border: 2.5px solid #e9ecef;
+  border-radius: var(--radius-md);
   padding: 14px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: 10px;
+  min-height: 180px;
+  box-shadow: 0 3px 0 #dee2e6;
+  transition: all 0.15s;
+  box-sizing: border-box;
 }
 
 .skin-swatch {
@@ -3724,4 +3814,153 @@ html, body {
   border-color: #38bdf8;
   color: #38bdf8;
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+/* =========================================================
+   Right-Bottom Floating Action Widget (화면 우측 하단 찌 액션 동그라미)
+   ========================================================= */
+.right-action-widget {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 95;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform: scale(1);
+  opacity: 1;
+}
+
+.right-action-widget.hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: scale(0.6) translateY(20px) !important;
+}
+
+.right-action-btn {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.90);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 2.5px solid #38bdf8;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  user-select: none;
+  padding: 0;
+}
+
+.right-action-btn:hover {
+  transform: scale(1.08);
+  border-color: #00f5d4;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 28px rgba(0, 245, 212, 0.6);
+}
+
+.right-action-btn:active {
+  transform: scale(0.95);
+}
+
+/* Specific Modes */
+.right-action-btn.mode-stop {
+  border-color: #f43f5e;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 20px rgba(244, 63, 94, 0.35);
+}
+
+.right-action-btn.mode-stop:hover {
+  border-color: #ff0054;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 28px rgba(255, 0, 84, 0.6);
+}
+
+.right-action-btn.mode-locked {
+  border-color: #ffd166;
+  background: rgba(30, 41, 59, 0.95);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 22px rgba(255, 209, 102, 0.5);
+  animation: pulse-locked 1.5s infinite alternate;
+}
+
+@keyframes pulse-locked {
+  from { box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 12px rgba(255, 209, 102, 0.4); }
+  to { box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 28px rgba(255, 209, 102, 0.8); }
+}
+
+.right-action-btn.mode-allure {
+  border-color: #ff007f;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 22px rgba(255, 0, 127, 0.45);
+}
+
+.right-action-btn.mode-bomb {
+  border-color: #fb923c;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 22px rgba(251, 146, 60, 0.45);
+}
+
+.right-action-icon {
+  font-size: 26px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.right-action-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.right-action-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #f8fafc;
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+}
+
+.right-action-count {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  background: #f43f5e;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 10px;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+
+.right-action-count.hidden {
+  display: none;
+}
+
+/* Mouse Right Click Badge in bottom-right corner */
+.mouse-right-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -6px;
+  background: #0f172a;
+  border: 1.5px solid #38bdf8;
+  border-radius: 12px;
+  padding: 2px 6px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.mouse-right-badge .badge-text {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #38bdf8;
+  white-space: nowrap;
 }

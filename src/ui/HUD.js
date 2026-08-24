@@ -1,9 +1,9 @@
 /**
  * HUD & In-Game UI Overlay Manager
  */
-import { BAITS } from '../systems/Economy.js?v=2.9.0';
-import { Fish } from '../entities/Fish.js?v=2.9.0';
-import { getBaitIconSvg } from './BaitIcons.js?v=2.9.0';
+import { BAITS } from '../systems/Economy.js?v=5.6.0';
+import { Fish } from '../entities/Fish.js?v=5.6.0';
+import { getBaitIconSvg } from './BaitIcons.js?v=5.6.0';
 
 export class HUD {
   constructor(economy, encyclopedia, soundEngine, environment = null) {
@@ -31,6 +31,14 @@ export class HUD {
     this.chargeFill = document.getElementById('hud-charge-fill');
     this.catchModal = document.getElementById('catch-modal');
 
+    // 🛑 / 💖 / 💣 Right-Bottom Floating Action Widget
+    this.rightActionWidget = document.getElementById('right-action-widget');
+    this.rightActionBtn = document.getElementById('right-action-btn');
+    this.rightActionIcon = document.getElementById('right-action-icon');
+    this.rightActionLabel = document.getElementById('right-action-label');
+    this.rightActionCount = document.getElementById('right-action-count');
+    this.onRightActionTrigger = null;
+
     // Floating notifications
     this.notifications = [];
     this.notifContainer = document.getElementById('floating-notifications');
@@ -38,6 +46,26 @@ export class HUD {
 
     this.initBaitBar();
     this.initDrawerEvents();
+    this.initRightActionWidget();
+  }
+
+  initRightActionWidget() {
+    if (this.rightActionBtn) {
+      this.rightActionBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (this.onRightActionTrigger) {
+          this.onRightActionTrigger();
+        }
+      });
+      this.rightActionBtn.addEventListener('contextmenu', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (this.onRightActionTrigger) {
+          this.onRightActionTrigger();
+        }
+      });
+    }
   }
 
   setRod(rod) {
@@ -107,7 +135,6 @@ export class HUD {
 
       let count = '';
       if (bait.id === 'bread') count = '∞';
-      else if (bait.isTackle) count = hasStock ? '보유' : '0';
       else count = `x${this.economy.baitInventory[bait.id] || 0}`;
 
       btn.innerHTML = `
@@ -119,9 +146,12 @@ export class HUD {
       btn.addEventListener('click', () => {
         if (bait.id === 'rocket') {
           this.toggleRocketItem();
+        } else if (bait.id === 'allure') {
+          this.sound.playClick();
+          this.showNotification('💖 현혹 페로몬: 물속에서 마우스 우클릭 시 주변 모든 물고기가 미끼로 쇄도합니다!', '💡');
         } else if (bait.id === 'bomb') {
           this.sound.playClick();
-          this.showNotification('💣 폭탄: 물속에서 마우스 우클릭 시 폭발합니다!', '💡');
+          this.showNotification('💣 폭탄: 물속에서 마우스 우클릭 시 주변 방해 물고기를 퇴치합니다!', '💡');
         } else if (bait.id === 'multi_hook_2') {
           this.selectHookCount(2);
         } else if (bait.id === 'multi_hook_3') {
@@ -143,8 +173,8 @@ export class HUD {
 
   isItemActive(id) {
     if (id === 'rocket') return this.economy.useRocket;
-    if (id === 'multi_hook_2') return this.economy.hookCount === 2;
-    if (id === 'multi_hook_3') return this.economy.hookCount === 3;
+    if (id === 'multi_hook_2') return this.economy.hookMode === 2 && (this.economy.baitInventory['multi_hook_2'] || 0) > 0;
+    if (id === 'multi_hook_3') return this.economy.hookMode === 3 && (this.economy.baitInventory['multi_hook_3'] || 0) > 0;
     return id === this.economy.currentBaitId;
   }
 
@@ -175,24 +205,23 @@ export class HUD {
       return;
     }
     if (count === 2 && (this.economy.baitInventory['multi_hook_2'] || 0) < 1) {
-      this.showNotification('🪝 2중 바늘 리그가 없습니다! 상점(S)에서 구매하세요.', '⚠️');
+      this.showNotification('🪝 2중 바늘 리그 채비가 없습니다! 상점(S)에서 구매하세요.', '⚠️');
       return;
     }
     if (count === 3 && (this.economy.baitInventory['multi_hook_3'] || 0) < 1) {
-      this.showNotification('🔱 3중 바늘 리그가 없습니다! 상점(S)에서 구매하세요.', '⚠️');
+      this.showNotification('🔱 3중 바늘 리그 채비가 없습니다! 상점(S)에서 구매하세요.', '⚠️');
       return;
     }
 
     // Toggle back to 1 if already equipped
-    if (this.economy.hookCount === count) {
-      this.economy.hookCount = 1;
+    if (this.economy.hookMode === count) {
+      this.economy.setHookMode(1);
       this.showNotification('🪝 기본 1개 바늘 장착으로 전환되었습니다.', '💡');
     } else {
-      this.economy.hookCount = count;
-      this.showNotification(count === 2 ? '🪝 2중 바늘 리그 장착 완료! (미끼 2개)' : '🔱 3중 바늘 리그 장착 완료! (미끼 3개)', '✨');
+      this.economy.setHookMode(count);
+      this.showNotification(count === 2 ? '🪝 2중 바늘 리그 채비 장착 완료! (미끼 2개 동시 낚기)' : '🔱 3중 바늘 리그 채비 장착 완료! (미끼 3개 동시 낚기)', '✨');
     }
-    this.economy.saveToStorage();
-    this.updateActiveBaitPill();
+    this.initBaitBar();
   }
 
   selectBait(baitId) {
@@ -351,6 +380,52 @@ export class HUD {
         if (textEl) textEl.innerHTML = `부두막 <b>${distM.toLocaleString()}m</b>`;
       } else {
         dockDistEl.classList.add('hidden');
+      }
+    }
+
+    // 8. 🛑 / 💖 / 💣 Update Right-Bottom Floating Action Widget
+    if (this.rightActionWidget && this.rightActionBtn) {
+      if (rod.state === 'FISHING' && rod.isSubmerged) {
+        this.rightActionWidget.classList.remove('hidden');
+
+        const allureCount = this.economy.baitInventory['allure'] || 0;
+        const bombCount = this.economy.baitInventory['bomb'] || 0;
+
+        this.rightActionBtn.className = 'right-action-btn';
+
+        if (allureCount > 0) {
+          // Case A-1: Allure Pheromone available
+          this.rightActionBtn.classList.add('mode-allure');
+          if (this.rightActionIcon) this.rightActionIcon.innerHTML = getBaitIconSvg('allure');
+          if (this.rightActionLabel) this.rightActionLabel.innerText = '현혹 페로몬';
+          if (this.rightActionCount) {
+            this.rightActionCount.classList.remove('hidden');
+            this.rightActionCount.innerText = `x${allureCount}`;
+          }
+        } else if (bombCount > 0) {
+          // Case A-2: Depth Bomb available
+          this.rightActionBtn.classList.add('mode-bomb');
+          if (this.rightActionIcon) this.rightActionIcon.innerHTML = getBaitIconSvg('bomb');
+          if (this.rightActionLabel) this.rightActionLabel.innerText = '어군 폭탄';
+          if (this.rightActionCount) {
+            this.rightActionCount.classList.remove('hidden');
+            this.rightActionCount.innerText = `x${bombCount}`;
+          }
+        } else {
+          // Case B: No special items -> Depth Lock (STOP / SINK)
+          if (this.rightActionCount) this.rightActionCount.classList.add('hidden');
+          if (rod.isDepthLocked) {
+            this.rightActionBtn.classList.add('mode-locked');
+            if (this.rightActionIcon) this.rightActionIcon.innerText = '▶️';
+            if (this.rightActionLabel) this.rightActionLabel.innerText = 'SINK';
+          } else {
+            this.rightActionBtn.classList.add('mode-stop');
+            if (this.rightActionIcon) this.rightActionIcon.innerText = '🛑';
+            if (this.rightActionLabel) this.rightActionLabel.innerText = 'STOP';
+          }
+        }
+      } else {
+        this.rightActionWidget.classList.add('hidden');
       }
     }
   }

@@ -5,7 +5,7 @@
 export const RODS = [
   {
     id: 'rod_twig',
-    name: '나뭇가지 낚싯대',
+    name: '🌿 나뭇가지 낚싯대',
     tier: 1,
     price: 0,
     maxLineLength: 1800, // ~90m
@@ -17,90 +17,204 @@ export const RODS = [
   },
   {
     id: 'rod_bamboo',
-    name: '단단 대나무 낚싯대',
+    name: '🎋 단단 대나무 낚싯대',
     tier: 2,
-    price: 180,
-    maxLineLength: 3800, // ~190m
-    maxTension: 180,
-    reelSpeed: 280,
-    castPower: 580,
+    price: 450,
+    maxLineLength: 2800, // ~140m
+    maxTension: 160,
+    reelSpeed: 260,
+    castPower: 540,
     color: '#70e000',
-    description: '유연하고 질긴 대나무 낚싯대. 중층 바다(190m)까지 깊숙이 낚싯줄을 내립니다.'
+    description: '유연하고 질긴 대나무 낚싯대. 중층 바다(140m)까지 깊숙이 낚싯줄을 내립니다.'
+  },
+  {
+    id: 'rod_glassfiber',
+    name: '🪶 낭만 글래스파이버 로드',
+    tier: 3,
+    price: 2200,
+    maxLineLength: 4200, // ~210m
+    maxTension: 240,
+    reelSpeed: 320,
+    castPower: 660,
+    color: '#06d6a0',
+    description: '유연한 탄성의 유리섬유 로드. 중층~심해 경계(210m)의 힘센 물고기를 낚아올립니다.'
   },
   {
     id: 'rod_carbon',
-    name: '카본 프로 로드',
-    tier: 3,
-    price: 750,
-    maxLineLength: 6800, // ~340m
-    maxTension: 320,
-    reelSpeed: 380,
-    castPower: 750,
+    name: '🖤 카본 프로 로드',
+    tier: 4,
+    price: 8500,
+    maxLineLength: 6000, // ~300m
+    maxTension: 360,
+    reelSpeed: 390,
+    castPower: 780,
     color: '#343a40',
-    description: '탄소 섬유로 제작되어 가볍고 튼튼합니다. 심해 어둠층(340m)의 희귀 어종과 겨룹니다.'
+    description: '가볍고 강력한 탄소 섬유 로드. 심해 어둠층(300m)의 희귀 어종과 겨룹니다.'
+  },
+  {
+    id: 'rod_obsidian',
+    name: '💎 흑요석 흑진주 로드',
+    tier: 5,
+    price: 28000,
+    maxLineLength: 7800, // ~390m
+    maxTension: 520,
+    reelSpeed: 470,
+    castPower: 900,
+    color: '#7b2cbf',
+    description: '심해 화산암과 흑진주를 가공해 극도의 인장력을 자랑합니다. 심연(390m)을 탐사합니다.'
   },
   {
     id: 'rod_titanium',
-    name: '심해 티타늄 로드',
-    tier: 4,
-    price: 2200,
-    maxLineLength: 9200, // ~460m
-    maxTension: 500,
-    reelSpeed: 490,
-    castPower: 920,
+    name: '🛡️ 심해 티타늄 로드',
+    tier: 6,
+    price: 85000,
+    maxLineLength: 9500, // ~475m
+    maxTension: 720,
+    reelSpeed: 560,
+    castPower: 1020,
     color: '#48cae4',
-    description: '심해의 극심한 수압을 견디는 특수 티타늄 합금. 심연의 해구(460m)를 탐사합니다.'
+    description: '수심 475m의 극심한 수압을 견디는 특수 티타늄 합금. 심연의 거대 괴수와 겨룹니다.'
+  },
+  {
+    id: 'rod_neon',
+    name: '⚡ 네온 하이드로 로드',
+    tier: 7,
+    price: 240000,
+    maxLineLength: 11200, // ~560m
+    maxTension: 1000,
+    reelSpeed: 660,
+    castPower: 1150,
+    color: '#00f5d4',
+    description: '500m 해저 바닥을 완벽 돌파! 발광 플라즈마 에너지로 560m 심해어를 매혹합니다.'
+  },
+  {
+    id: 'rod_atlantis',
+    name: '🔱 고대 아틀란티스 로드',
+    tier: 8,
+    price: 650000,
+    maxLineLength: 12800, // ~640m
+    maxTension: 1450,
+    reelSpeed: 780,
+    castPower: 1300,
+    color: '#ffd166',
+    description: '고대 해저 신전의 유물 합금 로드. 640m 초심연의 전설 물고기를 단숨에 제압합니다.'
   },
   {
     id: 'rod_aurora',
-    name: '전설의 별빛 오로라 로드',
-    tier: 5,
-    price: 5500,
-    maxLineLength: 12500, // ~625m (500m 해저 바닥 돌파!)
-    maxTension: 900,
-    reelSpeed: 620,
-    castPower: 1100,
-    color: '#ff006e',
-    description: '별빛과 오로라가 깃든 신화의 로드. 500m 초심연 해저 바닥의 별빛 고래와 크라켄도 낚아올립니다!'
+    name: '🌌 전설의 별빛 오로라 로드',
+    tier: 9,
+    price: 1800000,
+    maxLineLength: 14200, // ~710m
+    maxTension: 2100,
+    reelSpeed: 920,
+    castPower: 1450,
+    color: '#ff007f',
+    description: '별빛과 오로라가 깃든 신화의 로드. 710m 해저 바닥의 별빛 고래와 크라켄을 낚아올립니다!'
+  },
+  {
+    id: 'rod_cosmic',
+    name: '🪐 코스믹 네뷸라 신화 로드',
+    tier: 10,
+    price: 5000000,
+    maxLineLength: 16000, // ~800m (750m 해저 바닥 완벽 정복!)
+    maxTension: 3200,
+    reelSpeed: 1100,
+    castPower: 1650,
+    color: '#70e000',
+    description: '우주의 성운 에너지가 응축된 궁극의 엔드게임 로드. 750m 초심연 해저의 모든 보스를 압도합니다!'
   }
 ];
 
 export const BOATS = [
   {
     id: 'boat_raft',
-    name: '통나무 뗏목',
+    name: '🪵 통나무 뗏목',
     price: 0,
-    speed: 85,
-    maxTravelX: 3200,
-    description: '해변 근처에서 잔잔하게 즐기는 통나무 뗏목.',
+    speed: 90,
+    maxTravelX: 2500,
+    description: '해변 근처에서 잔잔하게 즐기는 기본 통나무 뗏목 (항해 2,500px).',
     drawType: 'raft'
   },
   {
+    id: 'boat_duck',
+    name: '🦆 포근 오리 페달보트',
+    price: 350,
+    speed: 135,
+    maxTravelX: 5500,
+    description: '귀여운 노란 오리 페달보트! 연안 바다로 신나게 나아갑니다 (항해 5,500px).',
+    drawType: 'duck'
+  },
+  {
     id: 'boat_rowboat',
-    name: '낭만 조각배',
-    price: 250,
-    speed: 145,
-    maxTravelX: 6500,
-    description: '노를 저으며 먼바다로 나아가는 클래식 나룻배.',
+    name: '🚣 낭만 조각배',
+    price: 1500,
+    speed: 180,
+    maxTravelX: 8500,
+    description: '노를 저으며 먼바다로 나아가는 클래식 나룻배 (항해 8,500px).',
     drawType: 'rowboat'
   },
   {
+    id: 'boat_motorboat',
+    name: '🚤 쾌속 냥냥 모터보트',
+    price: 6800,
+    speed: 230,
+    maxTravelX: 12000,
+    description: '시원한 물살을 가르며 중원양 바다로 질주하는 모터보트 (항해 12,000px).',
+    drawType: 'motorboat'
+  },
+  {
+    id: 'boat_jetski',
+    name: '⚡ 사이버 네온 제트스키',
+    price: 28000,
+    speed: 280,
+    maxTravelX: 15500,
+    description: '폭발적인 추진력으로 원양 파도를 뛰어넘는 네온 제트스키 (항해 15,500px).',
+    drawType: 'jetski'
+  },
+  {
+    id: 'boat_trawler',
+    name: '🚢 원양 트롤러 어선',
+    price: 95000,
+    speed: 330,
+    maxTravelX: 19500,
+    description: '거친 파도를 뚫고 원양 심해 어군을 찾아 나서는 튼튼한 어선 (항해 19,500px).',
+    drawType: 'trawler'
+  },
+  {
+    id: 'boat_catamaran',
+    name: '⛵ 쌍동선 스포츠 카타마란',
+    price: 290000,
+    speed: 380,
+    maxTravelX: 23500,
+    description: '두 개의 날렵한 선체와 트윈 세일로 바람을 가르는 스포츠 쌍동선 (항해 23,500px).',
+    drawType: 'catamaran'
+  },
+  {
     id: 'boat_cruiser',
-    name: '쾌속 냥냥 어선',
-    price: 900,
-    speed: 210,
-    maxTravelX: 10500,
-    description: '원거리 원양 낚시를 위한 기동성 뛰어난 고양이 어선.',
+    name: '🛳️ 럭셔리 요트 크루저',
+    price: 780000,
+    speed: 430,
+    maxTravelX: 27000,
+    description: '고급스러운 샴페인 데크를 갖춘 쾌속 크루저 요트 (항해 27,000px).',
     drawType: 'cruiser'
   },
   {
     id: 'boat_submarine',
-    name: '냥냥 노란 잠수정',
-    price: 3200,
-    speed: 280,
-    maxTravelX: 14000,
-    description: '가로 14,000px 끝없는 초원양 바다 한가운데까지 진출할 수 있는 최첨단 고양이 잠수정!',
+    name: '潜 냥냥 노란 잠수정',
+    price: 2100000,
+    speed: 490,
+    maxTravelX: 29800,
+    description: '심해 탐사 전용 첨단 고양이 잠수정 (항해 29,800px).',
     drawType: 'submarine'
+  },
+  {
+    id: 'boat_hyper',
+    name: '🛸 하이퍼 코스믹 비행정',
+    price: 5500000,
+    speed: 560,
+    maxTravelX: 32000,
+    description: '바다 끝 32,000px까지 순식간에 도달하는 우주급 비행선 (항해 32,000px).',
+    drawType: 'hyper'
   }
 ];
 
@@ -121,7 +235,7 @@ export const BAITS = [
     id: 'worm',
     name: '통통 갯지렁이',
     category: 'bait',
-    price: 15,
+    price: 25,
     countPerBuy: 5,
     maxDepth: 80,
     description: '활발하게 꿈틀거려 수심 80m까지의 표층·중층 물고기들을 유혹합니다.',
@@ -132,7 +246,7 @@ export const BAITS = [
     id: 'shrimp',
     name: '싱싱 핑크 생새우',
     category: 'bait',
-    price: 45,
+    price: 75,
     countPerBuy: 5,
     maxDepth: 180,
     description: '고소한 냄새로 수심 180m까지의 중층·중심해 고급 어종을 유혹합니다.',
@@ -143,29 +257,61 @@ export const BAITS = [
     id: 'lure',
     name: '반짝 야광 루어',
     category: 'bait',
-    price: 120,
+    price: 200,
     countPerBuy: 3,
-    maxDepth: 320,
-    description: '화려하게 발광하여 수심 320m까지의 심해 어둠층과 희귀어를 유혹합니다.',
+    maxDepth: 350,
+    description: '화려하게 발광하여 수심 350m까지의 심해 어둠층과 희귀어를 유혹합니다.',
     icon: '✨',
     sinkSpeed: 1.8
   },
   {
-    id: 'golden',
-    name: '황금 크릴 엑기스',
+    id: 'jelly',
+    name: '🔮 발광 플랑크톤 젤리',
     category: 'bait',
-    price: 350,
+    price: 380,
+    countPerBuy: 3,
+    maxDepth: 520,
+    description: '신비롭게 번뜩이는 발광 젤리. 수심 520m까지의 초심해 희귀 어종을 매혹합니다.',
+    icon: '🔮',
+    sinkSpeed: 2.1
+  },
+  {
+    id: 'pearl',
+    name: '🌌 심연의 오로라 펄',
+    category: 'bait',
+    price: 680,
     countPerBuy: 2,
-    maxDepth: 600,
-    description: '수심 600m+ 초심연의 전설 어종까지 모든 물고기를 매혹시키는 특급 미끼! (이로치 확률 2배)',
+    maxDepth: 750,
+    description: '오로라 광채를 뿜는 신비의 진주. 수심 750m 해저 바닥의 전설 어종을 유혹합니다.',
+    icon: '🌌',
+    sinkSpeed: 2.4
+  },
+  {
+    id: 'golden',
+    name: '👑 황금 크릴 엑기스',
+    category: 'bait',
+    price: 1200,
+    countPerBuy: 2,
+    maxDepth: 800,
+    description: '👑 10대 전설 신화 보스가 유일하게 먹는 전설의 특급 미끼! (일반 물고기도 물지만 보스는 오직 이 미끼에만 반응)',
     icon: '👑',
-    sinkSpeed: 2.2
+    sinkSpeed: 2.6
+  },
+  {
+    id: 'allure',
+    name: '💖 환상의 현혹 페로몬',
+    category: 'item',
+    price: 450,
+    countPerBuy: 3,
+    description: '물속에서 우클릭 시 강력한 매혹 페로몬을 방출하여 주변 넓은 범위의 모든 물고기들이 미끼로 쇄도합니다!',
+    icon: '💖',
+    sinkSpeed: 1.0
   },
   {
     id: 'rocket',
     name: '🚀 냥냥 로켓 폭죽',
     category: 'item',
-    price: 80,
+    price: 150,
     countPerBuy: 3,
     description: '찌를 던질 때 로켓 불꽃을 뿜으며 초원거리로 날아갑니다!',
     icon: '🚀',
@@ -175,7 +321,7 @@ export const BAITS = [
     id: 'bomb',
     name: '💣 심해 어군 폭탄',
     category: 'item',
-    price: 120,
+    price: 250,
     countPerBuy: 2,
     description: '물속에서 우클릭 시 폭발하여 주변의 방해 물고기를 즉시 퇴치합니다!',
     icon: '💣',
@@ -185,10 +331,11 @@ export const BAITS = [
     id: 'multi_hook_2',
     name: '🪝 2중 찌 바늘 리그',
     category: 'tackle',
-    price: 200,
-    countPerBuy: 1,
+    price: 800,
+    countPerBuy: 5,
     isTackle: true,
-    description: '미끼 2개를 동시에 달아 한 번에 두 마리를 낚아올립니다!',
+    hookCount: 2,
+    description: '미끼 2개를 동시에 달아 한 번에 2마리를 낚아올립니다! (5회분 소모성 채비)',
     icon: '🪝',
     sinkSpeed: 1.0
   },
@@ -196,10 +343,11 @@ export const BAITS = [
     id: 'multi_hook_3',
     name: '🔱 3중 찌 바늘 리그',
     category: 'tackle',
-    price: 450,
-    countPerBuy: 1,
+    price: 2500,
+    countPerBuy: 3,
     isTackle: true,
-    description: '미끼 3개를 동시에 달아 한 번에 최대 세 마리를 낚아올립니다!',
+    hookCount: 3,
+    description: '미끼 3개를 동시에 달아 한 번에 최대 3마리를 낚아올립니다! (3회분 소모성 채비)',
     icon: '🔱',
     sinkSpeed: 1.0
   }
@@ -217,7 +365,7 @@ export const HATS = [
   {
     id: 'hat_straw',
     name: '포근 밀짚모자',
-    price: 50,
+    price: 100,
     icon: '👒',
     perk: '평화로운 낚시 감성 +50%',
     drawType: 'straw'
@@ -225,7 +373,7 @@ export const HATS = [
   {
     id: 'hat_sailor',
     name: '꼬마 마린 선원모',
-    price: 180,
+    price: 500,
     icon: '⚓',
     perk: '릴링 속도 +15%',
     drawType: 'sailor'
@@ -233,7 +381,7 @@ export const HATS = [
   {
     id: 'hat_frog',
     name: '개구리 우비 후드',
-    price: 350,
+    price: 1500,
     icon: '🐸',
     perk: '물고기 입질 거리 +25%',
     drawType: 'frog'
@@ -241,7 +389,7 @@ export const HATS = [
   {
     id: 'hat_wizard',
     name: '별빛 마법사 고깔',
-    price: 800,
+    price: 6000,
     icon: '🧙‍♂️',
     perk: '밤바다 희귀 어종 확률 +30%',
     drawType: 'wizard'
@@ -249,7 +397,7 @@ export const HATS = [
   {
     id: 'hat_pirate',
     name: '카리스마 해적 모자',
-    price: 1600,
+    price: 25000,
     icon: '🏴‍☠️',
     perk: '보물상자 & 대어 출현율 2배',
     drawType: 'pirate'
@@ -257,10 +405,18 @@ export const HATS = [
   {
     id: 'hat_crown',
     name: '영롱한 황금 왕관',
-    price: 3500,
+    price: 100000,
     icon: '👑',
-    perk: '물고기 판매 가격 +30%',
+    perk: '상점 전 품목 20% 세일 할인 구매',
     drawType: 'crown'
+  },
+  {
+    id: 'hat_radar',
+    name: '📡 냥냥 레이더 모자',
+    price: 150000,
+    icon: '📡',
+    perk: '화면 모서리에 보스 방향 & 거리 레이더 표시',
+    drawType: 'radar'
   }
 ];
 
@@ -268,38 +424,56 @@ export const PASSIVE_UPGRADES = [
   {
     id: 'line_durability',
     name: '초강력 낚싯줄 코팅',
-    maxLevel: 10,
-    basePrice: 80,
-    priceMult: 1.55,
+    maxLevel: 15,
+    basePrice: 150,
+    priceMult: 1.65,
     icon: '🧵',
-    description: '낚싯줄의 팽팽함(Tension) 내구도를 레벨당 +20% 향상시킵니다.'
+    description: '낚싯줄의 팽팽함(Tension) 내구도를 레벨당 +15% 향상시킵니다.'
   },
   {
     id: 'sinker_weight',
-    name: '고속 다이빙 추',
-    maxLevel: 10,
-    basePrice: 60,
-    priceMult: 1.5,
+    name: '고속 다이빙 메탈 추',
+    maxLevel: 15,
+    basePrice: 120,
+    priceMult: 1.60,
     icon: '⚓',
-    description: '미끼가 가라앉는 속도를 레벨당 +25% 빠르게 하여 500m 심해에 신속히 도달합니다.'
+    description: '미끼가 가라앉는 속도를 레벨당 +20% 빠르게 하여 750m 심해에 신속히 도달합니다.'
+  },
+  {
+    id: 'reel_motor',
+    name: '고성능 전동 릴 모터',
+    maxLevel: 15,
+    basePrice: 200,
+    priceMult: 1.70,
+    icon: '⚡',
+    description: '릴링으로 물고기를 끌어올리는 속도를 레벨당 +10% 향상시킵니다.'
   },
   {
     id: 'fish_sonar',
     name: '냥냥 음파 어군 탐지기',
-    maxLevel: 5,
-    basePrice: 200,
-    priceMult: 2.0,
+    maxLevel: 10,
+    basePrice: 500,
+    priceMult: 1.85,
     icon: '📡',
-    description: '수심 500m 전 구역의 물고기 위치와 ✨ 이로치 여부를 HUD에 표시합니다.'
+    description: '수심 750m 전 구역의 물고기 위치와 ✨ 이로치 여부를 HUD에 표시합니다.'
   },
   {
-    id: 'lucky_charm',
-    name: '황금 마네키네코 방울',
-    maxLevel: 10,
-    basePrice: 120,
-    priceMult: 1.65,
-    icon: '🔔',
-    description: '극도로 희귀한 ✨ 이로치(Shiny) 출현 확률을 레벨당 +15% 증가시킵니다.'
+    id: 'lucky_clover',
+    name: '네잎클로버 행운 부적',
+    maxLevel: 15,
+    basePrice: 300,
+    priceMult: 1.75,
+    icon: '🍀',
+    description: '행운 확률을 레벨당 +1%씩만 점진적으로 증가시킵니다.'
+  },
+  {
+    id: 'aquarium_prosperity',
+    name: '아쿠아리움 풍요의 분수',
+    maxLevel: 15,
+    basePrice: 250,
+    priceMult: 1.70,
+    icon: '🏺',
+    description: '아쿠아리움 물고기 밥주기 시 생성되는 금화 보상을 레벨당 +25% 증가시킵니다.'
   }
 ];
 
@@ -419,6 +593,7 @@ export class Economy {
     this.currentBaitId = 'bread';
     this.useRocket = false;
     this.hookCount = 1;
+    this.hookMode = 1; // 1: standard 1-hook, 2: 2-hook rig, 3: 3-hook rig
 
     this.baitInventory = {
       bread: 999,
@@ -435,8 +610,10 @@ export class Economy {
     this.upgradeLevels = {
       line_durability: 0,
       sinker_weight: 0,
+      reel_motor: 0,
       fish_sonar: 0,
-      lucky_charm: 0
+      lucky_clover: 0,
+      aquarium_prosperity: 0
     };
 
     // 🧺 Caught Fish Basket (잡은 물고기 보관 바구니: 상인에게 판매하거나 아쿠아리움에 수집)
@@ -464,8 +641,26 @@ export class Economy {
         this.currentBaitId = data.currentBaitId || 'bread';
         this.useRocket = data.useRocket || false;
         this.hookCount = data.hookCount || 1;
+        this.hookMode = data.hookMode || 1;
         this.baitInventory = Object.assign(this.baitInventory, data.baitInventory || {});
-        this.upgradeLevels = Object.assign(this.upgradeLevels, data.upgradeLevels || {});
+        this.upgradeLevels = Object.assign({
+          line_durability: 0,
+          sinker_weight: 0,
+          reel_motor: 0,
+          fish_sonar: 0,
+          lucky_clover: 0,
+          aquarium_prosperity: 0
+        }, data.upgradeLevels || {});
+        // Migration from legacy lucky_charm
+        if (data.upgradeLevels?.lucky_charm && (!this.upgradeLevels.lucky_clover || this.upgradeLevels.lucky_clover === 0)) {
+          this.upgradeLevels.lucky_clover = data.upgradeLevels.lucky_charm;
+        }
+        if (!Array.isArray(this.ownedBoats) || this.ownedBoats.length === 0) {
+          this.ownedBoats = ['boat_raft'];
+        }
+        if (!Array.isArray(this.ownedRods) || this.ownedRods.length === 0) {
+          this.ownedRods = ['rod_twig'];
+        }
         this.caughtFishBasket = Array.isArray(data.caughtFishBasket) ? data.caughtFishBasket : [];
       }
     } catch (e) {
@@ -490,6 +685,7 @@ export class Economy {
         currentBaitId: this.currentBaitId,
         useRocket: this.useRocket,
         hookCount: this.hookCount,
+        hookMode: this.hookMode,
         baitInventory: this.baitInventory,
         upgradeLevels: this.upgradeLevels,
         caughtFishBasket: this.caughtFishBasket
@@ -586,14 +782,28 @@ export class Economy {
     return false;
   }
 
+  spendAllure() {
+    if ((this.baitInventory['allure'] || 0) > 0) {
+      this.baitInventory['allure'] -= 1;
+      this.saveToStorage();
+      return true;
+    }
+    return false;
+  }
+
   addGold(amount) {
-    // Hat bonus: Golden Crown (+30%)
-    let mult = 1.0;
-    if (this.currentHatId === 'hat_crown') mult += 0.3;
-    const finalAmount = Math.round(amount * mult);
+    const finalAmount = Math.round(amount);
     this.gold += finalAmount;
     this.saveToStorage();
     return finalAmount;
+  }
+
+  getShopDiscountMultiplier() {
+    // 👑 영롱한 황금 왕관 착용 시 상점 전 품목 20% 세일 할인!
+    if (this.currentHatId === 'hat_crown') {
+      return 0.80;
+    }
+    return 1.0;
   }
 
   spendGold(amount) {
@@ -619,24 +829,86 @@ export class Economy {
   }
 
   getExpForNextLevel() {
-    return Math.round(50 * Math.pow(1.35, this.level - 1));
+    return Math.round(60 * Math.pow(1.22, this.level - 1) + this.level * 30);
   }
 
   getCurrentRod() {
-    return RODS.find(r => r.id === this.currentRodId) || RODS[0];
+    let found = RODS.find(r => r.id === this.currentRodId);
+    if (!found) {
+      this.currentRodId = 'rod_twig';
+      found = RODS[0];
+    }
+    return found;
   }
 
   getCurrentBoat() {
-    return BOATS.find(b => b.id === this.currentBoatId) || BOATS[0];
+    let found = BOATS.find(b => b.id === this.currentBoatId);
+    if (!found) {
+      this.currentBoatId = 'boat_raft';
+      found = BOATS[0];
+    }
+    return found;
   }
 
   getCurrentHat() {
-    return HATS.find(h => h.id === this.currentHatId) || HATS[0];
+    let found = HATS.find(h => h.id === this.currentHatId);
+    if (!found) {
+      this.currentHatId = 'hat_none';
+      found = HATS[0];
+    }
+    return found;
   }
 
   hasBait(baitId) {
     if (!baitId || baitId === 'bread') return true;
     return (this.baitInventory[baitId] || 0) > 0;
+  }
+
+  setHookMode(mode) {
+    if (mode === 3 && (this.baitInventory['multi_hook_3'] || 0) > 0) {
+      this.hookMode = 3;
+      this.hookCount = 3;
+    } else if (mode === 2 && (this.baitInventory['multi_hook_2'] || 0) > 0) {
+      this.hookMode = 2;
+      this.hookCount = 2;
+    } else {
+      this.hookMode = 1;
+      this.hookCount = 1;
+    }
+    this.saveToStorage();
+    return this.hookMode;
+  }
+
+  getAvailableHookCount() {
+    if (this.hookMode === 3 && (this.baitInventory['multi_hook_3'] || 0) > 0) {
+      return 3;
+    }
+    if (this.hookMode === 2 && (this.baitInventory['multi_hook_2'] || 0) > 0) {
+      return 2;
+    }
+    return 1;
+  }
+
+  spendHookTackle(hookCount) {
+    if (hookCount === 3 && (this.baitInventory['multi_hook_3'] || 0) > 0) {
+      this.baitInventory['multi_hook_3'] -= 1;
+      if (this.baitInventory['multi_hook_3'] <= 0 && this.hookMode === 3) {
+        this.hookMode = 1;
+        this.hookCount = 1;
+      }
+      this.saveToStorage();
+      return true;
+    }
+    if (hookCount === 2 && (this.baitInventory['multi_hook_2'] || 0) > 0) {
+      this.baitInventory['multi_hook_2'] -= 1;
+      if (this.baitInventory['multi_hook_2'] <= 0 && this.hookMode === 2) {
+        this.hookMode = 1;
+        this.hookCount = 1;
+      }
+      this.saveToStorage();
+      return true;
+    }
+    return false;
   }
 
   consumeBait() {
@@ -659,11 +931,16 @@ export class Economy {
   buyBait(baitId) {
     const bait = BAITS.find(b => b.id === baitId);
     if (!bait || bait.price === 0) return false;
-    if (bait.isTackle && (this.baitInventory[baitId] || 0) >= 1) return false; // Already owned
-    if (this.spendGold(bait.price)) {
+    const finalPrice = Math.round(bait.price * this.getShopDiscountMultiplier());
+    if (this.spendGold(finalPrice)) {
       this.baitInventory[baitId] = (this.baitInventory[baitId] || 0) + bait.countPerBuy;
-      if (bait.id === 'multi_hook_2') this.hookCount = 2;
-      if (bait.id === 'multi_hook_3') this.hookCount = 3;
+      if (bait.id === 'multi_hook_2') {
+        this.hookMode = 2;
+        this.hookCount = 2;
+      } else if (bait.id === 'multi_hook_3') {
+        this.hookMode = 3;
+        this.hookCount = 3;
+      }
       this.saveToStorage();
       return true;
     }
@@ -673,7 +950,8 @@ export class Economy {
   buyRod(rodId) {
     const rod = RODS.find(r => r.id === rodId);
     if (!rod || this.ownedRods.includes(rodId)) return false;
-    if (this.spendGold(rod.price)) {
+    const finalPrice = Math.round(rod.price * this.getShopDiscountMultiplier());
+    if (this.spendGold(finalPrice)) {
       this.ownedRods.push(rodId);
       this.currentRodId = rodId;
       this.saveToStorage();
@@ -694,7 +972,8 @@ export class Economy {
   buyBoat(boatId) {
     const boat = BOATS.find(b => b.id === boatId);
     if (!boat || this.ownedBoats.includes(boatId)) return false;
-    if (this.spendGold(boat.price)) {
+    const finalPrice = Math.round(boat.price * this.getShopDiscountMultiplier());
+    if (this.spendGold(finalPrice)) {
       this.ownedBoats.push(boatId);
       this.currentBoatId = boatId;
       this.saveToStorage();
@@ -715,7 +994,8 @@ export class Economy {
   buyHat(hatId) {
     const hat = HATS.find(h => h.id === hatId);
     if (!hat || this.ownedHats.includes(hatId)) return false;
-    if (this.spendGold(hat.price)) {
+    const finalPrice = Math.round(hat.price * this.getShopDiscountMultiplier());
+    if (this.spendGold(finalPrice)) {
       this.ownedHats.push(hatId);
       this.currentHatId = hatId;
       this.saveToStorage();
@@ -738,7 +1018,8 @@ export class Economy {
     if (!up) return 0;
     const currentLv = this.upgradeLevels[upgradeId] || 0;
     if (currentLv >= up.maxLevel) return -1; // Max level
-    return Math.round(up.basePrice * Math.pow(up.priceMult, currentLv));
+    const baseCost = Math.round(up.basePrice * Math.pow(up.priceMult, currentLv));
+    return Math.round(baseCost * this.getShopDiscountMultiplier());
   }
 
   buyUpgrade(upgradeId) {
@@ -755,13 +1036,13 @@ export class Economy {
   // Calculated Effective Stats
   getEffectiveTensionMax() {
     const base = this.getCurrentRod().maxTension;
-    const bonus = 1 + (this.upgradeLevels.line_durability || 0) * 0.20;
+    const bonus = 1 + (this.upgradeLevels.line_durability || 0) * 0.15;
     return base * bonus;
   }
 
   getEffectiveReelSpeed() {
     const base = this.getCurrentRod().reelSpeed;
-    let bonus = 1.0;
+    let bonus = 1.0 + (this.upgradeLevels.reel_motor || 0) * 0.10;
     if (this.currentHatId === 'hat_sailor') bonus += 0.15;
     return base * bonus;
   }
@@ -769,23 +1050,42 @@ export class Economy {
   getEffectiveSinkSpeed() {
     const baitObj = BAITS.find(b => b.id === this.currentBaitId) || BAITS[0];
     const baitSink = baitObj.sinkSpeed || 1.0;
-    const sinkerBonus = 1 + (this.upgradeLevels.sinker_weight || 0) * 0.25;
+    const sinkerBonus = 1 + (this.upgradeLevels.sinker_weight || 0) * 0.20;
     return baitSink * sinkerBonus;
   }
 
+  getSonarRadius() {
+    // 📡 냥냥 음파 어군 탐지기 반경 (1Lv: 450px ~ 10Lv: 2000px)
+    const lv = this.upgradeLevels.fish_sonar || 0;
+    if (lv <= 0) return 0;
+    return 300 + lv * 170;
+  }
+
   getLuckMultiplier() {
-    let mult = 1 + (this.upgradeLevels.lucky_charm || 0) * 0.15;
+    // 🍀 행운의 네잎클로버 1업당 행운 +1% 증가 (+0.01 per lv)
+    let mult = 1 + (this.upgradeLevels.lucky_clover || 0) * 0.01;
     if (this.currentHatId === 'hat_pirate') mult *= 1.5;
     return mult;
   }
 
+  getAquariumProsperityMultiplier() {
+    // 🏺 아쿠아리움 밥주기 금화 보상 대폭 증가 (+Lv당 +25%)
+    return 1 + (this.upgradeLevels.aquarium_prosperity || 0) * 0.25;
+  }
+
+  getBossChance() {
+    // 👑 10대 전설 신화 보스 스폰 기본 확률 0.1% (0.001) + 행운 배율 연동
+    const base = 0.001;
+    let mult = this.getLuckMultiplier();
+    if (this.currentBaitId === 'golden') mult *= 2.0; // 황금 미끼 2배
+    return base * mult;
+  }
+
   getShinyChance(isNight = false) {
-    // 🌟 낮 기본 1.0% (0.01), 밤(Night) 시간대 3.0% (0.03) 상향!
-    const baseChance = isNight ? 0.03 : 0.01;
-    const lv = this.upgradeLevels.lucky_charm || 0;
-    let multiplier = 1 + lv * 0.15;
-    if (this.currentHatId === 'hat_pirate') multiplier *= 1.5;
-    if (this.currentBaitId === 'golden') multiplier *= 2.0; // 황금 미끼 사용 시 2배 보너스!
+    // ✨ 이로치(Shiny) 기본 확률 0.05% (0.0005), 밤 0.15% (0.0015) + 행운 배율 연동
+    const baseChance = isNight ? 0.0015 : 0.0005;
+    let multiplier = this.getLuckMultiplier();
+    if (this.currentBaitId === 'golden') multiplier *= 2.5; // 황금 미끼 사용 시 2.5배 보너스!
     return baseChance * multiplier;
   }
 

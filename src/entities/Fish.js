@@ -2,7 +2,7 @@
  * Fish Entity, Procedural Biological Renderer, ✨ Shiny (이로치) Variant System,
  * and Tiring / Slack-Line Escape Mechanics
  */
-import { Vector2 } from '../engine/Vector.js';
+import { Vector2 } from '../engine/Vector.js?v=5.0.0';
 
 export class Fish {
   constructor(speciesData, startPos, isShiny = false, swimBounds = null) {
@@ -59,6 +59,9 @@ export class Fish {
     this.inkParticles = [];
     this.curiousTimer = 0;
     this.ignoreCooldown = 0;
+    this.isInspecting = false;
+    this.inspectTimer = 0;
+    this.inspectDuration = 1.0;
   }
 
   update(dt, hook, waterBounds, cat) {
@@ -170,38 +173,48 @@ export class Fish {
 
     let isAttractive = false;
 
-    if (isLiveBait && liveBaitData) {
+    // 💖 1. 환상의 현혹 페로몬 활성화 시 반경 내 모든 물고기 즉시 매혹
+    if (hook.isAllureActive) {
+      isAttractive = true;
+    } else if (isLiveBait && liveBaitData) {
       if (this.data.favBait.includes('live_small') && liveBaitData.baitSize === 'small') {
         isAttractive = true;
       }
     } else {
-      // 🎯 Depth-based Bait Coverage Tier System
-      const zone = this.data.zone || 'shallow';
-      const isDeepSea = (zone === 'deep' || zone === 'abyss' || zone === 'hadal' || this.isBoss);
+      // 👑 2. 10대 전설 신화 보스 물고기: 오직 '황금 크릴 엑기스(golden)'에만 반응!
+      if (this.isBoss) {
+        if (currentBaitId === 'golden') {
+          isAttractive = true;
+        } else {
+          return; // 보스는 일반 미끼는 거들떠보지도 않음
+        }
+      } else {
+        // 🎯 일반 어종 Depth-based Bait Coverage Tier System
+        const zone = this.data.zone || 'shallow';
+        const isDeepSea = (zone === 'deep' || zone === 'abyss' || zone === 'hadal');
 
-      if (currentBaitId === 'bread') {
-        // 🍞 식빵: 표층(0~30m) 연안 어종만 유혹 (심해어/중층어 절대 불가)
-        if (zone === 'shallow' && !isDeepSea) {
+        if (currentBaitId === 'bread') {
+          // 🍞 식빵: 표층(0~35m) 연안 어종만 유혹
+          if (zone === 'shallow' && !isDeepSea) isAttractive = true;
+        } else if (currentBaitId === 'worm') {
+          // 🪱 갯지렁이: 표층 및 중층(0~80m) 어종 유혹
+          if ((zone === 'shallow' || zone === 'mid') && !isDeepSea) isAttractive = true;
+        } else if (currentBaitId === 'shrimp') {
+          // 🦐 생새우: 표층 및 중층(0~180m) 어종 유혹
+          if ((zone === 'shallow' || zone === 'mid') && !isDeepSea) isAttractive = true;
+        } else if (currentBaitId === 'lure') {
+          // ✨ 반짝 야광 루어: 심해 어둠층(0~350m) 어종 유혹
+          if (zone === 'deep' || zone === 'mid' || zone === 'shallow') isAttractive = true;
+        } else if (currentBaitId === 'jelly') {
+          // 🔮 발광 플랑크톤 젤리: 심연층(0~520m) 초심해 어종 유혹
+          if (zone !== 'hadal') isAttractive = true;
+        } else if (currentBaitId === 'pearl') {
+          // 🌌 심연의 오로라 펄: 해저 초심연(0~750m) 모든 일반/전설 어종 유혹
+          isAttractive = true;
+        } else if (currentBaitId === 'golden') {
+          // 👑 황금 크릴 엑기스: 모든 물고기 유혹
           isAttractive = true;
         }
-      } else if (currentBaitId === 'worm') {
-        // 🪱 갯지렁이: 표층 및 중층(0~80m) 어종만 유혹 (심해어 절대 불가)
-        if ((zone === 'shallow' || zone === 'mid') && !isDeepSea) {
-          isAttractive = true;
-        }
-      } else if (currentBaitId === 'shrimp') {
-        // 🦐 생새우: 표층 및 중층(0~100m) 어종만 유혹! (심해 어둠층 및 심해어/보스는 절대 불가!)
-        if ((zone === 'shallow' || zone === 'mid') && !isDeepSea) {
-          isAttractive = true;
-        }
-      } else if (currentBaitId === 'lure') {
-        // ✨ 반짝 야광 루어: 심해 어둠층(100~250m) 및 심연(250~400m), 중층 심해어 전용!
-        if (zone === 'deep' || zone === 'abyss' || zone === 'mid' || this.isBoss || this.data.favBait.includes('lure')) {
-          isAttractive = true;
-        }
-      } else if (currentBaitId === 'golden') {
-        // 👑 황금 크릴 엑기스: 500m+ 초심연의 전설 어종 및 보스 포함 모든 물고기 유혹!
-        isAttractive = true;
       }
     }
 
@@ -220,19 +233,23 @@ export class Fish {
     if (!targetPos) return;
 
     const dist = this.pos.dist(targetPos);
-    const detectRadius = 145 * (hook.attractionBonus || 1.0);
+    const detectRadius = (hook.isAllureActive ? 600 : 150) * (hook.attractionBonus || 1.0);
 
     if (dist < detectRadius) {
       this.state = 'CURIOUS';
       this.curiousTimer = 0;
       this.target = hook;
       this.targetSlot = freeSlot;
+      this.isInspecting = false;
+      this.inspectTimer = 0;
+      this.inspectDuration = 0.8 + Math.random() * 1.4;
     }
   }
 
   updateCurious(dt, hook) {
     if (!hook || !hook.isSubmerged) {
       this.state = 'WANDER';
+      this.isInspecting = false;
       return;
     }
 
@@ -242,6 +259,7 @@ export class Fish {
         this.targetSlot = anotherSlot;
       } else {
         this.state = 'WANDER';
+        this.isInspecting = false;
         return;
       }
     }
@@ -249,14 +267,16 @@ export class Fish {
     const hookPos = (this.targetSlot && this.targetSlot.pos) ? this.targetSlot.pos : (hook.hookPos || hook.pos);
     if (!hookPos) {
       this.state = 'WANDER';
+      this.isInspecting = false;
       return;
     }
 
     const dist = this.pos.dist(hookPos);
 
-    if (dist > 230 || hookPos.y > (this.data.maxDepth + 3) * 20) {
+    if (dist > 350 || hookPos.y > (this.data.maxDepth + 4) * 20) {
       this.state = 'WANDER';
       this.ignoreCooldown = 2.5;
+      this.isInspecting = false;
       return;
     }
 
@@ -265,33 +285,71 @@ export class Fish {
 
     const isBaitMoving = hook.isJiggling || hook.isReeling;
 
-    if (!isBaitMoving) {
-      // Free sinking: stand off, then de-aggro
-      this.curiousTimer += dt;
-
-      if (this.curiousTimer >= 1.6) {
-        this.state = 'WANDER';
-        this.ignoreCooldown = 3.2;
-        this.wanderTimer = 3.0;
-        this.wanderAngle = this.facing > 0 ? Math.PI * 0.8 : Math.PI * 0.2;
-        return;
-      }
-
-      if (dist > 28) {
-        this.pos.add(Vector2.mult(dir, this.data.speed * 0.8 * dt));
-      }
-
-    } else {
-      // Bait is actively twitched: strike!
-      this.curiousTimer = 0;
-
+    // 💖 환상의 현혹 페로몬 활성화 시 즉시 덥석 뭄!
+    if (hook.isAllureActive) {
       if (dist < 42) {
         hook.attachFish(this, this.targetSlot);
         this.state = 'HOOKED';
+        this.isInspecting = false;
         if (this.data.id === 'pufferfish') this.isPuffed = true;
         if (this.data.id === 'inky_squid') this.spawnInk();
       } else {
-        this.pos.add(Vector2.mult(dir, this.data.speed * 2.0 * dt));
+        this.pos.add(Vector2.mult(dir, this.data.speed * 2.6 * dt));
+      }
+      return;
+    }
+
+    // 🎣 미끼 앞 도달 전: 미끼 쪽으로 헤엄쳐 다가감
+    if (dist > 32) {
+      this.isInspecting = false;
+      const approachSpeed = this.data.speed * (isBaitMoving ? 1.6 : 1.0);
+      this.pos.add(Vector2.mult(dir, approachSpeed * dt));
+
+    } else {
+      // 🧐 미끼 앞 도달! 바로 물지 않고 호기심 가득하게 쪼기 시늉(밀당 & 관찰) 단계
+      this.isInspecting = true;
+      this.inspectTimer += dt;
+
+      // 미끼 앞에서 콕콕 쪼는 미세 진동 애니메이션
+      const nibbleBob = Math.sin(this.inspectTimer * 16) * 3.5;
+      this.pos.x = hookPos.x - dir.x * (20 + nibbleBob);
+      this.pos.y = hookPos.y - dir.y * (10 + nibbleBob * 0.5);
+
+      // 쪼기 시간 완료 -> 수심별 & 유혹별 입질 확률 판정!
+      if (this.inspectTimer >= this.inspectDuration) {
+        this.isInspecting = false;
+
+        // 수심 계산 (1m = 20px)
+        const depthM = Math.max(1, this.pos.y / 20);
+
+        // 🌊 얕은 수심일수록 경계심이 높아 물 확률이 낮고, 심해는 먹이가 귀해 물 확률이 매우 높음!
+        // 0~30m: ~45% | 100m: ~65% | 300m: ~82% | 500m+: ~95%
+        let biteChance = 0.40 + Math.min(0.55, (depthM / 250) * 0.55);
+
+        // 낚싯대 릴링/흔들기 유혹 보너스 (+20%)
+        if (isBaitMoving) {
+          biteChance += 0.20;
+        }
+
+        // 보스는 황금 미끼에 높은 반응 (85%)
+        if (this.isBoss) {
+          biteChance = 0.85;
+        }
+
+        const roll = Math.random();
+        if (roll < biteChance) {
+          // 🎣 입질 성공! 미끼를 덥석 뭄!
+          hook.attachFish(this, this.targetSlot);
+          this.state = 'HOOKED';
+          if (this.data.id === 'pufferfish') this.isPuffed = true;
+          if (this.data.id === 'inky_squid') this.spawnInk();
+        } else {
+          // 💨 의심하고 뒤로 슬쩍 빠져나감 (도망 & 쿨다운)
+          this.state = 'FLEE';
+          this.ignoreCooldown = 4.0;
+          this.wanderTimer = 3.5;
+          this.wanderAngle = this.facing > 0 ? Math.PI * 0.85 : Math.PI * 0.15;
+        }
       }
     }
   }
@@ -327,10 +385,10 @@ export class Fish {
   updateHooked(dt, hook, cat) {
     const targetSlotPos = (this.targetSlot && this.targetSlot.pos) ? this.targetSlot.pos : (hook.hookPos || hook.pos);
     if (targetSlotPos) {
-      // 🎣 바늘(Hook)이 물고기의 입/머리(Mouth)에 물리도록 오프셋 계산 적용 & 해저 바닥(10070px) 뚫림 방지!
+      // 🎣 바늘(Hook)이 물고기의 입/머리(Mouth)에 물리도록 오프셋 계산 적용 & 해저 바닥(15070px) 뚫림 방지!
       const mouthOffset = this.getMouthOffset();
       this.pos.x = targetSlotPos.x - this.facing * mouthOffset;
-      this.pos.y = Math.min(10070, targetSlotPos.y + Math.sin(this.animTime * 6) * 2);
+      this.pos.y = Math.min(15070, targetSlotPos.y + Math.sin(this.animTime * 6) * 2);
     }
 
     this.animTime += dt * 3;
@@ -375,13 +433,13 @@ export class Fish {
           }
         }
       } else {
-        // ⚡ Exhausted State: Calm for 10 seconds, then recovers stamina & resumes struggle!
+        // ⚡ Exhausted State: Calm for 15 seconds, then recovers stamina & resumes struggle!
         this.rage = 0;
         this.slackEscapeTimer = 0;
         this.exhaustedTimer += dt;
 
-        if (this.exhaustedTimer >= 10.0) {
-          // 👑 10초 후 체력 회복 및 다시 줄다리기 시작!
+        if (this.exhaustedTimer >= 15.0) {
+          // 👑 15초 후 체력 회복 및 다시 줄다리기 시작!
           this.isExhausted = false;
           this.exhaustedTimer = 0;
           this.fightDuration = 0; // Reset fight timer to start another struggle phase

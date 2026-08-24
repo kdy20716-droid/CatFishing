@@ -495,6 +495,41 @@ export class CloudSave {
     return true;
   }
 
+  async manualSaveToCloud() {
+    if (!this.currentUser) {
+      if (this.hud) this.hud.showNotification('로그인이 필요합니다! 먼저 구글 계정을 연동해주세요.', '🔒');
+      return false;
+    }
+    const success = await this.saveToCloud();
+    if (success) {
+      if (this.sound) this.sound.playCoin();
+      if (this.hud) this.hud.showNotification('☁️ 현재 기기의 진행 상황이 클라우드 서버에 안전하게 백업되었습니다!', '✨');
+    } else {
+      if (this.hud) this.hud.showNotification('⚠️ 클라우드 백업 중 오류가 발생했습니다.', '❌');
+    }
+    return success;
+  }
+
+  async manualLoadFromCloud() {
+    if (!this.currentUser) {
+      if (this.hud) this.hud.showNotification('로그인이 필요합니다! 먼저 구글 계정을 연동해주세요.', '🔒');
+      return false;
+    }
+    this.updateSyncBadge('☁️ 클라우드 조회 중...');
+    const cloudData = await this.fetchCloudData(this.currentUser);
+    if (cloudData) {
+      this.applySaveData(cloudData);
+      if (this.sound) this.sound.playCoin();
+      if (this.hud) this.hud.showNotification('📥 클라우드 서버의 낚시 기록을 성공적으로 불러왔습니다!', '☁️');
+      this.updateSyncBadge('☁️ 자동 동기화됨');
+      return true;
+    } else {
+      if (this.hud) this.hud.showNotification('⚠️ 클라우드 계정에 저장된 기록이 없습니다.', 'ℹ️');
+      this.updateSyncBadge('☁️ 동기화 데이터 없음');
+      return false;
+    }
+  }
+
   triggerAutoSave() {
     if (!this.currentUser) return;
     if (this.saveDebounceTimer) clearTimeout(this.saveDebounceTimer);

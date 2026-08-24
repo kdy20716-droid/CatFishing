@@ -1,7 +1,7 @@
 /**
  * Unified Input Manager (Mouse, Touch, Keyboard)
  */
-import { Vector2 } from './Vector.js';
+import { Vector2 } from './Vector.js?v=5.0.0';
 
 export class Input {
   constructor(canvas, camera) {

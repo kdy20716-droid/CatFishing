@@ -1,7 +1,7 @@
 /**
  * Fishing Rod, Multi-Hook Rig Physics, Rocket Booster, Depth Bomb, and Tension Mechanics
  */
-import { Vector2 } from '../engine/Vector.js';
+import { Vector2 } from '../engine/Vector.js?v=5.0.0';
 
 export class Rod {
   constructor(economy, soundEngine) {
@@ -38,6 +38,14 @@ export class Rod {
     this.explosionEffects = [];
     this.waterParticles = [];
 
+    // 💖 Phantasm Allure Pheromone state & particles
+    this.isAllureActive = false;
+    this.allureTimer = 0;
+    this.allureParticles = [];
+
+    // 🛑 Depth Lock (찌 침강 정지 / STOP)
+    this.isDepthLocked = false;
+
     // Tension
     this.tension = 0; // 0 ~ 100
     this.tensionSnapTimer = 0;
@@ -57,7 +65,7 @@ export class Rod {
   }
 
   initHooks() {
-    this.hookCount = this.economy ? (this.economy.hookCount || 1) : 1;
+    this.hookCount = this.economy ? this.economy.getAvailableHookCount() : 1;
     this.hooks = [];
     for (let i = 0; i < this.hookCount; i++) {
       this.hooks.push({
@@ -99,7 +107,11 @@ export class Rod {
     this.hookPos.copy(rodTip);
     this.bobberPos.copy(rodTip);
 
+    // Initialize hooks & consume multi-hook tackle if 2-hook or 3-hook mode is active
     this.initHooks();
+    if (this.economy && this.hookCount > 1) {
+      this.economy.spendHookTackle(this.hookCount);
+    }
 
     const rod = this.economy.getCurrentRod();
     const facing = cat.facing;
@@ -206,11 +218,49 @@ export class Rod {
       this.hooks.forEach(h => {
         if (h.hookedFish === fish) h.hookedFish = null;
       });
-      if (this.hookedFish === fish) this.hookedFish = null;
-      if (onFishEliminated) onFishEliminated(fish);
+      if (typeof onFishEliminated === 'function') onFishEliminated(fish);
     });
 
     return true;
+  }
+
+  triggerAllure(oceanFishList) {
+    if (this.state !== 'FISHING' || !this.isSubmerged) return false;
+    if (!this.economy.spendAllure()) return false;
+
+    this.isAllureActive = true;
+    this.allureTimer = 6.0; // 6초간 강력한 매혹 오라 방출!
+
+    // Play sparkling magic sound
+    if (this.sound && this.sound.playChime) {
+      this.sound.playChime();
+    }
+
+    const allureRadius = 600;
+    const center = this.hookPos;
+
+    // Immediately attract all fishes in radius
+    oceanFishList.forEach(fish => {
+      if (fish.state !== 'HOOKED') {
+        const dist = fish.pos.dist(center);
+        if (dist <= allureRadius) {
+          fish.state = 'CURIOUS';
+          fish.curiousTimer = 0;
+          fish.target = this;
+          fish.ignoreCooldown = 0;
+          const freeSlot = this.hooks.find(h => !h.hookedFish) || { pos: this.hookPos };
+          fish.targetSlot = freeSlot;
+        }
+      }
+    });
+
+    return true;
+  }
+
+  toggleDepthLock() {
+    if (this.state !== 'FISHING' || !this.isSubmerged) return false;
+    this.isDepthLocked = !this.isDepthLocked;
+    return this.isDepthLocked;
   }
 
   reset(cat) {
@@ -221,6 +271,7 @@ export class Rod {
     this.bobberPos.copy(rodTip);
     this.hookVel.set(0, 0);
     this.isSubmerged = false;
+    this.isDepthLocked = false;
     this.hookedFish = null;
     this.isLiveBait = false;
     this.liveBaitFish = null;
@@ -247,6 +298,33 @@ export class Rod {
     }
 
     const rodTip = cat.getRodTipPos();
+
+    // 💖 Update Allure Pheromone Timer & Particles
+    if (this.allureTimer > 0) {
+      this.allureTimer -= dt;
+      if (this.allureTimer <= 0) {
+        this.isAllureActive = false;
+      }
+      if (Math.random() < 0.45 && this.isSubmerged) {
+        this.allureParticles.push({
+          x: this.hookPos.x + (Math.random() - 0.5) * 40,
+          y: this.hookPos.y + (Math.random() - 0.5) * 40,
+          vx: (Math.random() - 0.5) * 30,
+          vy: -25 - Math.random() * 35,
+          alpha: 1.0,
+          size: 12 + Math.random() * 8,
+          symbol: Math.random() > 0.4 ? '💖' : '💕'
+        });
+      }
+    }
+
+    for (let i = this.allureParticles.length - 1; i >= 0; i--) {
+      const p = this.allureParticles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.alpha -= dt * 1.2;
+      if (p.alpha <= 0) this.allureParticles.splice(i, 1);
+    }
 
     // Update Explosion Effects & Particles
     for (let i = this.explosionEffects.length - 1; i >= 0; i--) {
@@ -354,13 +432,19 @@ export class Rod {
         let totalFishPull = 0;
         let avgFacing = 0;
         let maxRage = 0;
+        let hasExhaustedFish = false;
 
         hookedList.forEach(fish => {
           let pull = fish.data.strength;
           if (fish.hasStruggleGauge) {
-            const rageRatio = (fish.rage || 0) / 100;
-            pull *= (1.0 + rageRatio * 1.3);
-            maxRage = Math.max(maxRage, fish.rage || 0);
+            if (fish.isExhausted) {
+              hasExhaustedFish = true;
+              pull *= 0.15; // Resistance drops to near 0 during stun!
+            } else {
+              const rageRatio = (fish.rage || 0) / 100;
+              pull *= (1.0 + rageRatio * 1.3);
+              maxRage = Math.max(maxRage, fish.rage || 0);
+            }
           }
           totalFishPull += pull;
           avgFacing += fish.facing;
@@ -368,13 +452,17 @@ export class Rod {
         avgFacing = Math.sign(avgFacing) || 1;
 
         if (isReelingInput) {
-          // Reeling battle!
-          const reelPower = this.economy.getEffectiveReelSpeed();
+          // Reeling battle! (⚡ 2.5x Reel Speed Boost during Stun/Exhausted state!)
+          let reelPower = this.economy.getEffectiveReelSpeed();
+          if (hasExhaustedFish) {
+            reelPower *= 2.5; // Rapid reeling up when fish is stunned!
+          }
+
           const toCat = Vector2.sub(rodTip, this.hookPos).normalize();
           
           this.hookVel.set(
-            toCat.x * reelPower * 0.8 + avgFacing * totalFishPull * 0.35,
-            toCat.y * reelPower * 0.8 + totalFishPull * 0.55
+            toCat.x * reelPower * 0.85 + avgFacing * totalFishPull * 0.25,
+            toCat.y * reelPower * 0.85 + totalFishPull * 0.40
           );
 
           // 🧲 Magnetic Attraction: Pull hooked fish into boat quickly when close
@@ -388,9 +476,9 @@ export class Rod {
 
           // Build tension with fish rage multiplier
           const effectiveMaxTension = this.economy.getEffectiveTensionMax();
-          let tensionRate = (totalFishPull / effectiveMaxTension) * 52;
+          let tensionRate = (totalFishPull / effectiveMaxTension) * 45;
 
-          if (maxRage > 0) {
+          if (maxRage > 0 && !hasExhaustedFish) {
             const rageMultiplier = 1.0 + (maxRage / 100) * 2.2;
             tensionRate *= rageMultiplier;
           }
@@ -411,8 +499,16 @@ export class Rod {
           }
         } else {
           // Releasing reel relaxes tension faster
-          this.tension = Math.max(0, this.tension - 50 * dt);
-          this.hookVel.set(avgFacing * totalFishPull * 0.7, totalFishPull * 0.5);
+          this.tension = Math.max(0, this.tension - 60 * dt);
+
+          // 🪝 Multi-Hook continuous sinking: If there are still empty hooks on the rig, keep sinking downward!
+          const emptySlotCount = this.hooks.filter(h => !h.hookedFish).length;
+          const multiSinkBonus = emptySlotCount > 0 ? (55 * sinkSpeedMultiplier) : 0;
+
+          this.hookVel.set(
+            avgFacing * totalFishPull * 0.6,
+            totalFishPull * 0.45 + multiSinkBonus
+          );
         }
 
         // Tension Overload & Snap check
@@ -432,11 +528,12 @@ export class Rod {
         }
 
       } else {
-        // Empty Hook sinking (Smooth & comfortable for 500m deep dive)
-        const sinkRate = 65 * sinkSpeedMultiplier;
+        // Empty Hook sinking (Smooth & comfortable for 750m deep dive)
+        const sinkRate = this.isDepthLocked ? 0 : (65 * sinkSpeedMultiplier);
         
         if (isReelingInput) {
-          // Reeling hook back up
+          // Reeling hook back up (Naturally unlocks depth lock)
+          this.isDepthLocked = false;
           const reelPower = this.economy.getEffectiveReelSpeed();
           const toCat = Vector2.sub(rodTip, this.hookPos).normalize();
           this.hookVel.set(toCat.x * reelPower, toCat.y * reelPower);
@@ -458,21 +555,16 @@ export class Rod {
             return;
           }
         } else {
-          // Sinking downwards
+          // Sinking downward (or stayed locked in place if isDepthLocked)
           this.hookVel.set(0, sinkRate);
-          const maxAllowedY = Math.min(10080, this.waterY + maxDepthLimit); // 🌊 500m Seabed Floor limit
-          if (this.hookPos.y >= maxAllowedY) {
-            this.hookPos.y = maxAllowedY;
-            this.hookVel.y = 0; // Hit seabed floor or maximum line depth
-          }
         }
       }
 
       this.hookPos.add(Vector2.mult(this.hookVel, dt));
 
-      // 🛑 Clamp hook position so it NEVER penetrates the seabed (10080px) or water surface
+      // 🛑 Clamp hook position so it NEVER penetrates the seabed (15080px) or water surface
       const minSubmergedY = this.waterY + 4;
-      const maxSubmergedY = Math.min(10080, this.waterY + maxDepthLimit);
+      const maxSubmergedY = Math.min(15080, this.waterY + maxDepthLimit);
       if (this.hookPos.y < minSubmergedY) {
         this.hookPos.y = minSubmergedY;
         if (this.hookVel.y < 0) this.hookVel.y = 0;
@@ -634,7 +726,40 @@ export class Rod {
       ctx.restore();
     });
 
-    // 5. Draw Rocket Graphic if flying with booster
+    // 💖 5. Draw Allure Pheromone Aura & Floating Heart Particles
+    if (this.isAllureActive && this.isSubmerged) {
+      ctx.save();
+      const pulse = 1.0 + Math.sin(Date.now() / 120) * 0.15;
+      const auraGrad = ctx.createRadialGradient(this.hookPos.x, this.hookPos.y, 10, this.hookPos.x, this.hookPos.y, 180 * pulse);
+      auraGrad.addColorStop(0, 'rgba(255, 0, 127, 0.45)');
+      auraGrad.addColorStop(0.5, 'rgba(255, 112, 166, 0.25)');
+      auraGrad.addColorStop(1, 'rgba(255, 0, 127, 0)');
+      ctx.fillStyle = auraGrad;
+      ctx.beginPath();
+      ctx.arc(this.hookPos.x, this.hookPos.y, 180 * pulse, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Shockwave ring
+      ctx.strokeStyle = 'rgba(255, 112, 166, 0.6)';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(this.hookPos.x, this.hookPos.y, 90 + ((Date.now() / 8) % 90), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if (this.allureParticles.length > 0) {
+      ctx.save();
+      this.allureParticles.forEach(p => {
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        ctx.font = `${p.size}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(p.symbol, p.x, p.y);
+      });
+      ctx.restore();
+    }
+
+    // 6. Draw Rocket Graphic if flying with booster
     if (this.state === 'FLYING' && this.isRocketPowered) {
       ctx.save();
       ctx.translate(this.hookPos.x, this.hookPos.y);
@@ -681,6 +806,30 @@ export class Rod {
       ctx.fillStyle = lureGlow;
       ctx.beginPath();
       ctx.arc(0, 4, 14, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (this.currentBaitId === 'jelly') {
+      const jellyGlow = ctx.createRadialGradient(0, 4, 1, 0, 4, 15);
+      jellyGlow.addColorStop(0, 'rgba(168, 85, 247, 1.0)');
+      jellyGlow.addColorStop(1, 'rgba(168, 85, 247, 0)');
+      ctx.fillStyle = jellyGlow;
+      ctx.beginPath();
+      ctx.arc(0, 4, 15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#c084fc';
+      ctx.beginPath();
+      ctx.arc(0, 4, 4, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (this.currentBaitId === 'pearl') {
+      const pearlGlow = ctx.createRadialGradient(0, 4, 1, 0, 4, 16);
+      pearlGlow.addColorStop(0, 'rgba(56, 189, 248, 1.0)');
+      pearlGlow.addColorStop(1, 'rgba(56, 189, 248, 0)');
+      ctx.fillStyle = pearlGlow;
+      ctx.beginPath();
+      ctx.arc(0, 4, 16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(0, 4, 4.5, 0, Math.PI * 2);
       ctx.fill();
     } else if (this.currentBaitId === 'golden') {
       const goldGlow = ctx.createRadialGradient(0, 4, 1, 0, 4, 16);

@@ -1,10 +1,10 @@
 /**
  * Interactive Modals (Shop, Fish Encyclopedia, Aquarium Controls, Settings, Guide)
  */
-import { RODS, BOATS, BAITS, HATS, PASSIVE_UPGRADES, CAT_SKINS } from '../systems/Economy.js';
-import { FISH_SPECIES } from '../systems/Encyclopedia.js';
-import { Fish } from '../entities/Fish.js';
-import { getBaitIconSvg } from './BaitIcons.js';
+import { RODS, BOATS, BAITS, HATS, PASSIVE_UPGRADES, CAT_SKINS } from '../systems/Economy.js?v=5.6.0';
+import { FISH_SPECIES } from '../systems/Encyclopedia.js?v=5.6.0';
+import { Fish } from '../entities/Fish.js?v=5.6.0';
+import { getBaitIconSvg } from './BaitIcons.js?v=5.6.0';
 
 export class Modals {
   constructor(economy, encyclopedia, aquarium, soundEngine, hud, cloudSave = null) {
@@ -196,6 +196,29 @@ export class Modals {
         if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
         if (this.cloudSave) {
           await this.cloudSave.loginWithGoogle();
+        }
+      });
+    }
+
+    // Manual Cloud Save & Load from Profile Dropdown
+    const btnManualSave = document.getElementById('btn-cloud-manual-save');
+    if (btnManualSave) {
+      btnManualSave.addEventListener('click', async () => {
+        this.sound.playClick();
+        if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
+        if (this.cloudSave) {
+          await this.cloudSave.manualSaveToCloud();
+        }
+      });
+    }
+
+    const btnManualLoad = document.getElementById('btn-cloud-manual-load');
+    if (btnManualLoad) {
+      btnManualLoad.addEventListener('click', async () => {
+        this.sound.playClick();
+        if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
+        if (this.cloudSave) {
+          await this.cloudSave.manualLoadFromCloud();
         }
       });
     }
@@ -1648,11 +1671,19 @@ export class Modals {
     if (!container) return;
     container.innerHTML = '';
 
+    const discount = this.economy.getShopDiscountMultiplier();
+    const isDiscountActive = discount < 1.0;
+
     if (this.currentShopTab === 'rods') {
       RODS.forEach(rod => {
         const isOwned = this.economy.ownedRods.includes(rod.id);
         const isEquipped = this.economy.currentRodId === rod.id;
-        const canAfford = this.economy.gold >= rod.price;
+        const finalPrice = Math.round(rod.price * discount);
+        const canAfford = this.economy.gold >= finalPrice;
+
+        const priceLabel = isDiscountActive && rod.price > 0
+          ? `<span style="text-decoration:line-through; opacity:0.6; font-size:11px; margin-right:4px;">${rod.price.toLocaleString()}G</span> ${finalPrice.toLocaleString()} G <span style="font-size:11px; background:#fef08a; color:#854d0e; padding:1px 4px; border-radius:4px; font-weight:800;">👑 20% SALE</span>`
+          : `${rod.price.toLocaleString()} G 구매`;
 
         const card = document.createElement('div');
         card.className = `shop-card ${isEquipped ? 'equipped' : ''}`;
@@ -1676,7 +1707,7 @@ export class Modals {
               : isOwned 
               ? `<button class="btn-secondary btn-equip" data-id="${rod.id}">장착하기</button>` 
               : `<button class="btn-primary btn-buy ${!canAfford ? 'disabled' : ''}" data-id="${rod.id}">
-                  ${rod.price.toLocaleString()} G 구매
+                  ${priceLabel}
                  </button>`}
           </div>
         `;
@@ -1711,7 +1742,12 @@ export class Modals {
       BOATS.forEach(boat => {
         const isOwned = this.economy.ownedBoats.includes(boat.id);
         const isEquipped = this.economy.currentBoatId === boat.id;
-        const canAfford = this.economy.gold >= boat.price;
+        const finalPrice = Math.round(boat.price * discount);
+        const canAfford = this.economy.gold >= finalPrice;
+
+        const priceLabel = isDiscountActive && boat.price > 0
+          ? `<span style="text-decoration:line-through; opacity:0.6; font-size:11px; margin-right:4px;">${boat.price.toLocaleString()}G</span> ${finalPrice.toLocaleString()} G <span style="font-size:11px; background:#fef08a; color:#854d0e; padding:1px 4px; border-radius:4px; font-weight:800;">👑 20% SALE</span>`
+          : `${boat.price.toLocaleString()} G 구매`;
 
         const card = document.createElement('div');
         card.className = `shop-card ${isEquipped ? 'equipped' : ''}`;
@@ -1733,7 +1769,7 @@ export class Modals {
               : isOwned 
               ? `<button class="btn-secondary btn-equip-boat" data-id="${boat.id}">탑승하기</button>` 
               : `<button class="btn-primary btn-buy-boat ${!canAfford ? 'disabled' : ''}" data-id="${boat.id}">
-                  ${boat.price.toLocaleString()} G 구매
+                  ${priceLabel}
                  </button>`}
           </div>
         `;
@@ -1766,19 +1802,24 @@ export class Modals {
 
     } else if (this.currentShopTab === 'baits') {
       BAITS.forEach(bait => {
-        const canAfford = this.economy.gold >= bait.price;
-        const isOwnedTackle = bait.isTackle && (this.economy.baitInventory[bait.id] || 0) >= 1;
-        const isEquippedTackle = (bait.id === 'multi_hook_2' && this.economy.hookCount === 2) || (bait.id === 'multi_hook_3' && this.economy.hookCount === 3);
+        const finalPrice = Math.round(bait.price * discount);
+        const canAfford = this.economy.gold >= finalPrice;
+        const count = this.economy.baitInventory[bait.id] || 0;
+        const isTackle = !!bait.isTackle;
 
         let countLabel = '';
         if (bait.id === 'bread') countLabel = '보유량: 무제한';
-        else if (bait.isTackle) countLabel = isOwnedTackle ? '영구 해금됨' : '미보유';
-        else countLabel = `보유량: ${this.economy.baitInventory[bait.id] || 0}개`;
+        else if (isTackle) countLabel = `보유 수량: ${count}개 (세트 소모품)`;
+        else countLabel = `보유량: ${count}개`;
 
         const depthBadge = bait.maxDepth ? `<span style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-left: 6px;">유효 수심 ~${bait.maxDepth}m</span>` : '';
 
+        const priceLabel = isDiscountActive && bait.price > 0
+          ? `<span style="text-decoration:line-through; opacity:0.6; font-size:11px; margin-right:4px;">${bait.price.toLocaleString()}G</span> ${finalPrice.toLocaleString()} G (+${bait.countPerBuy}개) <span style="font-size:11px; background:#fef08a; color:#854d0e; padding:1px 4px; border-radius:4px; font-weight:800;">👑 20%</span>`
+          : `${bait.price.toLocaleString()} G (+${bait.countPerBuy}개 구매)`;
+
         const card = document.createElement('div');
-        card.className = `shop-card ${isEquippedTackle ? 'equipped' : ''}`;
+        card.className = 'shop-card';
         card.innerHTML = `
           <div class="shop-card-header">
             <span class="card-icon card-bait-icon-wrapper">${getBaitIconSvg(bait.id)}</span>
@@ -1791,37 +1832,24 @@ export class Modals {
           <div class="card-footer">
             ${bait.price === 0 
               ? '<span class="badge-free">기본 제공</span>' 
-              : isEquippedTackle
-              ? '<span class="badge-equipped">장착 중</span>'
-              : isOwnedTackle
-              ? `<button class="btn-secondary btn-equip-tackle" data-id="${bait.id}">장착하기</button>`
-              : `<button class="btn-primary btn-buy-bait ${!canAfford ? 'disabled' : ''}" data-id="${bait.id}">
-                  ${bait.price} G ${bait.isTackle ? '영구 구매' : `(+${bait.countPerBuy}개)`}
-                 </button>`}
+              : `
+                <button class="btn-primary btn-buy-bait ${!canAfford ? 'disabled' : ''}" data-id="${bait.id}">
+                  ${priceLabel}
+                </button>
+              `}
           </div>
         `;
-
-        const btnEquip = card.querySelector('.btn-equip-tackle');
-        if (btnEquip) {
-          btnEquip.addEventListener('click', () => {
-            if (!this.canChangeEquipment()) return;
-            this.sound.playClick();
-            if (bait.id === 'multi_hook_2') this.hud.selectHookCount(2);
-            if (bait.id === 'multi_hook_3') this.hud.selectHookCount(3);
-            this.renderShopContent();
-          });
-        }
 
         const btnBuy = card.querySelector('.btn-buy-bait');
         if (btnBuy) {
           btnBuy.addEventListener('click', () => {
             if (this.economy.buyBait(bait.id)) {
               this.sound.playCoin();
-              this.hud.showNotification(`${bait.name} 구매 완료!`, '🎒');
+              this.hud.showNotification(`${bait.name} (+${bait.countPerBuy}개) 구매 완료!`, '🎒');
               this.renderShopContent();
               this.hud.initBaitBar();
             } else {
-              this.hud.showNotification('골드가 부족하거나 이미 보유 중입니다!', '⚠️');
+              this.hud.showNotification('골드가 부족합니다!', '⚠️');
             }
           });
         }
@@ -1833,7 +1861,12 @@ export class Modals {
       HATS.forEach(hat => {
         const isOwned = this.economy.ownedHats.includes(hat.id);
         const isEquipped = this.economy.currentHatId === hat.id;
-        const canAfford = this.economy.gold >= hat.price;
+        const finalPrice = Math.round(hat.price * discount);
+        const canAfford = this.economy.gold >= finalPrice;
+
+        const priceLabel = isDiscountActive && hat.price > 0
+          ? `<span style="text-decoration:line-through; opacity:0.6; font-size:11px; margin-right:4px;">${hat.price.toLocaleString()}G</span> ${finalPrice.toLocaleString()} G <span style="font-size:11px; background:#fef08a; color:#854d0e; padding:1px 4px; border-radius:4px; font-weight:800;">👑 20% SALE</span>`
+          : `${hat.price.toLocaleString()} G 구매`;
 
         const card = document.createElement('div');
         card.className = `shop-card ${isEquipped ? 'equipped' : ''}`;
@@ -1851,7 +1884,7 @@ export class Modals {
               : isOwned 
               ? `<button class="btn-secondary btn-equip-hat" data-id="${hat.id}">착용하기</button>` 
               : `<button class="btn-primary btn-buy-hat ${!canAfford ? 'disabled' : ''}" data-id="${hat.id}">
-                  ${hat.price.toLocaleString()} G 구매
+                  ${priceLabel}
                  </button>`}
           </div>
         `;
@@ -1889,6 +1922,10 @@ export class Modals {
         const cost = this.economy.getUpgradeCost(up.id);
         const canAfford = this.economy.gold >= cost;
 
+        const priceLabel = isDiscountActive && cost > 0
+          ? `${cost.toLocaleString()} G 강화 (Lv.${currentLv + 1}) <span style="font-size:11px; background:#fef08a; color:#854d0e; padding:1px 4px; border-radius:4px; font-weight:800;">👑 20% SALE</span>`
+          : `${cost.toLocaleString()} G 강화 (Lv.${currentLv + 1})`;
+
         const card = document.createElement('div');
         card.className = `shop-card ${isMax ? 'maxed' : ''}`;
         card.innerHTML = `
@@ -1904,7 +1941,7 @@ export class Modals {
             ${isMax 
               ? '<span class="badge-max">MAX 강화 완료</span>' 
               : `<button class="btn-primary btn-upgrade ${!canAfford ? 'disabled' : ''}" data-id="${up.id}">
-                  ${cost.toLocaleString()} G 강화 (Lv.${currentLv + 1})
+                  ${priceLabel}
                  </button>`}
           </div>
         `;
