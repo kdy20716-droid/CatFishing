@@ -1253,25 +1253,36 @@ html, body {
    Inventory Modal (내 가방)
    ========================================================= */
 .inventory-window {
-  max-width: 900px;
-  width: 94%;
-  max-height: 85vh;
+  width: 980px;
+  max-width: 95vw;
+  height: 720px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .inventory-tabs {
   display: flex;
-  gap: 10px;
-  padding: 14px 24px;
+  gap: 12px;
+  padding: 14px 24px 18px 24px;
   background: #fdfaf3;
   border-bottom: 2px solid #f1e7d0;
-  overflow-x: auto;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  min-height: 72px;
+  box-sizing: border-box;
 }
 
 .inv-tab-btn {
+  flex: 1 1 0px;
+  min-width: 0;
+  height: 42px;
   background: #fff;
   border: 2px solid #dee2e6;
-  padding: 10px 20px;
+  padding: 8px 6px;
   border-radius: var(--radius-pill);
   font-family: var(--font-cute);
   font-size: 15px;
@@ -1280,6 +1291,10 @@ html, body {
   white-space: nowrap;
   box-shadow: 0 3px 0 #ced4da;
   transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .inv-tab-btn:hover {

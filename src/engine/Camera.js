@@ -13,8 +13,8 @@ export class Camera {
     this.targetZoom = 1.0;
     this.lerpSpeed = 0.08;
     
-    // Bounds in world coordinates (Expanded for 30,000px ocean width and 750m depth)
-    this.minX = -1200;
+    // Bounds in world coordinates (dock shop at left edge -130px, 32,000px ocean width, 750m depth)
+    this.minX = -130;
     this.maxX = 32000;
     this.minY = -500; // Above water (sky)
     this.maxY = 16500; // Deep 750m+ seabed floor

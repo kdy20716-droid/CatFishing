@@ -303,11 +303,19 @@ export class Fish {
     // 💖 환상의 현혹 페로몬 활성화 시 즉시 덥석 뭄!
     if (hook.isAllureActive) {
       if (dist < 42) {
-        hook.attachFish(this, this.targetSlot);
-        this.state = 'HOOKED';
-        this.isInspecting = false;
-        if (this.data.id === 'pufferfish') this.isPuffed = true;
-        if (this.data.id === 'inky_squid') this.spawnInk();
+        const attached = hook.attachFish(this, this.targetSlot);
+        if (attached) {
+          this.state = 'HOOKED';
+          this.isInspecting = false;
+          if (this.data.id === 'pufferfish') this.isPuffed = true;
+          if (this.data.id === 'inky_squid') this.spawnInk();
+        } else {
+          // 남은 바늘 슬롯이 없으면 즉시 호기심을 풀고 유영으로 복귀
+          this.state = 'WANDER';
+          this.ignoreCooldown = 3.0;
+          this.isInspecting = false;
+          this.targetSlot = null;
+        }
       } else {
         this.pos.add(Vector2.mult(dir, this.data.speed * 2.6 * dt));
       }
@@ -317,9 +325,15 @@ export class Fish {
     // 🎁 보물상자, 유리병 편지, 고대 유물 등 무생물 오브젝트: 생물이 아니므로 쪼기 시늉/도망 없이 닿는 즉시 100% 바늘에 걸림!
     if (this.isNonLiving) {
       if (dist < 46) {
-        hook.attachFish(this, this.targetSlot);
-        this.state = 'HOOKED';
-        this.isInspecting = false;
+        const attached = hook.attachFish(this, this.targetSlot);
+        if (attached) {
+          this.state = 'HOOKED';
+          this.isInspecting = false;
+        } else {
+          this.state = 'WANDER';
+          this.ignoreCooldown = 3.0;
+          this.targetSlot = null;
+        }
       } else {
         this.pos.add(Vector2.mult(dir, 26 * dt));
       }
@@ -371,10 +385,16 @@ export class Fish {
         const roll = Math.random();
         if (roll < biteChance) {
           // 🎣 입질 성공! 미끼를 덥석 뭄!
-          hook.attachFish(this, this.targetSlot);
-          this.state = 'HOOKED';
-          if (this.data.id === 'pufferfish') this.isPuffed = true;
-          if (this.data.id === 'inky_squid') this.spawnInk();
+          const attached = hook.attachFish(this, this.targetSlot);
+          if (attached) {
+            this.state = 'HOOKED';
+            if (this.data.id === 'pufferfish') this.isPuffed = true;
+            if (this.data.id === 'inky_squid') this.spawnInk();
+          } else {
+            this.state = 'WANDER';
+            this.ignoreCooldown = 3.0;
+            this.targetSlot = null;
+          }
         } else {
           // 💨 의심하고 뒤로 슬쩍 빠져나감 (도망 & 쿨다운)
           this.state = 'FLEE';
@@ -415,6 +435,14 @@ export class Fish {
   }
 
   updateHooked(dt, hook, cat) {
+    // 🛡️ 유령 물고기 방지: 낚싯대가 없거나 READY 상태이거나 등록된 물고기 목록에 없으면 즉시 유영 상태로 복귀
+    if (!hook || hook.state === 'READY' || (hook.allHookedFishes && !hook.allHookedFishes.includes(this))) {
+      this.state = 'WANDER';
+      this.ignoreCooldown = 4.0;
+      this.targetSlot = null;
+      return;
+    }
+
     const targetSlotPos = (this.targetSlot && this.targetSlot.pos) ? this.targetSlot.pos : (hook.hookPos || hook.pos);
     if (targetSlotPos) {
       // 🎣 바늘(Hook)이 물고기의 입/머리(Mouth)에 물리도록 오프셋 계산 적용 & 해저 바닥(15070px) 뚫림 방지!

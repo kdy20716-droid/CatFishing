@@ -1,9 +1,9 @@
 /**
  * HUD & In-Game UI Overlay Manager
  */
-import { BAITS } from '../systems/Economy.js?v=6.8.0';
-import { Fish } from '../entities/Fish.js?v=6.8.0';
-import { getBaitIconSvg } from './BaitIcons.js?v=6.8.0';
+import { BAITS } from '../systems/Economy.js?v=7.3.0';
+import { Fish } from '../entities/Fish.js?v=7.3.0';
+import { getBaitIconSvg } from './BaitIcons.js?v=7.3.0';
 
 export class HUD {
   constructor(economy, encyclopedia, soundEngine, environment = null) {
@@ -370,12 +370,12 @@ export class HUD {
       if (timeTextEl) timeTextEl.innerText = timeInfo.phase;
     }
 
-    // 7. ⬅️ Update Dock Distance Indicator (부두막 방향 & 거리 알림)
+    // 7. ⬅️ Update Dock Distance Indicator (부두막 방향 & 거리 알림: 50m 초과 시 표시, 50m 이내 접근 시 숨김)
     const dockDistEl = document.getElementById('dock-distance-indicator');
     if (dockDistEl && cat) {
       const dockX = 200; // Dock wooden pier center
       const distM = Math.max(0, Math.round((cat.pos.x - dockX) / 20));
-      if (distM >= 10) {
+      if (distM > 50) {
         dockDistEl.classList.remove('hidden');
         const textEl = dockDistEl.querySelector('.dock-dist-text');
         if (textEl) textEl.innerHTML = `부두막 <b>${distM.toLocaleString()}m</b>`;

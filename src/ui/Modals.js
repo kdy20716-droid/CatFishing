@@ -1,10 +1,10 @@
 /**
  * Interactive Modals (Shop, Fish Encyclopedia, Aquarium Controls, Settings, Guide)
  */
-import { RODS, BOATS, BAITS, HATS, PASSIVE_UPGRADES, CAT_SKINS } from '../systems/Economy.js?v=6.8.0';
-import { FISH_SPECIES } from '../systems/Encyclopedia.js?v=6.8.0';
-import { Fish } from '../entities/Fish.js?v=6.8.0';
-import { getBaitIconSvg } from './BaitIcons.js?v=6.8.0';
+import { RODS, BOATS, BAITS, HATS, PASSIVE_UPGRADES, CAT_SKINS } from '../systems/Economy.js?v=7.3.0';
+import { FISH_SPECIES } from '../systems/Encyclopedia.js?v=7.3.0';
+import { Fish } from '../entities/Fish.js?v=7.3.0';
+import { getBaitIconSvg } from './BaitIcons.js?v=7.3.0';
 
 export class Modals {
   constructor(economy, encyclopedia, aquarium, soundEngine, hud, cloudSave = null) {
@@ -29,6 +29,7 @@ export class Modals {
     this.merchantGuideModal = document.getElementById('merchant-guide-modal');
     this.fishMarketModal = document.getElementById('fish-market-modal');
     this.nicknameModal = document.getElementById('nickname-modal');
+    this.couponModal = document.getElementById('coupon-modal');
     this.inventoryModal = document.getElementById('inventory-modal');
     this.pauseModal = document.getElementById('pause-modal');
     this.userDropdownMenu = document.getElementById('user-dropdown-menu');
@@ -183,6 +184,84 @@ export class Modals {
       btnNicknameCancel.addEventListener('click', () => {
         this.sound.playClick();
         if (this.nicknameModal) this.nicknameModal.classList.remove('visible');
+      });
+    }
+
+    // 🎟️ Secret Code / Coupon Modal Listeners (SHA-256 Hash Validation)
+    const btnOpenCoupon = document.getElementById('btn-open-coupon-modal');
+    const inputCouponCode = document.getElementById('input-coupon-code');
+    const btnCouponSubmit = document.getElementById('btn-coupon-submit');
+    const btnCouponCancel = document.getElementById('btn-coupon-cancel');
+    const couponMsg = document.getElementById('coupon-message');
+
+    if (btnOpenCoupon) {
+      btnOpenCoupon.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.sound.playClick();
+        if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
+        this.openCouponModal();
+      });
+    }
+
+    const sha256Hex = async (str) => {
+      try {
+        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+      } catch (e) {
+        return '';
+      }
+    };
+
+    const handleCouponSubmit = async () => {
+      const inputVal = inputCouponCode ? inputCouponCode.value.trim() : '';
+      if (!inputVal) {
+        if (couponMsg) {
+          couponMsg.innerText = '⚠️ 코드를 입력해주세요!';
+          couponMsg.style.color = '#e11d48';
+          couponMsg.style.display = 'block';
+        }
+        return;
+      }
+
+      // SHA-256 해시 단방향 암호화 비교 (소스코드 평문 노출 완전 차단!)
+      const inputHash = await sha256Hex(inputVal);
+      const secretHash = 'efa92c0adbbc1f4b33b035b31a3cd6ce219f2ed805f179c3c0807cd860700824';
+
+      if (inputHash === secretHash) {
+        this.sound.playLevelUp();
+        this.sound.playCoin();
+        
+        // 💰 7,777만 골드 (77,777,777 G) 즉시 지급!
+        const rewardAmount = 77777777;
+        this.economy.addGold(rewardAmount);
+        this.economy.saveToStorage();
+        if (this.cloudSave) this.cloudSave.triggerAutoSave();
+
+        if (this.couponModal) this.couponModal.classList.remove('visible');
+        if (inputCouponCode) inputCouponCode.value = '';
+        if (couponMsg) couponMsg.style.display = 'none';
+
+        this.hud.showNotification(`🎉 [코드 보상] ${rewardAmount.toLocaleString()} G 골드가 지급되었습니다! 🪙✨`, '🎁');
+      } else {
+        this.sound.playClick();
+        if (couponMsg) {
+          couponMsg.innerText = '❌ 유효하지 않은 코드입니다. 다시 확인해주세요.';
+          couponMsg.style.color = '#e11d48';
+          couponMsg.style.display = 'block';
+        }
+      }
+    };
+
+    if (btnCouponSubmit) btnCouponSubmit.addEventListener('click', handleCouponSubmit);
+    if (inputCouponCode) {
+      inputCouponCode.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handleCouponSubmit();
+      });
+    }
+    if (btnCouponCancel) {
+      btnCouponCancel.addEventListener('click', () => {
+        this.sound.playClick();
+        if (this.couponModal) this.couponModal.classList.remove('visible');
       });
     }
 
@@ -611,6 +690,7 @@ export class Modals {
     if (this.merchantGuideModal) this.merchantGuideModal.classList.remove('visible');
     if (this.fishMarketModal) this.fishMarketModal.classList.remove('visible');
     if (this.nicknameModal) this.nicknameModal.classList.remove('visible');
+    if (this.couponModal) this.couponModal.classList.remove('visible');
     if (this.inventoryModal) this.inventoryModal.classList.remove('visible');
     if (this.pauseModal) this.pauseModal.classList.remove('visible');
     if (this.aquariumManageModal) this.aquariumManageModal.classList.remove('visible');
@@ -633,6 +713,7 @@ export class Modals {
       (this.merchantGuideModal && this.merchantGuideModal.classList.contains('visible')) ||
       (this.fishMarketModal && this.fishMarketModal.classList.contains('visible')) ||
       (this.nicknameModal && this.nicknameModal.classList.contains('visible')) ||
+      (this.couponModal && this.couponModal.classList.contains('visible')) ||
       (this.inventoryModal && this.inventoryModal.classList.contains('visible')) ||
       (this.pauseModal && this.pauseModal.classList.contains('visible')) ||
       (this.aquariumManageModal && this.aquariumManageModal.classList.contains('visible')) ||
@@ -1065,6 +1146,22 @@ export class Modals {
       }
       this.nicknameModal.classList.add('visible');
       setTimeout(() => inputNicknameNew?.focus(), 50);
+    }
+  }
+
+  openCouponModal() {
+    this.closeAll();
+    if (!this.couponModal) {
+      this.couponModal = document.getElementById('coupon-modal');
+    }
+    if (this.couponModal) {
+      this.sound.playClick();
+      const input = document.getElementById('input-coupon-code');
+      const msg = document.getElementById('coupon-message');
+      if (input) input.value = '';
+      if (msg) msg.style.display = 'none';
+      this.couponModal.classList.add('visible');
+      setTimeout(() => input?.focus(), 50);
     }
   }
 

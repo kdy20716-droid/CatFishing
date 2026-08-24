@@ -147,16 +147,24 @@ export class Rod {
     }
   }
 
+  stopAllure() {
+    this.isAllureActive = false;
+    this.allureTimer = 0;
+  }
+
   attachFish(fish, targetSlot = null) {
     let slot = targetSlot;
-    if (!slot) {
+    if (!slot || slot.hookedFish) {
       slot = this.hooks.find(h => !h.hookedFish);
     }
-    if (!slot) return; // No empty hook
+    if (!slot) return false; // No empty hook slot available
 
     slot.hookedFish = fish;
     this.hookedFish = fish;
     this.sound.playBite();
+
+    // 💖 물고기가 미끼를 무는 즉시 현혹 페로몬 효과 즉시 종료!
+    this.stopAllure();
 
     // 🍞 물고기가 미끼를 물었을 때만 인벤토리에서 미끼 1개 소모! (빈 바늘 그대로 회수 시 미끼 보존)
     if (!this.baitConsumed) {
@@ -169,6 +177,8 @@ export class Rod {
       this.isLiveBait = true;
       this.liveBaitFish = fish;
     }
+
+    return true;
   }
 
   triggerBomb(oceanFishList, onFishEliminated) {
