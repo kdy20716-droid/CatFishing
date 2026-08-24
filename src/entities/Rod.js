@@ -65,13 +65,17 @@ export class Rod {
   }
 
   initHooks() {
-    this.hookCount = this.economy ? this.economy.getAvailableHookCount() : 1;
+    let count = 1;
+    if (this.economy) {
+      count = this.economy.hookCount || this.economy.getAvailableHookCount() || 1;
+    }
+    this.hookCount = Math.max(1, Math.min(3, count));
     this.hooks = [];
     for (let i = 0; i < this.hookCount; i++) {
       this.hooks.push({
         index: i,
-        offsetY: i * 36,
-        offsetX: (i % 2 === 1 ? -12 : 12) * (i > 0 ? 1 : 0),
+        offsetY: i * 38,
+        offsetX: (i % 2 === 1 ? -16 : 16) * (i > 0 ? 1 : 0),
         pos: new Vector2(0, 0),
         hookedFish: null
       });

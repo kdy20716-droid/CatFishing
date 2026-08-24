@@ -30,6 +30,8 @@ export class HUD {
     this.chargeBarContainer = document.getElementById('hud-charge-container');
     this.chargeFill = document.getElementById('hud-charge-fill');
     this.catchModal = document.getElementById('catch-modal');
+    this.catchPopupQueue = [];
+    this.isShowingCatchPopup = false;
 
     // 🛑 / 💖 / 💣 Right-Bottom Floating Action Widget
     this.rightActionWidget = document.getElementById('right-action-widget');
@@ -429,6 +431,22 @@ export class HUD {
 
   showCatchPopup(fishInstance, catchResult) {
     if (!this.catchModal) return;
+    this.catchPopupQueue.push({ fishInstance, catchResult });
+    if (!this.isShowingCatchPopup) {
+      this._processNextCatchPopup();
+    }
+  }
+
+  _processNextCatchPopup() {
+    if (this.catchPopupQueue.length === 0) {
+      this.isShowingCatchPopup = false;
+      if (this.catchModal) this.catchModal.classList.remove('visible');
+      return;
+    }
+
+    this.isShowingCatchPopup = true;
+    const { fishInstance, catchResult } = this.catchPopupQueue.shift();
+    const remainingCount = this.catchPopupQueue.length;
 
     const data = fishInstance.data;
     const size = fishInstance.sizeCm;
@@ -479,6 +497,11 @@ export class HUD {
     if (isBoss) badgeBg = 'linear-gradient(90deg, #ff0054, #7b2cbf)';
     else if (isShiny) badgeBg = 'linear-gradient(90deg, #ffd166, #ff007f)';
 
+    // Multi-catch next button text
+    const btnText = remainingCount > 0 
+      ? `다음 낚은 물고기 보기 (${remainingCount}마리 남음) ➔` 
+      : '확인 (계속 낚시)';
+
     this.catchModal.innerHTML = `
       <div class="catch-modal-content ${(isShiny || isBoss) ? 'shiny-modal-content' : ''}">
         ${bannerHtml}
@@ -516,7 +539,7 @@ export class HUD {
         ${isFirstTime ? '<div class="first-caught-banner">📖 새로운 어종 도감 등록 완료! ✨</div>' : ''}
 
         <div class="catch-actions">
-          <button id="btn-catch-ok" class="btn-primary">확인 (계속 낚시)</button>
+          <button id="btn-catch-ok" class="btn-primary" style="${remainingCount > 0 ? 'background: linear-gradient(180deg, #f59e0b, #d97706); border-color: #b45309; box-shadow: 0 4px 0 #b45309;' : ''}">${btnText}</button>
         </div>
       </div>
     `;
@@ -534,10 +557,13 @@ export class HUD {
 
     this.catchModal.classList.add('visible');
 
-    document.getElementById('btn-catch-ok').addEventListener('click', () => {
-      this.sound.playClick();
-      this.catchModal.classList.remove('visible');
-    });
+    const okBtn = document.getElementById('btn-catch-ok');
+    if (okBtn) {
+      okBtn.addEventListener('click', () => {
+        this.sound?.playClick?.();
+        this._processNextCatchPopup();
+      });
+    }
   }
 
   triggerCatchFireworks() {

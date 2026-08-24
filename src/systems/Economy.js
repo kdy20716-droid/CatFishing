@@ -938,10 +938,10 @@ export class Economy {
   }
 
   getAvailableHookCount() {
-    if (this.hookMode === 3 && (this.baitInventory['multi_hook_3'] || 0) > 0) {
+    if ((this.hookMode === 3 || this.hookCount === 3) && (this.baitInventory['multi_hook_3'] || 0) > 0) {
       return 3;
     }
-    if (this.hookMode === 2 && (this.baitInventory['multi_hook_2'] || 0) > 0) {
+    if ((this.hookMode === 2 || this.hookCount === 2) && (this.baitInventory['multi_hook_2'] || 0) > 0) {
       return 2;
     }
     return 1;

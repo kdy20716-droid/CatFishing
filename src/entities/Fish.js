@@ -238,7 +238,15 @@ export class Fish {
 
     let freeSlot = null;
     if (hook.hooks && hook.hooks.length > 0) {
-      freeSlot = hook.hooks.find(h => !h.hookedFish);
+      // Find all empty hook slots
+      const emptySlots = hook.hooks.filter(h => !h.hookedFish);
+      if (emptySlots.length === 0) return;
+      // Pick the closest empty slot or an unassigned slot
+      freeSlot = emptySlots.reduce((closest, slot) => {
+        const slotPos = slot.pos || hook.hookPos;
+        const d = this.pos.dist(slotPos);
+        return (!closest || d < closest.dist) ? { slot, dist: d } : closest;
+      }, null)?.slot;
     } else {
       freeSlot = !hook.hookedFish ? { pos: hook.hookPos } : null;
     }
@@ -303,16 +311,19 @@ export class Fish {
     // 💖 환상의 현혹 페로몬 활성화 시 즉시 덥석 뭄!
     if (hook.isAllureActive) {
       if (dist < 42) {
-        const attached = hook.attachFish(this, this.targetSlot);
+        // Try attaching to target slot or any other remaining empty slot
+        let attached = hook.attachFish(this, this.targetSlot);
+        if (!attached) {
+          attached = hook.attachFish(this, null);
+        }
         if (attached) {
           this.state = 'HOOKED';
           this.isInspecting = false;
           if (this.data.id === 'pufferfish') this.isPuffed = true;
           if (this.data.id === 'inky_squid') this.spawnInk();
         } else {
-          // 남은 바늘 슬롯이 없으면 즉시 호기심을 풀고 유영으로 복귀
           this.state = 'WANDER';
-          this.ignoreCooldown = 3.0;
+          this.ignoreCooldown = 2.0;
           this.isInspecting = false;
           this.targetSlot = null;
         }
@@ -385,14 +396,17 @@ export class Fish {
         const roll = Math.random();
         if (roll < biteChance) {
           // 🎣 입질 성공! 미끼를 덥석 뭄!
-          const attached = hook.attachFish(this, this.targetSlot);
+          let attached = hook.attachFish(this, this.targetSlot);
+          if (!attached) {
+            attached = hook.attachFish(this, null);
+          }
           if (attached) {
             this.state = 'HOOKED';
             if (this.data.id === 'pufferfish') this.isPuffed = true;
             if (this.data.id === 'inky_squid') this.spawnInk();
           } else {
             this.state = 'WANDER';
-            this.ignoreCooldown = 3.0;
+            this.ignoreCooldown = 2.0;
             this.targetSlot = null;
           }
         } else {
