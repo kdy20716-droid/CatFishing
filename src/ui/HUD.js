@@ -33,13 +33,32 @@ export class HUD {
     this.catchPopupQueue = [];
     this.isShowingCatchPopup = false;
 
-    // 🛑 / 💖 / 💣 Right-Bottom Floating Action Widget
+    // 🛑 / 💖 / 💣 Right-Bottom Floating Action Widgets
     this.rightActionWidget = document.getElementById('right-action-widget');
     this.rightActionBtn = document.getElementById('right-action-btn');
     this.rightActionIcon = document.getElementById('right-action-icon');
     this.rightActionLabel = document.getElementById('right-action-label');
-    this.rightActionCount = document.getElementById('right-action-count');
-    this.onRightActionTrigger = null;
+
+    this.qItemBtn = document.getElementById('q-item-action-btn');
+    this.qItemIcon = document.getElementById('q-item-action-icon');
+    this.qItemLabel = document.getElementById('q-item-action-label');
+    this.qItemCount = document.getElementById('q-item-action-count');
+
+    this.onDepthLockTrigger = null;
+    this.onItemUseTrigger = null;
+
+    // 🚢 Cruise Fast-Travel to Dock Button
+    this.cruiseBtn = document.getElementById('btn-dock-cruise');
+    this.cruisePriceBadge = document.getElementById('hud-cruise-price');
+    this.onCruiseTrigger = null;
+    if (this.cruiseBtn) {
+      this.cruiseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.onCruiseTrigger) {
+          this.onCruiseTrigger();
+        }
+      });
+    }
 
     // Floating notifications
     this.notifications = [];
@@ -52,19 +71,31 @@ export class HUD {
   }
 
   initRightActionWidget() {
+    // 1. [Q] Special Item Button
+    if (this.qItemBtn) {
+      this.qItemBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (this.onItemUseTrigger) {
+          this.onItemUseTrigger();
+        }
+      });
+    }
+
+    // 2. [Right-Click] Depth Lock STOP/SINK Button
     if (this.rightActionBtn) {
       this.rightActionBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
-        if (this.onRightActionTrigger) {
-          this.onRightActionTrigger();
+        if (this.onDepthLockTrigger) {
+          this.onDepthLockTrigger();
         }
       });
       this.rightActionBtn.addEventListener('contextmenu', (e) => {
         e.stopPropagation();
         e.preventDefault();
-        if (this.onRightActionTrigger) {
-          this.onRightActionTrigger();
+        if (this.onDepthLockTrigger) {
+          this.onDepthLockTrigger();
         }
       });
     }
@@ -150,10 +181,10 @@ export class HUD {
           this.toggleRocketItem();
         } else if (bait.id === 'allure') {
           this.sound.playClick();
-          this.showNotification('💖 현혹 페로몬: 물속에서 마우스 우클릭 시 주변 모든 물고기가 미끼로 쇄도합니다!', '💡');
+          this.showNotification('💖 현혹 페로몬: 물속에서 [Q] 키 (또는 클릭) 시 주변 모든 물고기가 미끼로 쇄도합니다!', '💡');
         } else if (bait.id === 'bomb') {
           this.sound.playClick();
-          this.showNotification('💣 폭탄: 물속에서 마우스 우클릭 시 주변 방해 물고기를 퇴치합니다!', '💡');
+          this.showNotification('💣 폭탄: 물속에서 [Q] 키 (또는 클릭) 시 주변 방해 물고기를 퇴치합니다!', '💡');
         } else if (bait.id === 'multi_hook_2') {
           this.selectHookCount(2);
         } else if (bait.id === 'multi_hook_3') {
@@ -289,12 +320,16 @@ export class HUD {
     if (rod.state !== 'READY' && this.baitDrawer && this.baitDrawer.classList.contains('open')) {
       this.baitDrawer.classList.remove('open');
     }
-    // 1. Update Gold & Level
+    // 1. Update Gold & Level & Cruise Price
     if (this.goldDisplay) {
       this.goldDisplay.innerText = this.economy.gold.toLocaleString() + ' G';
     }
     if (this.levelDisplay) {
       this.levelDisplay.innerText = `Lv. ${this.economy.level}`;
+    }
+    if (this.cruisePriceBadge) {
+      const cruiseCost = this.economy.level * 1000;
+      this.cruisePriceBadge.innerText = `${cruiseCost.toLocaleString()} G`;
     }
     if (this.expFill) {
       const needed = this.economy.getExpForNextLevel();
@@ -382,37 +417,36 @@ export class HUD {
       }
     }
 
-    // 8. 🛑 / 💖 / 💣 Update Right-Bottom Floating Action Widget
-    if (this.rightActionWidget && this.rightActionBtn) {
+    // 8. 🛑 / 💖 / 💣 Update Right-Bottom Floating Action Widgets
+    if (this.rightActionWidget) {
       if (rod.state === 'FISHING' && rod.isSubmerged) {
         this.rightActionWidget.classList.remove('hidden');
 
+        // 8-A. Update [Q] Special Item Button (Only shown when player has allure or bomb)
         const allureCount = this.economy.baitInventory['allure'] || 0;
         const bombCount = this.economy.baitInventory['bomb'] || 0;
 
-        this.rightActionBtn.className = 'right-action-btn';
+        if (this.qItemBtn) {
+          if (allureCount > 0) {
+            this.qItemBtn.classList.remove('hidden');
+            this.qItemBtn.className = 'right-action-btn mode-allure';
+            if (this.qItemIcon) this.qItemIcon.innerHTML = getBaitIconSvg('allure');
+            if (this.qItemLabel) this.qItemLabel.innerText = '현혹 페로몬';
+            if (this.qItemCount) this.qItemCount.innerText = `x${allureCount}`;
+          } else if (bombCount > 0) {
+            this.qItemBtn.classList.remove('hidden');
+            this.qItemBtn.className = 'right-action-btn mode-bomb';
+            if (this.qItemIcon) this.qItemIcon.innerHTML = getBaitIconSvg('bomb');
+            if (this.qItemLabel) this.qItemLabel.innerText = '어군 폭탄';
+            if (this.qItemCount) this.qItemCount.innerText = `x${bombCount}`;
+          } else {
+            this.qItemBtn.classList.add('hidden');
+          }
+        }
 
-        if (allureCount > 0) {
-          // Case A-1: Allure Pheromone available
-          this.rightActionBtn.classList.add('mode-allure');
-          if (this.rightActionIcon) this.rightActionIcon.innerHTML = getBaitIconSvg('allure');
-          if (this.rightActionLabel) this.rightActionLabel.innerText = '현혹 페로몬';
-          if (this.rightActionCount) {
-            this.rightActionCount.classList.remove('hidden');
-            this.rightActionCount.innerText = `x${allureCount}`;
-          }
-        } else if (bombCount > 0) {
-          // Case A-2: Depth Bomb available
-          this.rightActionBtn.classList.add('mode-bomb');
-          if (this.rightActionIcon) this.rightActionIcon.innerHTML = getBaitIconSvg('bomb');
-          if (this.rightActionLabel) this.rightActionLabel.innerText = '어군 폭탄';
-          if (this.rightActionCount) {
-            this.rightActionCount.classList.remove('hidden');
-            this.rightActionCount.innerText = `x${bombCount}`;
-          }
-        } else {
-          // Case B: No special items -> Depth Lock (STOP / SINK)
-          if (this.rightActionCount) this.rightActionCount.classList.add('hidden');
+        // 8-B. Update [Right-Click] Depth Lock STOP/SINK Button (Always available during fishing)
+        if (this.rightActionBtn) {
+          this.rightActionBtn.className = 'right-action-btn';
           if (rod.isDepthLocked) {
             this.rightActionBtn.classList.add('mode-locked');
             if (this.rightActionIcon) this.rightActionIcon.innerText = '▶️';

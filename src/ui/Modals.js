@@ -270,7 +270,6 @@ export class Modals {
         const rewardAmount = 77777777;
         this.economy.addGold(rewardAmount);
         this.economy.saveToStorage();
-        if (this.cloudSave) this.cloudSave.triggerAutoSave();
 
         if (this.couponModal) this.couponModal.classList.remove('visible');
         if (inputCouponCode) inputCouponCode.value = '';
@@ -810,15 +809,16 @@ export class Modals {
       });
     }
 
-    // 2. Save progress button
+    // 2. Save progress button (Manual save button)
     const btnSave = document.getElementById('btn-pause-save');
     if (btnSave) {
       btnSave.addEventListener('click', async () => {
-        this.sound.playCoin();
         if (this.cloudSave) {
-          await this.cloudSave.triggerAutoSave();
+          await this.cloudSave.manualSaveToCloud();
+        } else {
+          this.sound.playCoin();
+          this.hud.showNotification('💾 게임 진행 상황이 로컬에 안전하게 저장되었습니다!', '✨');
         }
-        this.hud.showNotification('💾 게임 진행 상황이 로컬 및 클라우드에 즉시 저장되었습니다!', '✨');
       });
     }
 

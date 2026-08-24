@@ -23,13 +23,16 @@ class Game {
     this.ctx = this.canvas.getContext('2d');
 
     this.lastTime = 0;
-    this.maxFishCount = 280; // Dense, lively ocean across entire 32,000px wide & 750m deep waters!
+    this.maxFishCount = 400; // Balanced, comfortable ocean with rich deep-sea life across 32,000px wide & 750m deep waters!
     this.fishList = [];
     this.prevTimeOfDay = 'day';
 
     // 👑 Boss Director (10~15분 주기 보스 출현 타이머)
     this.bossSpawnTimer = 0;
     this.bossSpawnCooldown = 600 + Math.random() * 300; // 600s ~ 900s (10~15 minutes)
+
+    // 🚢 Cruise Fast-Travel Splash State
+    this.isCruiseTraveling = false;
 
     this.init();
   }
@@ -111,7 +114,7 @@ class Game {
           maxSwimX: f.swimBounds?.maxX
         }));
 
-      localStorage.setItem('cozy_cat_ocean_fish_v1', JSON.stringify(serializableFish));
+      localStorage.setItem('cozy_cat_ocean_fish_v4', JSON.stringify(serializableFish));
     } catch (e) {}
   }
 
@@ -121,7 +124,7 @@ class Game {
 
     // 1. Try to restore previous fish population
     try {
-      const saved = localStorage.getItem('cozy_cat_ocean_fish_v1');
+      const saved = localStorage.getItem('cozy_cat_ocean_fish_v4');
       if (saved) {
         const fishDataList = JSON.parse(saved);
         if (Array.isArray(fishDataList) && fishDataList.length > 0) {
@@ -129,9 +132,7 @@ class Game {
             const species = FISH_SPECIES.find(s => s.id === item.id);
             if (species) {
               let spawnX = item.x;
-              let bounds = (typeof item.minSwimX === 'number' && typeof item.maxSwimX === 'number')
-                ? { minX: item.minSwimX, maxX: item.maxSwimX }
-                : null;
+              let bounds = { minX: -600, maxX: 32000 };
 
               if (species.isBoss) {
                 // 👑 보스 물고기는 최신 원양 서식 구역(minX ~ maxX)으로 엄격 갱신
@@ -162,7 +163,7 @@ class Game {
       console.warn("Failed to restore ocean fish population:", e);
     }
 
-    // 2. Fill the remaining spots up to maxFishCount
+    // 2. Fill the remaining spots up to maxFishCount (400)
     const needed = this.maxFishCount - loadedFishCount;
     for (let i = 0; i < needed; i++) {
       this.spawnSingleFish();
@@ -188,60 +189,77 @@ class Game {
       // 👑 10대 전설 신화 보스 소환 (현재 없는 보스 중 무작위 선택)
       chosen = availableBossSpecies[Math.floor(Math.random() * availableBossSpecies.length)];
     } else {
-      // 🐟 일반/희귀/에픽/전설 물고기 (행운 가중치 적용)
+      // 🌊 수심대별 목표 개체수: 100m 이하 심해(deep, abyss, hadal)에 320마리(80%) 균형 배치!
+      const targetZoneCounts = {
+        shallow: 30,  // 표층 0 ~ 30m
+        mid: 50,      // 중층 30 ~ 100m
+        deep: 100,    // 심해 어둠층 100 ~ 250m
+        abyss: 110,   // 심연의 해구 250 ~ 400m
+        hadal: 110    // 미지의 초심연 400 ~ 750m
+      };
+
+      const currentZoneCounts = { shallow: 0, mid: 0, deep: 0, abyss: 0, hadal: 0 };
+      this.fishList.forEach(f => {
+        if (!f.isBoss && f.data && f.data.zone && currentZoneCounts[f.data.zone] !== undefined) {
+          currentZoneCounts[f.data.zone]++;
+        }
+      });
+
+      // 가장 개체수 부족분(deficit)이 큰 zone 선택
+      const deficits = Object.keys(targetZoneCounts).map(zone => ({
+        zone,
+        deficit: Math.max(0.1, targetZoneCounts[zone] - currentZoneCounts[zone])
+      }));
+
+      const totalDeficit = deficits.reduce((sum, d) => sum + d.deficit, 0);
+      let rand = Math.random() * totalDeficit;
+      let targetZone = 'deep';
+      for (const d of deficits) {
+        if (rand < d.deficit) {
+          targetZone = d.zone;
+          break;
+        }
+        rand -= d.deficit;
+      }
+
+      const zoneSpecies = regularSpecies.filter(f => f.zone === targetZone);
+      const candidates = zoneSpecies.length > 0 ? zoneSpecies : regularSpecies;
+
+      // 행운 가중치 적용하여 해당 수심 어종 중 무작위 선택
       const luckMult = this.economy.getLuckMultiplier();
       const roll = Math.random();
       let targetRarity = 'common';
-      if (roll < 0.03 * luckMult) targetRarity = 'mythic';
-      else if (roll < 0.09 * luckMult) targetRarity = 'legendary';
-      else if (roll < 0.22 * luckMult) targetRarity = 'epic';
-      else if (roll < 0.48 * luckMult) targetRarity = 'rare';
-      else if (roll < 0.72) targetRarity = 'uncommon';
+      if (roll < 0.05 * luckMult) targetRarity = 'mythic';
+      else if (roll < 0.14 * luckMult) targetRarity = 'legendary';
+      else if (roll < 0.30 * luckMult) targetRarity = 'epic';
+      else if (roll < 0.58 * luckMult) targetRarity = 'rare';
+      else if (roll < 0.82) targetRarity = 'uncommon';
 
-      const candidates = regularSpecies.filter(f => f.rarity === targetRarity);
-      chosen = candidates.length > 0 
-        ? candidates[Math.floor(Math.random() * candidates.length)] 
-        : regularSpecies[Math.floor(Math.random() * regularSpecies.length)];
+      const rarityCandidates = candidates.filter(f => f.rarity === targetRarity);
+      chosen = rarityCandidates.length > 0
+        ? rarityCandidates[Math.floor(Math.random() * rarityCandidates.length)]
+        : candidates[Math.floor(Math.random() * candidates.length)];
     }
 
-    const speciesIndex = FISH_SPECIES.indexOf(chosen);
-    const totalSpecies = Math.max(1, FISH_SPECIES.length - 1);
-    const depthProgress = Math.max(0, Math.min(1, speciesIndex / totalSpecies));
-
-    // 🌊 가로 32,000px & 수심 750m(15,000px) 광활한 바다 전역에 골고루 분산 배치!
-    let minSpawnX, maxSpawnX;
-    let minSwimX, maxSwimX;
+    // 🌊 가로 스폰 범위: 플레이어 활동/탐험 영역에 65% 집중 배치하여 부두막 밑과 어디서든 빽빽하게 밀집!
+    let minSpawnX = -350;
+    let maxSpawnX = 31500;
+    let minSwimX = -600;
+    let maxSwimX = 32000;
 
     if (chosen.isBoss) {
-      // 👑 10대 신화 보스: 배 티어별 원양 서식 구역(minX ~ maxX)에 엄격히 격리되어 부두막 근처 침범 방지!
+      // 👑 10대 신화 보스는 배 티어별 원양 서식 구역(minX ~ maxX) 준수
       minSpawnX = chosen.minX || 1600;
       maxSpawnX = chosen.maxX || 32000;
       minSwimX = Math.max(1200, minSpawnX - 150);
       maxSwimX = Math.min(32000, maxSpawnX + 150);
-    } else if (depthProgress < 0.25) {
-      // 1. 표층/초근해 (0~30m: 멸치, 구피, 흰동가리, 복어 등)
-      minSpawnX = -350;
-      maxSpawnX = 31500;
-      minSwimX = -600;
-      maxSwimX = 32000;
-    } else if (depthProgress < 0.50) {
-      // 2. 중층 (30~100m: 참돔, 고등어, 꽁치, 날치, 바다거북 등)
-      minSpawnX = 200;
-      maxSpawnX = 31500;
-      minSwimX = 0;
-      maxSwimX = 32000;
-    } else if (depthProgress < 0.75) {
-      // 3. 심해 어둠층 (100~250m: 갈치, 초롱아귀, 문어, 톱상어 등)
-      minSpawnX = 600;
-      maxSpawnX = 31500;
-      minSwimX = 400;
-      maxSwimX = 32000;
     } else {
-      // 4. 심연 & 초심연 (250~750m: 대왕 산갈치, 덤보문어, 실러캔스, 별빛고래, 크라켄, 레비아탄 등)
-      minSpawnX = 1200;
-      maxSpawnX = 31500;
-      minSwimX = 800;
-      maxSwimX = 32000;
+      // 일반/심해 물고기: 플레이어 주변 및 시작 영역(0~5000px)에 65% 밀집 스폰
+      if (Math.random() < 0.65) {
+        const catX = (this.cat && typeof this.cat.pos?.x === 'number') ? this.cat.pos.x : 1000;
+        const activeMaxX = Math.min(31500, Math.max(4500, catX + 3500));
+        maxSpawnX = activeMaxX;
+      }
     }
 
     const startX = minSpawnX + Math.random() * (maxSpawnX - minSpawnX);
@@ -332,7 +350,7 @@ class Game {
 
   initInputHandlers() {
     this.input.on('pointerdown', () => {
-      if (this.aquarium.isOpen) return;
+      if (this.aquarium.isOpen || this.isCruiseTraveling) return;
 
       if (this.rod.state === 'READY') {
         this.rod.startCharging();
@@ -341,7 +359,7 @@ class Game {
     });
 
     this.input.on('pointerup', () => {
-      if (this.aquarium.isOpen) return;
+      if (this.aquarium.isOpen || this.isCruiseTraveling) return;
 
       if (this.rod.state === 'CHARGING') {
         this.rod.cast(this.cat);
@@ -352,11 +370,11 @@ class Game {
       }
     });
 
-    // Right-Click & Action Widget Trigger Handling
-    this.handleRightClickAction = () => {
-      if (this.aquarium.isOpen) return;
+    // 1. [Q] Key: 특수 아이템 사용 전용 (현혹 페로몬 💖, 어군 폭탄 💣)
+    this.handleUseItemAction = () => {
+      if (this.aquarium.isOpen || this.isCruiseTraveling) return;
       if (this.rod.state === 'FISHING' && this.rod.isSubmerged) {
-        // 1. Try triggering Allure Pheromone first if owned
+        // A. Try triggering Allure Pheromone first if owned
         if ((this.economy.baitInventory['allure'] || 0) > 0) {
           const success = this.rod.triggerAllure(this.fishList);
           if (success) {
@@ -367,7 +385,7 @@ class Game {
           }
         }
 
-        // 2. Otherwise try Depth Charge Bomb
+        // B. Otherwise try Depth Charge Bomb
         if ((this.economy.baitInventory['bomb'] || 0) > 0) {
           const success = this.rod.triggerBomb(this.fishList, (eliminatedFish) => {
             const idx = this.fishList.indexOf(eliminatedFish);
@@ -385,7 +403,15 @@ class Game {
           }
         }
 
-        // 3. No special item -> Toggle Depth Lock (STOP / RESUME SINKING)
+        this.sound.playClick();
+        this.hud.showNotification('사용할 수 있는 수중 특수 아이템(현혹 페로몬/어군 폭탄)이 없습니다냥! 🎒', '💡');
+      }
+    };
+
+    // 2. [마우스 우클릭]: 찌 침강 정지 / 진행 전용 (오로지 STOP & SINK만 작동!)
+    this.handleDepthLockAction = () => {
+      if (this.aquarium.isOpen || this.isCruiseTraveling) return;
+      if (this.rod.state === 'FISHING' && this.rod.isSubmerged) {
         const isLocked = this.rod.toggleDepthLock();
         if (isLocked) {
           this.sound.playClick();
@@ -397,8 +423,101 @@ class Game {
       }
     };
 
-    this.input.on('rightclick', () => this.handleRightClickAction());
-    this.hud.onRightActionTrigger = () => this.handleRightClickAction();
+    // 우클릭은 오로지 찌 침강 STOP & SINK만 실행!
+    this.input.on('rightclick', () => this.handleDepthLockAction());
+    this.hud.onDepthLockTrigger = () => this.handleDepthLockAction();
+    this.hud.onItemUseTrigger = () => this.handleUseItemAction();
+
+    // 🚢 Cruise Fast-Travel to Dock Pier (Lv * 1,000 G + 3s Splash Screen Voyage)
+    this.hud.onCruiseTrigger = () => {
+      if (this.aquarium.isOpen || this.isCruiseTraveling) return;
+
+      const cost = this.economy.level * 1000;
+      const isAtDock = this.cat.pos.x <= 260;
+
+      if (isAtDock) {
+        this.sound.playClick();
+        this.hud.showNotification('이미 부두막에 도착해 있습니다냥! 🏪', '🐾');
+        return;
+      }
+
+      if (this.economy.gold < cost) {
+        this.sound.playClick();
+        this.hud.showNotification(`골드가 부족합니다냥! (필요: ${cost.toLocaleString()} G)`, '⚠️');
+        return;
+      }
+
+      // Deduct gold & save
+      this.economy.addGold(-cost);
+      this.economy.saveToStorage();
+
+      // Safely retrieve/reset fishing line if active
+      if (this.rod.state !== 'READY') {
+        this.rod.reset(this.cat);
+      }
+
+      this.isCruiseTraveling = true;
+      this.cat.velX = 0;
+      this.cat.state = 'IDLE';
+
+      // 1. Play Cruise Horn & Water Splash Sound
+      this.sound.playCruiseHorn();
+      this.sound.playSplash(1.5);
+
+      // 2. Display 3-Second Grand Cruise Sailing Left Animation Screen
+      const splashOverlay = document.getElementById('cruise-splash-overlay');
+      if (splashOverlay) {
+        // Set dynamic theme matching current in-game time of day (day / sunset / night)
+        const currentTheme = this.environment.timeOfDay || 'day';
+        splashOverlay.dataset.theme = currentTheme;
+
+        // Reset Ship Sailing & Meter Animations
+        const ship = splashOverlay.querySelector('.cruise-grand-ship');
+        const meterFill = splashOverlay.querySelector('.meter-bar-fill');
+        const meterBoat = splashOverlay.querySelector('.meter-boat-indicator');
+
+        if (ship) {
+          ship.style.animation = 'none';
+          void ship.offsetWidth; // force DOM reflow
+          ship.style.animation = 'cruise-sail-left 3.0s cubic-bezier(0.12, 0.95, 0.35, 1) forwards, cruise-ship-bob 1.2s ease-in-out infinite alternate';
+        }
+        if (meterFill) {
+          meterFill.style.animation = 'none';
+          void meterFill.offsetWidth; // force DOM reflow
+          meterFill.style.animation = 'meter-progress-fill 3.0s linear forwards';
+        }
+        if (meterBoat) {
+          meterBoat.style.animation = 'none';
+          void meterBoat.offsetWidth; // force DOM reflow
+          meterBoat.style.animation = 'meter-boat-glide 3.0s linear forwards';
+        }
+
+        splashOverlay.classList.add('visible');
+      }
+
+      // 3. Move player & camera in background while sailing
+      setTimeout(() => {
+        this.cat.pos.x = 240;
+        this.cat.velX = 0;
+        this.cat.savePosition();
+        this.camera.pos.set(this.cat.pos.x, this.cat.pos.y);
+        this.camera.setTarget(this.cat.pos.x + 80 * this.cat.facing, this.cat.pos.y - 40, 1.0);
+      }, 1500);
+
+      // 4. Complete Voyage at 3.0 seconds -> Dock Arrival Celebration
+      setTimeout(() => {
+        if (splashOverlay) {
+          splashOverlay.classList.remove('visible');
+        }
+
+        this.isCruiseTraveling = false;
+        this.sound.playSplash(1.2);
+        this.sound.playCoin();
+        this.camera.shake(6, 0.4);
+
+        this.hud.showNotification(`🚢 부두막에 무사히 도착했습니다냥! (-${cost.toLocaleString()} G)`, '✨');
+      }, 3000);
+    };
 
     // Keyboard Shortcuts (지정된 단축키로 정돈)
     this.input.on('keydown', (code) => {
@@ -415,6 +534,11 @@ class Game {
           if (aquaUI) aquaUI.classList.remove('visible');
         }
         return;
+      }
+
+      // 💖 / 💣 [Q] 키: 수중 특수 아이템 사용 전용
+      if (code === 'KeyQ') {
+        this.handleUseItemAction();
       }
 
       // 🏷️ [Tab] 키: 내 머리 위 닉네임 일시 표시 (3.5초)
@@ -505,11 +629,6 @@ class Game {
       this.fishList.splice(idx, 1);
     }
     this.spawnSingleFish(false);
-
-    // Auto-sync progress to cloud
-    if (this.cloudSave) {
-      this.cloudSave.triggerAutoSave();
-    }
   }
 
   loop(currentTime) {
@@ -554,8 +673,8 @@ class Game {
       this.cat.state = 'IDLE';
     }
 
-    // Update Cat & Boat (allow steering in READY, FLYING, and FISHING)
-    const boatAxis = (this.rod.state !== 'CHARGING') ? this.input.horizontalAxis : 0;
+    // Update Cat & Boat (allow steering only when not charging and not cruise traveling)
+    const boatAxis = (!this.isCruiseTraveling && this.rod.state !== 'CHARGING') ? this.input.horizontalAxis : 0;
     this.cat.update(dt, this.environment.waterSurfaceY, boatAxis);
 
     // Update Rod & Line
@@ -633,8 +752,18 @@ class Game {
     // 3. 🏡 Draw Far Left Wooden Pier, Cabin Shack, & Merchant Cat NPC (with [R] interact badge)
     this.environment.drawPierAndCabin(this.ctx, bounds, this.cat.pos.x);
 
-    // 4. Draw Ocean Fish
-    this.fishList.forEach(fish => fish.draw(this.ctx));
+    // 4. Draw Ocean Fish (Viewport frustum culled with 180px buffer for ultra-smooth 60 FPS)
+    const margin = 180;
+    this.fishList.forEach(fish => {
+      if (
+        fish.pos.x >= bounds.left - margin &&
+        fish.pos.x <= bounds.right + margin &&
+        fish.pos.y >= bounds.top - margin &&
+        fish.pos.y <= bounds.bottom + margin
+      ) {
+        fish.draw(this.ctx);
+      }
+    });
 
     // 5. Draw Sonar Waves & Detected Fish Markers
     this.drawSonarEffect(this.ctx, bounds);

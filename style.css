@@ -336,6 +336,49 @@ html, body {
   font-size: 13px;
 }
 
+/* 🚢 Cruise Fast-Travel to Dock Button */
+.cruise-pill-btn {
+  background: linear-gradient(180deg, #ffffff 0%, #ecfdf5 100%);
+  border: 3px solid #6ee7b7;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  box-shadow: 0 4px 0 #10b981, 0 6px 14px rgba(16, 185, 129, 0.2);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  user-select: none;
+  font-family: var(--font-main);
+}
+
+.cruise-pill-btn:hover {
+  transform: scale(1.06);
+  background: linear-gradient(180deg, #ffffff 0%, #d1fae5 100%);
+  border-color: #10b981;
+  box-shadow: 0 4px 0 #059669, 0 8px 18px rgba(16, 185, 129, 0.35);
+}
+
+.cruise-pill-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 0 #059669;
+}
+
+.cruise-pill-btn .cruise-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #065f46;
+}
+
+.cruise-pill-btn .cruise-price-badge {
+  font-size: 11px;
+  font-weight: 800;
+  background: #059669;
+  color: #ffffff;
+  padding: 2px 7px;
+  border-radius: 10px;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+}
+
 /* Tactile Wooden UI Buttons */
 .hud-btn {
   background: linear-gradient(180deg, #ffffff 0%, #fbf8eb 100%);
@@ -4259,6 +4302,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 14px;
   pointer-events: auto;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   transform: scale(1);
@@ -4269,6 +4313,10 @@ html, body {
   opacity: 0 !important;
   pointer-events: none !important;
   transform: scale(0.6) translateY(20px) !important;
+}
+
+.right-action-btn.hidden {
+  display: none !important;
 }
 
 .right-action-btn {
@@ -4567,3 +4615,491 @@ html, body {
 .shortcut-tag strong {
   color: #d97706;
 }
+
+/* =========================================================
+   🚢 Grand Luxury Cruise Splash Overlay (Time-of-Day + Sailing Left)
+   ========================================================= */
+.cruise-splash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 30px 20px;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.cruise-splash-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ---------------------------------------------------------
+   Time-of-Day Dynamic Atmospheres (Day / Sunset / Night)
+   --------------------------------------------------------- */
+/* 1. ☀️ DAY THEME */
+.cruise-splash-overlay[data-theme="day"] {
+  background: linear-gradient(180deg, #38bdf8 0%, #7dd3fc 35%, #bae6fd 60%, #0284c7 90%);
+}
+.cruise-splash-overlay[data-theme="day"] .sun-element {
+  display: block;
+  top: 35px;
+  right: 120px;
+  width: 95px;
+  height: 95px;
+  background: radial-gradient(circle, #fffbeb 20%, #fde047 55%, rgba(253, 224, 71, 0) 100%);
+  border-radius: 50%;
+  box-shadow: 0 0 50px #fde047, 0 0 90px rgba(250, 204, 21, 0.4);
+  animation: sun-pulse 3s ease-in-out infinite alternate;
+}
+.cruise-splash-overlay[data-theme="day"] .moon-element,
+.cruise-splash-overlay[data-theme="day"] .cruise-aurora,
+.cruise-splash-overlay[data-theme="day"] .cruise-stars {
+  display: none;
+}
+.cruise-splash-overlay[data-theme="day"] .wave-horizon { background: rgba(3, 105, 161, 0.7); }
+.cruise-splash-overlay[data-theme="day"] .wave-mid { background: #0284c7; }
+.cruise-splash-overlay[data-theme="day"] .wave-front { background: linear-gradient(180deg, #0369a1 0%, #075985 100%); }
+
+/* 2. 🌅 SUNSET THEME */
+.cruise-splash-overlay[data-theme="sunset"] {
+  background: linear-gradient(180deg, #4c1d95 0%, #9d174d 25%, #ea580c 55%, #fbbf24 80%, #b45309 100%);
+}
+.cruise-splash-overlay[data-theme="sunset"] .sun-element {
+  display: block;
+  top: 90px;
+  left: 20%;
+  width: 110px;
+  height: 110px;
+  background: radial-gradient(circle, #fff7ed 15%, #fb923c 50%, #ea580c 75%, rgba(234, 88, 12, 0) 100%);
+  border-radius: 50%;
+  box-shadow: 0 0 60px #f97316, 0 0 120px rgba(234, 88, 12, 0.5);
+  animation: sun-pulse 2.5s ease-in-out infinite alternate;
+}
+.cruise-splash-overlay[data-theme="sunset"] .moon-element,
+.cruise-splash-overlay[data-theme="sunset"] .cruise-aurora,
+.cruise-splash-overlay[data-theme="sunset"] .cruise-stars {
+  display: none;
+}
+.cruise-splash-overlay[data-theme="sunset"] .wave-horizon { background: rgba(154, 52, 18, 0.75); }
+.cruise-splash-overlay[data-theme="sunset"] .wave-mid { background: #9a3412; }
+.cruise-splash-overlay[data-theme="sunset"] .wave-front { background: linear-gradient(180deg, #7c2d12 0%, #431407 100%); }
+
+/* 3. 🌌 NIGHT THEME */
+.cruise-splash-overlay[data-theme="night"] {
+  background: linear-gradient(180deg, #020617 0%, #0f172a 30%, #1e1b4b 65%, #090d16 100%);
+}
+.cruise-splash-overlay[data-theme="night"] .sun-element {
+  display: none;
+}
+.cruise-splash-overlay[data-theme="night"] .moon-element {
+  display: block;
+  top: 40px;
+  right: 140px;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  box-shadow: 16px 8px 0 0 #fef08a, 0 0 35px rgba(254, 240, 138, 0.45);
+  transform: rotate(-15deg);
+}
+.cruise-splash-overlay[data-theme="night"] .cruise-stars {
+  display: block;
+  position: absolute;
+  inset: 0;
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, #ffffff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 80px 120px, #ffd166, rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 160px 40px, #ffffff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 260px 90px, #38bdf8, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 380px 50px, #ffffff, rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 500px 110px, #ffd166, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 640px 30px, #ffffff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 800px 80px, #38bdf8, rgba(0,0,0,0));
+  background-repeat: repeat;
+  background-size: 850px 220px;
+  animation: star-twinkle 2.5s infinite alternate;
+}
+.cruise-splash-overlay[data-theme="night"] .cruise-aurora {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60%;
+  background: linear-gradient(135deg, rgba(6, 214, 160, 0.15) 0%, rgba(56, 189, 248, 0.2) 40%, rgba(168, 85, 247, 0.2) 75%, transparent 100%);
+  filter: blur(25px);
+  animation: aurora-wave 6s ease-in-out infinite alternate;
+}
+.cruise-splash-overlay[data-theme="night"] .wave-horizon { background: rgba(15, 23, 42, 0.85); }
+.cruise-splash-overlay[data-theme="night"] .wave-mid { background: #0f172a; }
+.cruise-splash-overlay[data-theme="night"] .wave-front { background: linear-gradient(180deg, #090d16 0%, #020617 100%); }
+
+/* Window illumination during night & sunset */
+.cruise-splash-overlay[data-theme="night"] .window-glow,
+.cruise-splash-overlay[data-theme="sunset"] .window-glow {
+  fill: #fef08a !important;
+  stroke: #ca8a04 !important;
+  filter: drop-shadow(0 0 6px rgba(254, 240, 138, 0.9));
+}
+
+@keyframes sun-pulse {
+  0% { transform: scale(0.95); opacity: 0.88; }
+  100% { transform: scale(1.06); opacity: 1; }
+}
+
+@keyframes star-twinkle {
+  0% { opacity: 0.65; }
+  100% { opacity: 1; }
+}
+
+@keyframes aurora-wave {
+  0% { transform: skewX(-5deg) translateY(-10px); opacity: 0.6; }
+  100% { transform: skewX(5deg) translateY(10px); opacity: 0.9; }
+}
+
+/* ---------------------------------------------------------
+   Sky Elements (Clouds & Birds)
+   --------------------------------------------------------- */
+.cruise-sky-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60%;
+  pointer-events: none;
+}
+
+.cruise-cloud-group {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  right: 0;
+}
+
+.cruise-cloud {
+  position: absolute;
+  font-size: 42px;
+  opacity: 0.82;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.1));
+}
+
+.cruise-cloud.c1 { top: 20px; left: 8%; animation: cloud-shift 24s linear infinite; }
+.cruise-cloud.c2 { top: 70px; left: 65%; animation: cloud-shift 30s linear infinite reverse; font-size: 34px; }
+.cruise-cloud.c3 { top: 30px; left: 42%; animation: cloud-shift 38s linear infinite; font-size: 48px; }
+
+@keyframes cloud-shift {
+  0% { transform: translateX(-50px); }
+  50% { transform: translateX(50px); }
+  100% { transform: translateX(-50px); }
+}
+
+.cruise-birds {
+  position: absolute;
+  top: 70px;
+  left: 30%;
+  font-size: 24px;
+  animation: birds-glide 3s ease-in-out infinite alternate;
+}
+
+@keyframes birds-glide {
+  0% { transform: translateY(0) rotate(-3deg); }
+  100% { transform: translateY(-14px) rotate(3deg); }
+}
+
+/* ---------------------------------------------------------
+   Ocean & Multi-Layer Waves
+   --------------------------------------------------------- */
+.cruise-ocean-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cruise-wave-layer {
+  position: absolute;
+  left: -40%;
+  right: -40%;
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.wave-horizon {
+  bottom: 125px;
+  height: 80px;
+  animation: wave-swell 3.2s ease-in-out infinite alternate;
+}
+
+.wave-mid {
+  bottom: 60px;
+  height: 120px;
+  animation: wave-swell 2.4s ease-in-out infinite alternate-reverse;
+}
+
+.wave-front {
+  bottom: -35px;
+  height: 160px;
+  animation: wave-swell 2.0s ease-in-out infinite alternate;
+  box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.35);
+  z-index: 12;
+}
+
+.wave-crest {
+  bottom: 95px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.4);
+  filter: blur(4px);
+  animation: wave-swell 1.8s ease-in-out infinite alternate-reverse;
+  z-index: 13;
+}
+
+@keyframes wave-swell {
+  0% { transform: translateX(-35px) scaleY(0.92); }
+  100% { transform: translateX(35px) scaleY(1.08); }
+}
+
+/* ---------------------------------------------------------
+   🚢 Big Cruise Ship Sailing to the Left Animation
+   --------------------------------------------------------- */
+.cruise-voyage-track-container {
+  position: absolute;
+  bottom: 110px; /* Elevated waterline so bottom hull is fully visible */
+  left: 0;
+  width: 100%;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* 3.0s Glides gracefully from Screen Right -> Screen Center */
+.cruise-grand-ship {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 540px;
+  height: 220px;
+  animation: 
+    cruise-sail-left 3.0s cubic-bezier(0.12, 0.95, 0.35, 1) forwards,
+    cruise-ship-bob 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes cruise-sail-left {
+  0% {
+    transform: translateX(100vw); /* Starts from screen right */
+  }
+  100% {
+    transform: translateX(calc(50vw - 270px)); /* Arrives & settles at screen center */
+  }
+}
+
+@keyframes cruise-ship-bob {
+  0% {
+    margin-top: 0px;
+    rotate: -1.8deg;
+  }
+  100% {
+    margin-top: 12px;
+    rotate: 2.0deg;
+  }
+}
+
+.cruise-svg-ship {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.45));
+}
+
+/* Steam & Heart Puffs Billowing to the Right */
+.cruise-steam-trail {
+  position: absolute;
+  top: -30px;
+  left: 230px;
+  display: flex;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.steam-puff {
+  font-size: 24px;
+  opacity: 0;
+  animation: puff-backward 1.4s infinite ease-out;
+}
+
+.steam-puff.p1 { animation-delay: 0s; }
+.steam-puff.p2 { animation-delay: 0.35s; font-size: 28px; }
+.steam-puff.p3 { animation-delay: 0.7s; font-size: 22px; }
+.steam-puff.p4 { animation-delay: 1.05s; font-size: 26px; }
+
+@keyframes puff-backward {
+  0% {
+    transform: translate(0, 0) scale(0.6);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(65px, -45px) scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* Bow Wake Splashes (Front-Left) */
+.cruise-bow-wake {
+  position: absolute;
+  bottom: 8px;
+  left: 15px;
+  display: flex;
+  gap: 4px;
+}
+
+.bow-splash {
+  font-size: 22px;
+  animation: bow-churn 0.8s infinite ease-out;
+}
+
+.bow-splash.b1 { animation-delay: 0.1s; }
+.bow-splash.b2 { animation-delay: 0.35s; font-size: 18px; }
+.bow-splash.b3 { animation-delay: 0.2s; font-size: 24px; }
+
+@keyframes bow-churn {
+  0% { transform: translateY(0) scale(0.5); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translate(-20px, -18px) scale(1.3); opacity: 0; }
+}
+
+/* Stern Trailing Foam Wake (Rear-Right) */
+.cruise-stern-wake {
+  position: absolute;
+  bottom: 12px;
+  right: -20px;
+  display: flex;
+  gap: 8px;
+}
+
+.stern-foam {
+  font-size: 22px;
+  animation: stern-trail 1.1s infinite ease-out;
+}
+
+.stern-foam.sf1 { animation-delay: 0.15s; }
+.stern-foam.sf2 { animation-delay: 0.45s; font-size: 26px; }
+.stern-foam.sf3 { animation-delay: 0.75s; font-size: 20px; }
+
+@keyframes stern-trail {
+  0% { transform: translate(0, 0) scale(0.7); opacity: 0; }
+  50% { opacity: 0.9; }
+  100% { transform: translate(45px, 8px) scale(1.5); opacity: 0; }
+}
+
+/* ---------------------------------------------------------
+   Cinematic Banner & 3-Second Meter
+   --------------------------------------------------------- */
+.cruise-cinematic-banner {
+  position: relative;
+  z-index: 25;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 2.5px solid rgba(250, 204, 21, 0.7);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 25px rgba(250, 204, 21, 0.25);
+  padding: 18px 30px;
+  max-width: 560px;
+  width: 90%;
+  text-align: center;
+  box-sizing: border-box;
+  animation: banner-slide-up 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes banner-slide-up {
+  0% { transform: translateY(40px) scale(0.92); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.cruise-cinematic-title {
+  font-family: var(--font-cute);
+  font-size: 24px;
+  font-weight: 700;
+  color: #fde047;
+  margin-bottom: 5px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  letter-spacing: 0.5px;
+}
+
+.cruise-cinematic-desc {
+  font-size: 13.5px;
+  color: #e2e8f0;
+  font-weight: 600;
+  margin-bottom: 14px;
+  line-height: 1.4;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
+/* Meter Progress Bar */
+.cruise-cinematic-meter {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  justify-content: center;
+}
+
+.meter-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #f8fafc;
+  white-space: nowrap;
+}
+
+.meter-bar-track {
+  position: relative;
+  flex: 1;
+  height: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 10px;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  overflow: visible;
+}
+
+.meter-bar-fill {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(270deg, #f59e0b, #06d6a0);
+  border-radius: 8px;
+  animation: meter-progress-fill 3.0s linear forwards;
+}
+
+.meter-boat-indicator {
+  position: absolute;
+  top: -16px;
+  right: 0%;
+  font-size: 22px;
+  transform: translateX(50%) scaleX(-1); /* Face left towards dock */
+  animation: meter-boat-glide 3.0s linear forwards;
+}
+
+@keyframes meter-progress-fill {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}
+
+@keyframes meter-boat-glide {
+  0% { right: 0%; }
+  100% { right: 100%; }
+}
+
+

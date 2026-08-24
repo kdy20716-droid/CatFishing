@@ -303,7 +303,7 @@ export const BAITS = [
     category: 'item',
     price: 450,
     countPerBuy: 3,
-    description: '물속에서 우클릭 시 강력한 매혹 페로몬을 방출하여 주변 넓은 범위의 모든 물고기들이 미끼로 쇄도합니다!',
+    description: '물속에서 [Q] 키 (또는 클릭) 시 강력한 매혹 페로몬을 방출하여 주변 넓은 범위의 모든 물고기들이 미끼로 쇄도합니다!',
     icon: '💖',
     sinkSpeed: 1.0
   },
@@ -323,7 +323,7 @@ export const BAITS = [
     category: 'item',
     price: 250,
     countPerBuy: 2,
-    description: '물속에서 우클릭 시 폭발하여 주변의 방해 물고기를 즉시 퇴치합니다!',
+    description: '물속에서 [Q] 키 (또는 클릭) 시 폭발하여 주변의 방해 물고기를 즉시 퇴치합니다!',
     icon: '💣',
     sinkSpeed: 1.0
   },

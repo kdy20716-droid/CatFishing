@@ -420,6 +420,39 @@ export class SoundEngine {
     lineNoise.start(now + 0.04);
   }
 
+  playCruiseHorn() {
+    this.ensureRunning();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    // Deep, warm nautical ship horn (Bb2 + F3 + D4 harmony)
+    const freqs = [116.54, 174.61, 233.08];
+    freqs.forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = idx === 0 ? 'sawtooth' : 'triangle';
+      osc.frequency.setValueAtTime(freq, now);
+      osc.frequency.linearRampToValueAtTime(freq * 1.015, now + 1.4);
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(420, now);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.18 / (idx + 1), now + 0.15);
+      gain.gain.setValueAtTime(0.15 / (idx + 1), now + 0.9);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.8);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.sfxGain);
+
+      osc.start(now);
+      osc.stop(now + 1.85);
+    });
+  }
+
   playSplash(intensity = 1.0) {
     this.ensureRunning();
     if (!this.ctx) return;

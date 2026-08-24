@@ -34,6 +34,12 @@
             <div id="hud-exp-fill" class="exp-bar-fill"></div>
           </div>
         </div>
+        <!-- 🚢 Cruise Fast-Travel to Dock Button (레벨 비례 요금: Lv * 1,000 G) -->
+        <button id="btn-dock-cruise" class="hud-stat-pill cruise-pill-btn" title="부두막으로 즉시 귀환 크루즈 탑승 (클릭 시 이동)">
+          <span class="pill-icon">🚢</span>
+          <span class="cruise-label">부두 귀환</span>
+          <span id="hud-cruise-price" class="cruise-price-badge">1,000 G</span>
+        </button>
       </div>
 
       <!-- 👑 Right HUD Panel (화살표 클릭 시 메뉴가 스르륵 접혀 프로필만 표시) -->
@@ -242,13 +248,25 @@
     <!-- Floating Notifications / Toasts -->
     <div id="floating-notifications"></div>
 
-    <!-- 🛑 / 💖 / 💣 Right-Bottom Floating Action Widget (화면 우측 하단 찌 액션 동그라미) -->
+    <!-- 🛑 / 💖 / 💣 Right-Bottom Floating Action Widget (수심 정지 [우클릭] & 특수 아이템 [Q]) -->
     <div id="right-action-widget" class="right-action-widget hidden">
-      <button id="right-action-btn" class="right-action-btn" title="우클릭 시 액션 발동">
+      <!-- 1. [Q] 특수 아이템 사용 버튼 (보유 시 자동 표시) -->
+      <button id="q-item-action-btn" class="right-action-btn mode-item hidden" title="[Q] 키 또는 클릭으로 특수 아이템 사용">
+        <div id="q-item-action-icon" class="right-action-icon">💖</div>
+        <div id="q-item-action-label" class="right-action-label">아이템</div>
+        <div id="q-item-action-count" class="right-action-count">x0</div>
+        <!-- [Q] Key Indicator Badge -->
+        <div class="mouse-right-badge q-key-badge" title="[Q] 키로 사용">
+          <span class="badge-icon">⌨️</span>
+          <span class="badge-text">[Q]</span>
+        </div>
+      </button>
+
+      <!-- 2. [우클릭] 찌 침강 정지 / 진행 전용 버튼 -->
+      <button id="right-action-btn" class="right-action-btn mode-stop" title="마우스 우클릭 또는 클릭 시 찌 정지/진행 토글">
         <div id="right-action-icon" class="right-action-icon">🛑</div>
         <div id="right-action-label" class="right-action-label">STOP</div>
-        <div id="right-action-count" class="right-action-count hidden">x0</div>
-        <!-- Right Click Mouse Indicator Badge at Bottom-Right Corner -->
+        <!-- Right Click Mouse Indicator Badge -->
         <div class="mouse-right-badge" title="마우스 우클릭으로 작동">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none">
             <rect x="5" y="2" width="14" height="20" rx="7" stroke="#ffffff" stroke-width="2" fill="#0f172a"/>
@@ -456,7 +474,7 @@
                 <span class="cozy-tip-title">3. 미끼 & 특수 아이템 활용</span>
               </div>
               <div class="cozy-tip-body">
-                <strong>2/3단 다중 바늘</strong>로 한 번에 여러 마리를 낚고, <strong>우클릭</strong>으로 <strong>[현혹 페로몬💖]</strong>을 피워 물고기들을 유혹하거나 <strong>[STOP🛑]</strong>으로 원하는 수심에 찌를 멈춰보세요!
+                <strong>2/3단 다중 바늘</strong>로 한 번에 여러 마리를 낚고, <strong>[Q] 키</strong>로 <strong>[현혹 페로몬💖]</strong>을 피워 물고기들을 유혹하거나 <strong>[STOP🛑]</strong>으로 원하는 수심에 찌를 멈춰보세요!
               </div>
             </div>
 
@@ -497,7 +515,7 @@
             <span class="shortcut-tag"><strong>[U]</strong> 📖 도감</span>
             <span class="shortcut-tag"><strong>[I]</strong> 🌐 멀티플레이</span>
             <span class="shortcut-tag"><strong>[R]</strong> 🏪 상점</span>
-            <span class="shortcut-tag"><strong>[우클릭]</strong> 🛑 수심 고정 / 아이템</span>
+            <span class="shortcut-tag"><strong>[Q]</strong> 🛑 수심 고정 / 아이템</span>
             <span class="shortcut-tag"><strong>[Space]</strong> 🎣 릴링</span>
           </div>
         </div>
@@ -1017,6 +1035,175 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🚢 Grand Luxury Cruise Splash Overlay (시간대별 배경 + 거대한 크루즈 좌측 항해 연출) -->
+    <div id="cruise-splash-overlay" class="cruise-splash-overlay" data-theme="day">
+      <!-- 1. Dynamic Time-of-Day Sky & Atmosphere -->
+      <div class="cruise-sky-container">
+        <!-- Celestial Bodies -->
+        <div class="cruise-celestial sun-element"></div>
+        <div class="cruise-celestial moon-element"></div>
+        <div class="cruise-aurora"></div>
+        <div class="cruise-stars"></div>
+        
+        <!-- Clouds & Birds -->
+        <div class="cruise-cloud-group">
+          <span class="cruise-cloud c1">☁️</span>
+          <span class="cruise-cloud c2">☁️</span>
+          <span class="cruise-cloud c3">☁️</span>
+        </div>
+        <div class="cruise-birds">🕊️ &nbsp; 🕊️</div>
+      </div>
+
+      <!-- 2. Cinematic Ocean with Multi-layer Waves -->
+      <div class="cruise-ocean-container">
+        <!-- Distant Horizon Waves -->
+        <div class="cruise-wave-layer wave-horizon"></div>
+        <div class="cruise-wave-layer wave-mid"></div>
+
+        <!-- 🚢 Giant Luxury Cruise Liner Container (Sails from Right to Left) -->
+        <div class="cruise-voyage-track-container">
+          <div class="cruise-grand-ship">
+            <!-- Puffed Steam billowing backwards to the right -->
+            <div class="cruise-steam-trail">
+              <span class="steam-puff p1">💨</span>
+              <span class="steam-puff p2">💭</span>
+              <span class="steam-puff p3">❤️</span>
+              <span class="steam-puff p4">💨</span>
+            </div>
+
+            <!-- Grand Vector Cruise Liner Graphic (Facing Left) -->
+            <svg class="cruise-svg-ship" viewBox="0 0 540 220" width="540" height="220" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Shadow under ship -->
+              <ellipse cx="270" cy="205" rx="250" ry="15" fill="rgba(0,0,0,0.35)" filter="blur(4px)" />
+
+              <!-- Lower Hull (Red & Dark Navy Bottom) -->
+              <path d="M 40 160 L 500 160 Q 480 205 440 205 L 120 205 Q 60 205 40 160 Z" fill="#b91c1c" stroke="#7f1d1d" stroke-width="3" />
+              <path d="M 40 160 L 500 160 L 495 172 L 45 172 Z" fill="#0f172a" />
+
+              <!-- Main White Hull -->
+              <path d="M 30 140 L 515 140 Q 505 165 500 160 L 40 160 Q 33 150 30 140 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" />
+              <line x1="32" y1="148" x2="510" y2="148" stroke="#f59e0b" stroke-width="3.5" />
+              <!-- Hull Portholes -->
+              <g fill="#fef08a" stroke="#ca8a04" stroke-width="1.5">
+                <circle cx="80" cy="154" r="4.5" />
+                <circle cx="115" cy="154" r="4.5" />
+                <circle cx="150" cy="154" r="4.5" />
+                <circle cx="185" cy="154" r="4.5" />
+                <circle cx="220" cy="154" r="4.5" />
+                <circle cx="255" cy="154" r="4.5" />
+                <circle cx="290" cy="154" r="4.5" />
+                <circle cx="325" cy="154" r="4.5" />
+                <circle cx="360" cy="154" r="4.5" />
+                <circle cx="395" cy="154" r="4.5" />
+                <circle cx="430" cy="154" r="4.5" />
+                <circle cx="465" cy="154" r="4.5" />
+              </g>
+
+              <!-- Lower Cabin Deck (Tier 1) -->
+              <rect x="65" y="105" width="415" height="35" rx="4" fill="#f8fafc" stroke="#94a3b8" stroke-width="2" />
+              <!-- Tier 1 Panoramic Windows -->
+              <g fill="#38bdf8" stroke="#0284c7" stroke-width="1.5" rx="2">
+                <rect x="80" y="112" width="22" height="18" rx="3" class="window-glow" />
+                <rect x="110" y="112" width="22" height="18" rx="3" class="window-glow" />
+                <rect x="140" y="112" width="22" height="18" rx="3" class="window-glow" />
+                <rect x="170" y="112" width="22" height="18" rx="3" class="window-glow" />
+                <rect x="200" y="112" width="22" height="18" rx="3" class="window-glow" />
+                <rect x="230" y="112" width="22" height="18" rx="3" class="window-glow" />
+                <rect x="260" y="112" width="22" height="18" rx="3" class="window-glow" />
+                <rect x="290" y="112" width="22" height="18" rx="3" class="window-glow" />
+                <rect x="320" y="112" width="22" height="18" rx="3" class="window-glow" />
+                <rect x="350" y="112" width="22" height="18" rx="3" class="window-glow" />
+                <rect x="380" y="112" width="22" height="18" rx="3" class="window-glow" />
+                <rect x="410" y="112" width="22" height="18" rx="3" class="window-glow" />
+                <rect x="440" y="112" width="22" height="18" rx="3" class="window-glow" />
+              </g>
+
+              <!-- Promenade Deck (Tier 2) -->
+              <rect x="95" y="72" width="345" height="33" rx="4" fill="#ffffff" stroke="#94a3b8" stroke-width="2" />
+              <!-- Deck Railing / Balconies -->
+              <line x1="95" y1="84" x2="440" y2="84" stroke="#64748b" stroke-width="1.5" />
+              <g fill="#bae6fd" stroke="#0284c7" stroke-width="1.5">
+                <rect x="110" y="86" width="20" height="14" rx="2" class="window-glow" />
+                <rect x="140" y="86" width="20" height="14" rx="2" class="window-glow" />
+                <rect x="170" y="86" width="20" height="14" rx="2" class="window-glow" />
+                <rect x="200" y="86" width="20" height="14" rx="2" class="window-glow" />
+                <rect x="230" y="86" width="20" height="14" rx="2" class="window-glow" />
+                <rect x="260" y="86" width="20" height="14" rx="2" class="window-glow" />
+                <rect x="290" y="86" width="20" height="14" rx="2" class="window-glow" />
+                <rect x="320" y="86" width="20" height="14" rx="2" class="window-glow" />
+                <rect x="350" y="86" width="20" height="14" rx="2" class="window-glow" />
+                <rect x="380" y="86" width="20" height="14" rx="2" class="window-glow" />
+                <rect x="410" y="86" width="20" height="14" rx="2" class="window-glow" />
+              </g>
+
+              <!-- Captain Bridge (Front-Left Tier 3) -->
+              <path d="M 85 72 L 65 72 L 72 45 L 175 45 L 175 72 Z" fill="#ffffff" stroke="#0284c7" stroke-width="2" />
+              <!-- Bridge Glass Windows -->
+              <polygon points="73,48 100,48 98,64 71,64" fill="#0284c7" class="window-glow" />
+              <polygon points="104,48 135,48 135,64 102,64" fill="#0284c7" class="window-glow" />
+              <polygon points="139,48 170,48 170,64 139,64" fill="#0284c7" class="window-glow" />
+
+              <!-- Luxury Smokestacks (Twin Funnels) -->
+              <!-- Funnel 1 (Front) -->
+              <polygon points="215,22 255,16 250,45 210,45" fill="#dc2626" stroke="#991b1b" stroke-width="2" />
+              <polygon points="222,30 253,26 251,36 220,40" fill="#facc15" />
+              <polygon points="215,22 255,16 254,23 214,28" fill="#0f172a" />
+              
+              <!-- Funnel 2 (Rear) -->
+              <polygon points="295,22 335,16 330,45 290,45" fill="#dc2626" stroke="#991b1b" stroke-width="2" />
+              <polygon points="302,30 333,26 331,36 300,40" fill="#facc15" />
+              <polygon points="295,22 335,16 334,23 294,28" fill="#0f172a" />
+
+              <!-- Top Deck Pool & Sunshade -->
+              <rect x="360" y="58" width="55" height="14" rx="3" fill="#0284c7" stroke="#0369a1" stroke-width="1.5" />
+              <line x1="350" y1="56" x2="430" y2="56" stroke="#e2e8f0" stroke-width="2" />
+              
+              <!-- Nautical Flags & Antenna -->
+              <line x1="72" y1="45" x2="72" y2="12" stroke="#475569" stroke-width="2.5" />
+              <polygon points="72,14 50,22 72,30" fill="#ef4444" />
+              <!-- Radar Dome -->
+              <circle cx="150" cy="38" r="7" fill="#ffffff" stroke="#64748b" stroke-width="1.5" />
+
+              <!-- Cat Captain on Bridge -->
+              <text x="80" y="62" font-size="19">🐱‍✈️</text>
+            </svg>
+
+            <!-- Bow Wake & Splashing Foams (At Front-Left Bow) -->
+            <div class="cruise-bow-wake">
+              <span class="bow-splash b1">💦</span>
+              <span class="bow-splash b2">✨</span>
+              <span class="bow-splash b3">🌊</span>
+            </div>
+
+            <!-- Stern Trailing Foam Wake (At Rear-Right) -->
+            <div class="cruise-stern-wake">
+              <span class="stern-foam sf1">🫧</span>
+              <span class="stern-foam sf2">🌊</span>
+              <span class="stern-foam sf3">🫧</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Foreground Wave Layer -->
+        <div class="cruise-wave-layer wave-front"></div>
+        <div class="cruise-wave-layer wave-crest"></div>
+      </div>
+
+      <!-- 3. Elegant Voyage Cinematic Caption & Progress -->
+      <div class="cruise-cinematic-banner">
+        <div class="cruise-cinematic-title">🚢 냥이 럭셔리 크루즈 부두막 귀환 항해</div>
+        <div class="cruise-cinematic-desc">시원한 바닷바람과 함께 부두막으로 안전하게 쾌속 순항 중입니다냥... 🐾</div>
+        <div class="cruise-cinematic-meter">
+          <span class="meter-label">⚓ 부두막 (도착)</span>
+          <div class="meter-bar-track">
+            <div class="meter-bar-fill"></div>
+            <div class="meter-boat-indicator">🚢</div>
+          </div>
+          <span class="meter-label">🌊 먼 바다</span>
         </div>
       </div>
     </div>

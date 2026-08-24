@@ -38,8 +38,8 @@ export class Fish {
     this.wanderAngle = this.facing > 0 ? 0 : Math.PI;
 
     // Struggle & Tiring (탈진 & 방치 탈출 줄타기) Mechanics
-    // The struggle gauge is applied to Bosses, Shiny variants, and Mythic titans!
-    this.hasStruggleGauge = this.isBoss || this.isShiny || (this.data.rarity === 'mythic');
+    // The struggle gauge is applied strictly to Bosses and Shiny (이로치) variants!
+    this.hasStruggleGauge = this.isBoss || this.isShiny;
     this.rage = 0; // 0 ~ 100
     this.fightDuration = 0;
     this.maxFightDuration = this.isBoss 
@@ -135,9 +135,9 @@ export class Fish {
 
     this.pos.add(Vector2.mult(this.vel, dt));
 
-    // Keep fish within its depth range (Clamped strictly to 500m Seabed Floor 10060px)
+    // Keep fish within its depth range (Clamped strictly to 750m+ Seabed Floor 15060px)
     const minPixelY = this.data.minDepth * 20; // 1m = 20px
-    const maxPixelY = Math.min(10060, this.data.maxDepth * 20);
+    const maxPixelY = Math.min(15060, this.data.maxDepth * 20);
 
     if (this.pos.y < minPixelY) {
       this.pos.y = minPixelY;
@@ -236,6 +236,12 @@ export class Fish {
     if (!isAttractive) return;
     if (this.ignoreCooldown > 0) return;
 
+    // 🛑 찌가 빠르게 아래로 가라앉는 중이면 입질 시도 안 함 (우클릭 STOP 수심 고정 시에만 입질!)
+    const isFastSinking = !hook.isDepthLocked && hook.hookVel && hook.hookVel.y > 35;
+    if (isFastSinking && !hook.isAllureActive && !this.isNonLiving) {
+      return;
+    }
+
     let freeSlot = null;
     if (hook.hooks && hook.hooks.length > 0) {
       // Find all empty hook slots
@@ -273,6 +279,17 @@ export class Fish {
     if (!hook || !hook.isSubmerged) {
       this.state = 'WANDER';
       this.isInspecting = false;
+      return;
+    }
+
+    // 🛑 입질하러 가던 중 찌가 빠르게 내려가면 입질을 포기하고 배회 상태로 복귀!
+    const isFastSinking = !hook.isDepthLocked && hook.hookVel && hook.hookVel.y > 35;
+    if (isFastSinking && !hook.isAllureActive && !this.isNonLiving) {
+      this.state = 'WANDER';
+      this.ignoreCooldown = 2.0;
+      this.isInspecting = false;
+      this.target = null;
+      this.targetSlot = null;
       return;
     }
 

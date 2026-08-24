@@ -53,27 +53,16 @@ export class CloudSave {
     this.isInitialized = false;
     this.isSyncing = false;
     this.lastSavedTime = null;
+    this.lastFirestoreSaveTime = null;
     this.isQuotaExhausted = false;
     this.quotaNotified = false;
 
-    // Debounce timer for auto cloud saves
-    this.saveDebounceTimer = null;
+    // Periodic 10-minute auto-save timer
     this.autoSaveInterval = null;
 
     this.initFirebase();
     this.initAutoSaveTimer();
     this.initConflictModalEvents();
-
-    // Hook economy, encyclopedia, and aquarium save callbacks
-    if (this.economy) {
-      this.economy.onSaveCallback = () => this.triggerAutoSave();
-    }
-    if (this.encyclopedia) {
-      this.encyclopedia.onSaveCallback = () => this.triggerAutoSave();
-    }
-    if (this.aquarium) {
-      this.aquarium.onSaveCallback = () => this.triggerAutoSave();
-    }
   }
 
   getSavedConfig() {
@@ -133,13 +122,13 @@ export class CloudSave {
   }
 
   initAutoSaveTimer() {
-    // Periodic auto-save every 30 seconds if logged in
+    // ☁️ Periodic auto-save every 10 minutes (600,000 ms) if logged in
     if (this.autoSaveInterval) clearInterval(this.autoSaveInterval);
     this.autoSaveInterval = setInterval(() => {
       if (this.currentUser) {
         this.saveToCloud();
       }
-    }, 30000);
+    }, 10 * 60 * 1000); // 10 minutes
   }
 
   // --- Authentication Methods ---
@@ -384,17 +373,27 @@ export class CloudSave {
     console.log(`🐾 Sync On Login - hasLocalProgress: ${hasLocalProgress}, hasCloudProgress: ${hasCloudProgress}`);
 
     if (hasLocalProgress && hasCloudProgress) {
-      // ⚠️ Conflict: Both local session and cloud account have progress! Ask the user.
-      this.openConflictModal(currentLocalData, cloudData);
+      const cloudTime = cloudData?.timestamp || 0;
+      const localTime = currentLocalData?.timestamp || 0;
+      // If cloud is equal or newer, load cloud directly without writing
+      if (cloudTime >= localTime) {
+        this.applySaveData(cloudData);
+        this.updateSyncBadge('☁️ 자동 동기화됨');
+      } else {
+        // Only ask if local has significantly distinct un-synced data
+        this.openConflictModal(currentLocalData, cloudData);
+      }
     } else if (hasCloudProgress) {
-      // Local is brand new, cloud has existing record -> Load cloud data directly
+      // Local is brand new, cloud has existing record -> Load cloud data directly (READ only)
       this.applySaveData(cloudData);
       if (this.hud) this.hud.showNotification('📥 클라우드 계정의 기존 낚시 기록을 불러왔습니다!', '☁️');
       this.updateSyncBadge('☁️ 자동 동기화됨');
-    } else {
-      // Cloud is empty -> Link current local data to cloud account
-      await this.saveToCloud();
+    } else if (hasLocalProgress && !cloudData) {
+      // Brand new account with initial local progress -> save once
+      await this.saveToCloud(true);
       if (this.hud) this.hud.showNotification('🎉 지금까지의 플레이 기록이 계정에 자동 연동되었습니다!', '☁️');
+      this.updateSyncBadge('☁️ 자동 동기화됨');
+    } else {
       this.updateSyncBadge('☁️ 자동 동기화됨');
     }
   }
@@ -405,7 +404,7 @@ export class CloudSave {
       // Fallback if modal DOM is missing: prompt confirm
       const useLocal = confirm('클라우드 계정에 이미 저장된 낚시 기록이 있습니다!\n\n[확인]을 누르면 현재 기기 데이터로 덮어쓰고, [취소]를 누르면 클라우드 데이터를 불러옵니다.');
       if (useLocal) {
-        this.saveToCloud();
+        this.saveToCloud(true);
       } else {
         this.applySaveData(cloudData);
       }
@@ -444,7 +443,7 @@ export class CloudSave {
         const modal = document.getElementById('cloud-conflict-modal');
         if (modal) modal.classList.remove('visible');
 
-        await this.saveToCloud();
+        await this.saveToCloud(true);
         if (this.hud) this.hud.showNotification('☁️ 현재 기기 기록으로 클라우드에 덮어쓰기 완료!', '✅');
         this.pendingConflict = null;
       });
@@ -466,17 +465,25 @@ export class CloudSave {
     }
   }
 
-  async saveToCloud() {
+  async saveToCloud(isManual = false) {
     if (!this.currentUser) return false;
+
+    // 1. Save to local storage backup immediately (Free, instant, 0ms latency)
+    const saveData = this.buildSaveDataPackage();
+    localStorage.setItem(`cozy_cat_cloud_save_${this.currentUser.uid}`, JSON.stringify(saveData));
+
+    // 2. Strict 10-Minute Firestore Quota Throttling (Unless user explicitly pressed manual backup button)
+    const now = Date.now();
+    if (!isManual && this.lastFirestoreSaveTime && (now - this.lastFirestoreSaveTime < 10 * 60 * 1000)) {
+      this.lastSavedTime = new Date();
+      this.updateSyncBadge('☁️ 자동 동기화됨');
+      return true;
+    }
+
     this.isSyncing = true;
     this.updateSyncBadge('☁️ 저장 중...');
 
-    const saveData = this.buildSaveDataPackage();
-
-    // 1. Save to localStorage backup
-    localStorage.setItem(`cozy_cat_cloud_save_${this.currentUser.uid}`, JSON.stringify(saveData));
-
-    // 2. Save to Firestore if available and quota not exceeded
+    // 3. Save to Firestore if online
     if (this.db && !this.currentUser.isSimulated && !this.isQuotaExhausted) {
       try {
         const cleanPayload = JSON.parse(JSON.stringify(saveData));
@@ -485,7 +492,8 @@ export class CloudSave {
           ...cleanPayload,
           serverTimestamp: serverTimestamp()
         }, { merge: true });
-        console.log("☁️ Firestore Cloud Auto-Save successful!");
+        this.lastFirestoreSaveTime = Date.now();
+        console.log("☁️ Firestore Cloud Save written successfully (10-minute cycle)!");
       } catch (e) {
         if (e.code === 'resource-exhausted' || (e.message && e.message.includes('Quota exceeded'))) {
           this.isQuotaExhausted = true;
@@ -511,7 +519,7 @@ export class CloudSave {
       if (this.hud) this.hud.showNotification('로그인이 필요합니다! 먼저 구글 계정을 연동해주세요.', '🔒');
       return false;
     }
-    const success = await this.saveToCloud();
+    const success = await this.saveToCloud(true);
     if (success) {
       if (this.sound) this.sound.playCoin();
       if (this.hud) this.hud.showNotification('☁️ 현재 기기의 진행 상황이 클라우드 서버에 안전하게 백업되었습니다!', '✨');
@@ -542,11 +550,8 @@ export class CloudSave {
   }
 
   triggerAutoSave() {
-    if (!this.currentUser) return;
-    if (this.saveDebounceTimer) clearTimeout(this.saveDebounceTimer);
-    this.saveDebounceTimer = setTimeout(() => {
-      this.saveToCloud();
-    }, 1500);
+    // Throttled auto-save wrapper: calls saveToCloud() (which enforces 10-minute rate limit)
+    this.saveToCloud(false);
   }
 
   applySaveData(data) {
