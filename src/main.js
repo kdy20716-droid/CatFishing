@@ -1,21 +1,21 @@
 /**
  * Master Game Controller & Loop
  */
-import { Vector2 } from './engine/Vector.js?v=5.9.0';
-import { Camera } from './engine/Camera.js?v=5.9.0';
-import { Input } from './engine/Input.js?v=5.9.0';
-import { SoundEngine } from './audio.js?v=5.9.0';
-import { Economy } from './systems/Economy.js?v=5.9.0';
-import { Encyclopedia, FISH_SPECIES } from './systems/Encyclopedia.js?v=5.9.0';
-import { Environment } from './systems/Environment.js?v=5.9.0';
-import { Aquarium } from './systems/Aquarium.js?v=5.9.0';
-import { Cat } from './entities/Cat.js?v=5.9.0';
-import { Rod } from './entities/Rod.js?v=5.9.0';
-import { Fish } from './entities/Fish.js?v=5.9.0';
-import { HUD } from './ui/HUD.js?v=5.9.0';
-import { Modals } from './ui/Modals.js?v=5.9.0';
-import { CloudSave } from './systems/CloudSave.js?v=5.9.0';
-import { Multiplayer } from './systems/Multiplayer.js?v=5.9.0';
+import { Vector2 } from './engine/Vector.js?v=6.2.0';
+import { Camera } from './engine/Camera.js?v=6.2.0';
+import { Input } from './engine/Input.js?v=6.2.0';
+import { SoundEngine } from './audio.js?v=6.2.0';
+import { Economy } from './systems/Economy.js?v=6.2.0';
+import { Encyclopedia, FISH_SPECIES } from './systems/Encyclopedia.js?v=6.2.0';
+import { Environment } from './systems/Environment.js?v=6.2.0';
+import { Aquarium } from './systems/Aquarium.js?v=6.2.0';
+import { Cat } from './entities/Cat.js?v=6.2.0';
+import { Rod } from './entities/Rod.js?v=6.2.0';
+import { Fish } from './entities/Fish.js?v=6.2.0';
+import { HUD } from './ui/HUD.js?v=6.2.0';
+import { Modals } from './ui/Modals.js?v=6.2.0';
+import { CloudSave } from './systems/CloudSave.js?v=6.2.0';
+import { Multiplayer } from './systems/Multiplayer.js?v=6.2.0';
 
 class Game {
   constructor() {
@@ -124,11 +124,22 @@ class Game {
           fishDataList.forEach(item => {
             const species = FISH_SPECIES.find(s => s.id === item.id);
             if (species) {
-              const bounds = (typeof item.minSwimX === 'number' && typeof item.maxSwimX === 'number')
+              let spawnX = item.x;
+              let bounds = (typeof item.minSwimX === 'number' && typeof item.maxSwimX === 'number')
                 ? { minX: item.minSwimX, maxX: item.maxSwimX }
                 : null;
 
-              const fish = new Fish(species, new Vector2(item.x, item.y), !!item.isShiny, bounds);
+              if (species.isBoss) {
+                // 👑 보스 물고기는 최신 원양 서식 구역(minX ~ maxX)으로 엄격 갱신
+                const bMin = species.minX || 1600;
+                const bMax = species.maxX || 32000;
+                bounds = { minX: bMin - 150, maxX: bMax + 150 };
+                if (spawnX < bMin || spawnX > bMax) {
+                  spawnX = bMin + Math.random() * (bMax - bMin);
+                }
+              }
+
+              const fish = new Fish(species, new Vector2(spawnX, item.y), !!item.isShiny, bounds);
               if (item.facing === 1 || item.facing === -1) fish.facing = item.facing;
               if (typeof item.sizeCm === 'number') fish.sizeCm = item.sizeCm;
 
@@ -159,12 +170,19 @@ class Game {
     const bossSpecies = FISH_SPECIES.filter(f => f.isBoss);
     const regularSpecies = FISH_SPECIES.filter(f => !f.isBoss);
 
+    const activeBosses = this.fishList.filter(f => f.isBoss);
+    const existingBossIds = activeBosses.map(f => f.data.id);
+    const availableBossSpecies = bossSpecies.filter(b => !existingBossIds.includes(b.id));
+
     const bossChance = this.economy.getBossChance(); // 👑 기본 0.1% (0.001) + 행운 배율
     const rollBoss = Math.random();
 
-    if ((forceBoss || rollBoss < bossChance) && bossSpecies.length > 0) {
-      // 👑 10대 전설 신화 보스 소환 (0.1% * 행운 배율)
-      chosen = bossSpecies[Math.floor(Math.random() * bossSpecies.length)];
+    // 맵 전체에 보스는 최대 2마리까지만 동시 출현하도록 제어 (과밀 스폰 방지)
+    const canSpawnBoss = (forceBoss || rollBoss < bossChance) && availableBossSpecies.length > 0 && activeBosses.length < 2;
+
+    if (canSpawnBoss) {
+      // 👑 10대 전설 신화 보스 소환 (현재 없는 보스 중 무작위 선택)
+      chosen = availableBossSpecies[Math.floor(Math.random() * availableBossSpecies.length)];
     } else {
       // 🐟 일반/희귀/에픽/전설 물고기 (행운 가중치 적용)
       const luckMult = this.economy.getLuckMultiplier();
@@ -191,11 +209,11 @@ class Game {
     let minSwimX, maxSwimX;
 
     if (chosen.isBoss) {
-      // 👑 10대 신화 보스: 도감에 지정된 minX ~ maxX 구역에서 서식
-      minSpawnX = chosen.minX || 2500;
-      maxSpawnX = chosen.maxX || 31500;
-      minSwimX = Math.max(450, minSpawnX - 400);
-      maxSwimX = Math.min(32000, maxSpawnX + 400);
+      // 👑 10대 신화 보스: 배 티어별 원양 서식 구역(minX ~ maxX)에 엄격히 격리되어 부두막 근처 침범 방지!
+      minSpawnX = chosen.minX || 1600;
+      maxSpawnX = chosen.maxX || 32000;
+      minSwimX = Math.max(1200, minSpawnX - 150);
+      maxSwimX = Math.min(32000, maxSpawnX + 150);
     } else if (depthProgress < 0.25) {
       // 1. 표층/초근해 (0~30m: 멸치, 구피, 흰동가리, 복어 등)
       minSpawnX = -350;
@@ -679,12 +697,15 @@ class Game {
 
         // Depth & distance text tag
         const distM = Math.round(dist / 20);
+        const isDiscovered = this.encyclopedia.isDiscovered(fish.data.id);
+        const displayName = isDiscovered ? fish.data.name : '???';
+
         ctx.font = 'bold 11px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillStyle = fish.isBoss ? '#ffd166' : '#ffffff';
         ctx.shadowColor = 'rgba(0,0,0,0.8)';
         ctx.shadowBlur = 4;
-        const tag = fish.isBoss ? `👑 ${fish.data.name}` : (fish.isShiny ? `✨ ${fish.data.name}` : `${fish.data.name} (${distM}m)`);
+        const tag = fish.isBoss ? `👑 ${displayName}` : (fish.isShiny ? `✨ ${displayName}` : `${displayName} (${distM}m)`);
         ctx.fillText(tag, fish.pos.x, fish.pos.y - 28 * (fish.isBoss ? 2.0 : 1.0));
         ctx.restore();
       }
@@ -707,6 +728,9 @@ class Game {
     // Distance in meters
     const distWorld = originWorld.dist ? originWorld.dist(boss.pos) : Math.hypot(originWorld.x - boss.pos.x, originWorld.y - boss.pos.y);
     const distM = Math.round(distWorld / 20);
+
+    const isBossDiscovered = this.encyclopedia.isDiscovered(boss.data.id);
+    const bossDisplayName = isBossDiscovered ? boss.data.name : '???';
 
     // Convert to Screen coordinates
     const originScreenX = (originWorld.x - this.camera.pos.x) * this.camera.zoom + this.canvas.width / 2;
@@ -742,7 +766,7 @@ class Game {
       ctx.textAlign = 'center';
       ctx.shadowColor = 'rgba(0,0,0,0.9)';
       ctx.shadowBlur = 6;
-      ctx.fillText(`🎯 [TARGET: ${boss.data.name}] ${distM}m`, bossScreenX, bossScreenY - 60 * pulse);
+      ctx.fillText(`🎯 [TARGET: ${bossDisplayName}] ${distM}m`, bossScreenX, bossScreenY - 60 * pulse);
     } else {
       // 🧭 Boss is off-screen: Clamp radar arrow to screen perimeter margin
       const cx = this.canvas.width / 2;
@@ -791,7 +815,7 @@ class Game {
       ctx.shadowColor = '#ffd166';
       ctx.shadowBlur = 8;
 
-      const label = `👑 ${boss.data.name} ${distM}m`;
+      const label = `👑 ${bossDisplayName} ${distM}m`;
       ctx.font = 'bold 12px sans-serif';
       const textMetrics = ctx.measureText(label);
       const pillW = textMetrics.width + 22;

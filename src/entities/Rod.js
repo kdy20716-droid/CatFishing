@@ -452,23 +452,24 @@ export class Rod {
         avgFacing = Math.sign(avgFacing) || 1;
 
         if (isReelingInput) {
-          // Reeling battle! (⚡ 2.5x Reel Speed Boost during Stun/Exhausted state!)
+          // Reeling battle! (⚡ 1.35x Smooth Reel Boost during Stun/Exhausted state)
           let reelPower = this.economy.getEffectiveReelSpeed();
           if (hasExhaustedFish) {
-            reelPower *= 2.5; // Rapid reeling up when fish is stunned!
+            reelPower *= 1.35; // Gentle controlled boost during stun
           }
 
           const toCat = Vector2.sub(rodTip, this.hookPos).normalize();
           
+          // 🎣 손맛 넘치는 릴링 속도 계산 (작은 물고기부터 묵직한 보스까지 쫀득한 손맛 제공)
           this.hookVel.set(
-            toCat.x * reelPower * 0.85 + avgFacing * totalFishPull * 0.25,
-            toCat.y * reelPower * 0.85 + totalFishPull * 0.40
+            toCat.x * reelPower * 0.75 + avgFacing * totalFishPull * 0.20,
+            toCat.y * reelPower * 0.75 + totalFishPull * 0.35
           );
 
-          // 🧲 Magnetic Attraction: Pull hooked fish into boat quickly when close
+          // 🧲 Landing Attraction: Gently guide fish onto deck only right next to boat
           const distToBoat = Math.hypot(this.hookPos.x - cat.pos.x, this.hookPos.y - this.waterY);
-          if (distToBoat < 140) {
-            const magnetPull = Math.min(320, (150 - distToBoat) * 3.2);
+          if (distToBoat < 65) {
+            const magnetPull = Math.min(160, (70 - distToBoat) * 2.2);
             const toBoatDir = new Vector2(cat.pos.x - this.hookPos.x, (this.waterY + 10) - this.hookPos.y).normalize();
             this.hookVel.x += toBoatDir.x * magnetPull;
             this.hookVel.y += toBoatDir.y * magnetPull;
@@ -539,10 +540,10 @@ export class Rod {
           this.hookVel.set(toCat.x * reelPower, toCat.y * reelPower);
           this.sound.playReelClick();
 
-          // 🧲 Magnetic Attraction: Snap empty hook to boat when close to water surface
+          // 🧲 Landing Attraction: Snap empty hook to boat when right next to deck
           const distToBoat = Math.hypot(this.hookPos.x - cat.pos.x, this.hookPos.y - this.waterY);
-          if (distToBoat < 150) {
-            const magnetPull = Math.min(380, (160 - distToBoat) * 3.8);
+          if (distToBoat < 65) {
+            const magnetPull = Math.min(180, (70 - distToBoat) * 2.5);
             const toBoatDir = new Vector2(cat.pos.x - this.hookPos.x, (this.waterY + 8) - this.hookPos.y).normalize();
             this.hookVel.x += toBoatDir.x * magnetPull;
             this.hookVel.y += toBoatDir.y * magnetPull;
@@ -550,7 +551,7 @@ export class Rod {
 
           // Return to boat (Instant & Clean retrieval)
           const distToCat = this.hookPos.dist(rodTip);
-          if (distToCat < 70 || distToBoat < 60) {
+          if (distToCat < 70 || distToBoat < 55) {
             this.reset(cat);
             return;
           }

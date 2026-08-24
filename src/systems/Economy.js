@@ -10,7 +10,7 @@ export const RODS = [
     price: 0,
     maxLineLength: 1800, // ~90m
     maxTension: 100,
-    reelSpeed: 210,
+    reelSpeed: 85,
     castPower: 420,
     color: '#8b5a2b',
     description: '작은 나뭇가지로 만든 정겨운 첫 낚싯대. 표층(90m)의 물고기들을 낚을 수 있습니다.'
@@ -22,7 +22,7 @@ export const RODS = [
     price: 450,
     maxLineLength: 2800, // ~140m
     maxTension: 160,
-    reelSpeed: 260,
+    reelSpeed: 105,
     castPower: 540,
     color: '#70e000',
     description: '유연하고 질긴 대나무 낚싯대. 중층 바다(140m)까지 깊숙이 낚싯줄을 내립니다.'
@@ -34,7 +34,7 @@ export const RODS = [
     price: 2200,
     maxLineLength: 4200, // ~210m
     maxTension: 240,
-    reelSpeed: 320,
+    reelSpeed: 130,
     castPower: 660,
     color: '#06d6a0',
     description: '유연한 탄성의 유리섬유 로드. 중층~심해 경계(210m)의 힘센 물고기를 낚아올립니다.'
@@ -46,7 +46,7 @@ export const RODS = [
     price: 8500,
     maxLineLength: 6000, // ~300m
     maxTension: 360,
-    reelSpeed: 390,
+    reelSpeed: 160,
     castPower: 780,
     color: '#343a40',
     description: '가볍고 강력한 탄소 섬유 로드. 심해 어둠층(300m)의 희귀 어종과 겨룹니다.'
@@ -58,7 +58,7 @@ export const RODS = [
     price: 28000,
     maxLineLength: 7800, // ~390m
     maxTension: 520,
-    reelSpeed: 470,
+    reelSpeed: 195,
     castPower: 900,
     color: '#7b2cbf',
     description: '심해 화산암과 흑진주를 가공해 극도의 인장력을 자랑합니다. 심연(390m)을 탐사합니다.'
@@ -70,7 +70,7 @@ export const RODS = [
     price: 85000,
     maxLineLength: 9500, // ~475m
     maxTension: 720,
-    reelSpeed: 560,
+    reelSpeed: 235,
     castPower: 1020,
     color: '#48cae4',
     description: '수심 475m의 극심한 수압을 견디는 특수 티타늄 합금. 심연의 거대 괴수와 겨룹니다.'
@@ -82,7 +82,7 @@ export const RODS = [
     price: 240000,
     maxLineLength: 11200, // ~560m
     maxTension: 1000,
-    reelSpeed: 660,
+    reelSpeed: 280,
     castPower: 1150,
     color: '#00f5d4',
     description: '500m 해저 바닥을 완벽 돌파! 발광 플라즈마 에너지로 560m 심해어를 매혹합니다.'
@@ -94,7 +94,7 @@ export const RODS = [
     price: 650000,
     maxLineLength: 12800, // ~640m
     maxTension: 1450,
-    reelSpeed: 780,
+    reelSpeed: 335,
     castPower: 1300,
     color: '#ffd166',
     description: '고대 해저 신전의 유물 합금 로드. 640m 초심연의 전설 물고기를 단숨에 제압합니다.'
@@ -106,7 +106,7 @@ export const RODS = [
     price: 1800000,
     maxLineLength: 14200, // ~710m
     maxTension: 2100,
-    reelSpeed: 920,
+    reelSpeed: 395,
     castPower: 1450,
     color: '#ff007f',
     description: '별빛과 오로라가 깃든 신화의 로드. 710m 해저 바닥의 별빛 고래와 크라켄을 낚아올립니다!'
@@ -118,7 +118,7 @@ export const RODS = [
     price: 5000000,
     maxLineLength: 16000, // ~800m (750m 해저 바닥 완벽 정복!)
     maxTension: 3200,
-    reelSpeed: 1100,
+    reelSpeed: 460,
     castPower: 1650,
     color: '#70e000',
     description: '우주의 성운 에너지가 응축된 궁극의 엔드게임 로드. 750m 초심연 해저의 모든 보스를 압도합니다!'
@@ -415,7 +415,7 @@ export const HATS = [
     name: '📡 냥냥 레이더 모자',
     price: 150000,
     icon: '📡',
-    perk: '화면 모서리에 보스 방향 & 거리 레이더 표시',
+    perk: '화면 모서리 보스 레이더 & 찌 주변 음파 어군 탐지 HUD 탑재',
     drawType: 'radar'
   }
 ];
@@ -449,13 +449,13 @@ export const PASSIVE_UPGRADES = [
     description: '릴링으로 물고기를 끌어올리는 속도를 레벨당 +10% 향상시킵니다.'
   },
   {
-    id: 'fish_sonar',
-    name: '냥냥 음파 어군 탐지기',
-    maxLevel: 10,
-    basePrice: 500,
-    priceMult: 1.85,
-    icon: '📡',
-    description: '수심 750m 전 구역의 물고기 위치와 ✨ 이로치 여부를 HUD에 표시합니다.'
+    id: 'bite_rate',
+    name: '냥냥 매혹 유혹술',
+    maxLevel: 15,
+    basePrice: 220,
+    priceMult: 1.65,
+    icon: '🎯',
+    description: '물고기가 미끼를 덥석 물 확률(입질 성공률)을 레벨당 +2.5%씩 증가시킵니다.'
   },
   {
     id: 'lucky_clover',
@@ -1055,10 +1055,15 @@ export class Economy {
   }
 
   getSonarRadius() {
-    // 📡 냥냥 음파 어군 탐지기 반경 (1Lv: 450px ~ 10Lv: 2000px)
-    const lv = this.upgradeLevels.fish_sonar || 0;
-    if (lv <= 0) return 0;
-    return 300 + lv * 170;
+    // 📡 냥냥 레이더 모자 착용 시 강력한 음파 탐지 HUD 활성화 (1,800px)
+    if (this.currentHatId === 'hat_radar') return 1800;
+    return 0;
+  }
+
+  getBiteRateBonus() {
+    // 🎯 냥냥 매혹 유혹술: 레벨당 입질 성공 확률 +2.5% 증가
+    const lv = this.upgradeLevels.bite_rate || 0;
+    return lv * 0.025;
   }
 
   getLuckMultiplier() {

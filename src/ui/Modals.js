@@ -1,10 +1,10 @@
 /**
  * Interactive Modals (Shop, Fish Encyclopedia, Aquarium Controls, Settings, Guide)
  */
-import { RODS, BOATS, BAITS, HATS, PASSIVE_UPGRADES, CAT_SKINS } from '../systems/Economy.js?v=5.9.0';
-import { FISH_SPECIES } from '../systems/Encyclopedia.js?v=5.9.0';
-import { Fish } from '../entities/Fish.js?v=5.9.0';
-import { getBaitIconSvg } from './BaitIcons.js?v=5.9.0';
+import { RODS, BOATS, BAITS, HATS, PASSIVE_UPGRADES, CAT_SKINS } from '../systems/Economy.js?v=6.2.0';
+import { FISH_SPECIES } from '../systems/Encyclopedia.js?v=6.2.0';
+import { Fish } from '../entities/Fish.js?v=6.2.0';
+import { getBaitIconSvg } from './BaitIcons.js?v=6.2.0';
 
 export class Modals {
   constructor(economy, encyclopedia, aquarium, soundEngine, hud, cloudSave = null) {
@@ -2058,7 +2058,7 @@ export class Modals {
             <canvas class="encyclo-fish-canvas" width="140" height="80"></canvas>
           </div>
           <div class="encyclo-title mystery-title">???</div>
-          <div class="encyclo-eng">미지의 생명체</div>
+          <div class="encyclo-eng">???</div>
           <div class="encyclo-details">
             <div>서식 수심: <strong>${species.minDepth}m ~ ${species.maxDepth}m</strong></div>
             <div>상태: <strong>미발견 🔒</strong></div>

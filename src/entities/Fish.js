@@ -358,6 +358,11 @@ export class Fish {
           biteChance += 0.20;
         }
 
+        // 🎯 냥냥 매혹 유혹술 패시브 보너스 (+Lv당 +2.5%)
+        if (hook.economy && typeof hook.economy.getBiteRateBonus === 'function') {
+          biteChance += hook.economy.getBiteRateBonus();
+        }
+
         // 보스는 황금 미끼에 높은 반응 (85%)
         if (this.isBoss) {
           biteChance = 0.85;
