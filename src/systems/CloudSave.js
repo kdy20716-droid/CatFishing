@@ -160,17 +160,18 @@ export class CloudSave {
       console.error("Google Auth popup error:", error.code, error.message);
       if (error.code === 'auth/unauthorized-domain') {
         if (this.hud) {
-          this.hud.showNotification('⚠️ Firebase 콘솔에 GitHub Pages 도메인(kdy20716-droid.github.io) 승인이 필요합니다!', '🔒');
+          this.hud.showNotification('⚠️ Firebase 콘솔에 현재 접속 도메인 승인이 필요합니다!', '🔒');
         }
       } else if (error.code === 'auth/popup-closed-by-user') {
         if (this.hud) {
           this.hud.showNotification('로그인 팝업이 닫혔습니다.', 'ℹ️');
         }
-        return false;
+      } else {
+        if (this.hud) {
+          this.hud.showNotification(`⚠️ 구글 로그인 실패: ${error.code || error.message}`, '❌');
+        }
       }
-      // Fallback to simulation mode if real auth failed
-      this.simulateLogin('google');
-      return true;
+      return false;
     }
   }
 

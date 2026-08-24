@@ -19,6 +19,7 @@ export class Modals {
     this.encyclopediaModal = document.getElementById('encyclopedia-modal');
     this.aquariumUI = document.getElementById('aquarium-controls-ui');
     this.aquariumManageModal = document.getElementById('aquarium-manage-modal');
+    this.soundModal = document.getElementById('sound-modal');
     this.guideModal = document.getElementById('guide-modal');
     this.authModal = document.getElementById('auth-modal');
     this.conflictModal = document.getElementById('cloud-conflict-modal');
@@ -43,6 +44,7 @@ export class Modals {
     this.onPauseChange = null;
 
     this.initEventListeners();
+    this.initSoundModalEvents();
     this.initMultiplayerEvents();
     this.initWardrobeEvents();
     this.initDockMerchantEvents();
@@ -571,6 +573,7 @@ export class Modals {
     if (this.inventoryModal) this.inventoryModal.classList.remove('visible');
     if (this.pauseModal) this.pauseModal.classList.remove('visible');
     if (this.aquariumManageModal) this.aquariumManageModal.classList.remove('visible');
+    if (this.soundModal) this.soundModal.classList.remove('visible');
     if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
     if (this.aquariumUI && !this.aquarium.isOpen) this.aquariumUI.classList.remove('visible');
     if (this.onPauseChange) this.onPauseChange(false);
@@ -592,6 +595,7 @@ export class Modals {
       (this.inventoryModal && this.inventoryModal.classList.contains('visible')) ||
       (this.pauseModal && this.pauseModal.classList.contains('visible')) ||
       (this.aquariumManageModal && this.aquariumManageModal.classList.contains('visible')) ||
+      (this.soundModal && this.soundModal.classList.contains('visible')) ||
       (this.userDropdownMenu && !this.userDropdownMenu.classList.contains('hidden'))
     );
   }
@@ -638,20 +642,12 @@ export class Modals {
       });
     }
 
-    // 3. Sound toggle button
+    // 3. Sound Settings button
     const btnSound = document.getElementById('btn-pause-sound');
     if (btnSound) {
       btnSound.addEventListener('click', () => {
-        const isMuted = !this.sound.isMuted;
-        this.sound.setMute(isMuted);
-        const topSoundBtn = document.getElementById('btn-sound-toggle');
-        if (topSoundBtn) topSoundBtn.innerHTML = isMuted ? '🔇 뮤트' : '🎵 소리 ON';
-        if (!isMuted && !this.sound.isBgmPlaying) {
-          this.sound.startBgm();
-        }
         this.sound.playClick();
-        this.updatePauseModalUI();
-        this.hud.showNotification(isMuted ? '🔇 사운드가 음소거되었습니다.' : '🎵 사운드가 켜졌습니다.', isMuted ? '🔇' : '🎵');
+        this.openSoundModal();
       });
     }
 
@@ -728,6 +724,173 @@ export class Modals {
     } else {
       this.openMultiplayerModal();
     }
+  }
+
+  initSoundModalEvents() {
+    // 1. Top HUD sound button
+    const btnSoundOpen = document.getElementById('btn-sound-modal-open');
+    if (btnSoundOpen) {
+      btnSoundOpen.addEventListener('click', () => {
+        this.sound.playClick();
+        this.openSoundModal();
+      });
+    }
+
+    // 2. Master Mute Toggle Card
+    const btnMasterMute = document.getElementById('btn-master-mute-toggle');
+    if (btnMasterMute) {
+      btnMasterMute.addEventListener('click', () => {
+        const isMuted = !this.sound.isMuted;
+        this.sound.setMute(isMuted);
+        if (!isMuted && !this.sound.isBgmPlaying) {
+          this.sound.startBgm();
+        }
+        this.sound.playClick();
+        this.updateSoundModalUI();
+        this.hud.showNotification(isMuted ? '🔇 마스터 사운드 음소거' : '🔊 마스터 사운드 켜짐', isMuted ? '🔇' : '🔊');
+      });
+    }
+
+    // 3. BGM Volume Slider
+    const sliderBgm = document.getElementById('slider-bgm-volume');
+    if (sliderBgm) {
+      sliderBgm.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        this.sound.setBgmVolume(val / 100);
+        if (!this.sound.isBgmPlaying && val > 0) {
+          this.sound.startBgm();
+        }
+        const valText = document.getElementById('val-bgm-volume');
+        if (valText) valText.textContent = `${val}%`;
+      });
+    }
+
+    // 4. SFX Volume Slider
+    const sliderSfx = document.getElementById('slider-sfx-volume');
+    if (sliderSfx) {
+      sliderSfx.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        this.sound.setSfxVolume(val / 100);
+        const valText = document.getElementById('val-sfx-volume');
+        if (valText) valText.textContent = `${val}%`;
+      });
+    }
+
+    // 5. Ambient Volume Slider
+    const sliderAmbient = document.getElementById('slider-ambient-volume');
+    if (sliderAmbient) {
+      sliderAmbient.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        this.sound.setAmbientVolume(val / 100);
+        const valText = document.getElementById('val-ambient-volume');
+        if (valText) valText.textContent = `${val}%`;
+      });
+    }
+
+    // 6. SFX Test Buttons
+    document.querySelectorAll('.btn-sfx-test').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sfxType = btn.dataset.sfx;
+        this.sound.playTestSfx(sfxType);
+      });
+    });
+
+    // 7. BGM Theme Selector
+    document.querySelectorAll('.btn-bgm-theme').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.sound.playClick();
+        const theme = btn.dataset.theme;
+        this.sound.setBgmTheme(theme);
+        if (!this.sound.isBgmPlaying) {
+          this.sound.startBgm();
+        }
+        this.updateSoundModalUI();
+      });
+    });
+  }
+
+  isSoundModalOpen() {
+    return this.soundModal && this.soundModal.classList.contains('visible');
+  }
+
+  openSoundModal() {
+    this.closeAll();
+    if (this.soundModal) {
+      this.sound.ensureRunning();
+      if (!this.sound.isBgmPlaying && !this.sound.isMuted) {
+        this.sound.startBgm();
+      }
+      this.updateSoundModalUI();
+      this.soundModal.classList.add('visible');
+    }
+  }
+
+  toggleSoundModal() {
+    if (this.isSoundModalOpen()) {
+      this.closeAll();
+    } else {
+      this.openSoundModal();
+    }
+  }
+
+  updateSoundModalUI() {
+    if (!this.sound) return;
+
+    // Master Mute Badge
+    const btnMasterMute = document.getElementById('btn-master-mute-toggle');
+    const masterBadgeText = document.getElementById('master-mute-badge-text');
+    const masterIcon = document.getElementById('sound-master-icon');
+    const masterDesc = document.getElementById('sound-master-desc');
+    const topSoundBtn = document.getElementById('btn-sound-modal-open');
+
+    const isMuted = this.sound.isMuted;
+    if (btnMasterMute) {
+      btnMasterMute.classList.toggle('active', !isMuted);
+      btnMasterMute.classList.toggle('muted', isMuted);
+    }
+    if (masterBadgeText) {
+      masterBadgeText.textContent = isMuted ? 'MUTE' : 'ON';
+    }
+    if (masterIcon) {
+      masterIcon.textContent = isMuted ? '🔇' : '🔊';
+    }
+    if (masterDesc) {
+      masterDesc.textContent = isMuted ? '현재 모든 사운드가 음소거 상태입니다.' : '게임의 모든 소리가 정상 출력 중입니다.';
+    }
+    if (topSoundBtn) {
+      topSoundBtn.textContent = isMuted ? '🔇 사운드' : '🔊 사운드';
+    }
+
+    // Sliders
+    const sliderBgm = document.getElementById('slider-bgm-volume');
+    const valBgm = document.getElementById('val-bgm-volume');
+    if (sliderBgm) {
+      const bgmVal = Math.round((this.sound.bgmVolume ?? 0.5) * 100);
+      sliderBgm.value = bgmVal;
+      if (valBgm) valBgm.textContent = `${bgmVal}%`;
+    }
+
+    const sliderSfx = document.getElementById('slider-sfx-volume');
+    const valSfx = document.getElementById('val-sfx-volume');
+    if (sliderSfx) {
+      const sfxVal = Math.round((this.sound.sfxVolume ?? 0.7) * 100);
+      sliderSfx.value = sfxVal;
+      if (valSfx) valSfx.textContent = `${sfxVal}%`;
+    }
+
+    const sliderAmbient = document.getElementById('slider-ambient-volume');
+    const valAmbient = document.getElementById('val-ambient-volume');
+    if (sliderAmbient) {
+      const ambVal = Math.round((this.sound.ambientVolume ?? 0.35) * 100);
+      sliderAmbient.value = ambVal;
+      if (valAmbient) valAmbient.textContent = `${ambVal}%`;
+    }
+
+    // Themes
+    const currentTheme = this.sound.forcedTheme || 'auto';
+    document.querySelectorAll('.btn-bgm-theme').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.theme === currentTheme);
+    });
   }
 
   openInventoryModal() {

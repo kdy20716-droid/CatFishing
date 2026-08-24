@@ -1,21 +1,21 @@
 /**
  * Master Game Controller & Loop
  */
-import { Vector2 } from './engine/Vector.js?v=2.9.0';
-import { Camera } from './engine/Camera.js?v=2.9.0';
-import { Input } from './engine/Input.js?v=2.9.0';
-import { SoundEngine } from './audio.js?v=2.9.0';
-import { Economy } from './systems/Economy.js?v=2.9.0';
-import { Encyclopedia, FISH_SPECIES } from './systems/Encyclopedia.js?v=2.9.0';
-import { Environment } from './systems/Environment.js?v=2.9.0';
-import { Aquarium } from './systems/Aquarium.js?v=2.9.0';
-import { Cat } from './entities/Cat.js?v=2.9.0';
-import { Rod } from './entities/Rod.js?v=2.9.0';
-import { Fish } from './entities/Fish.js?v=2.9.0';
-import { HUD } from './ui/HUD.js?v=2.9.0';
-import { Modals } from './ui/Modals.js?v=2.9.0';
-import { CloudSave } from './systems/CloudSave.js?v=2.9.0';
-import { Multiplayer } from './systems/Multiplayer.js?v=2.9.0';
+import { Vector2 } from './engine/Vector.js?v=3.9.0';
+import { Camera } from './engine/Camera.js?v=3.9.0';
+import { Input } from './engine/Input.js?v=3.9.0';
+import { SoundEngine } from './audio.js?v=3.9.0';
+import { Economy } from './systems/Economy.js?v=3.9.0';
+import { Encyclopedia, FISH_SPECIES } from './systems/Encyclopedia.js?v=3.9.0';
+import { Environment } from './systems/Environment.js?v=3.9.0';
+import { Aquarium } from './systems/Aquarium.js?v=3.9.0';
+import { Cat } from './entities/Cat.js?v=3.9.0';
+import { Rod } from './entities/Rod.js?v=3.9.0';
+import { Fish } from './entities/Fish.js?v=3.9.0';
+import { HUD } from './ui/HUD.js?v=3.9.0';
+import { Modals } from './ui/Modals.js?v=3.9.0';
+import { CloudSave } from './systems/CloudSave.js?v=3.9.0';
+import { Multiplayer } from './systems/Multiplayer.js?v=3.9.0';
 
 class Game {
   constructor() {
@@ -58,16 +58,22 @@ class Game {
     };
 
     this.hasTriggeredDockMerchant = false;
+    this.fishSaveTimer = 0;
 
-    // Initial camera placement
+    // Initial camera placement (focus on cat's persisted position)
     this.camera.pos.set(this.cat.pos.x, this.cat.pos.y);
 
-    // Populate initial ocean fish
+    // Populate initial ocean fish (or restore previous fish population)
     this.spawnInitialFish();
 
     // Hook inputs & buttons
     this.initUIButtons();
     this.initInputHandlers();
+
+    // Auto-save fish population on page unload/refresh
+    window.addEventListener('beforeunload', () => {
+      this.saveFishState();
+    });
 
     // Start Loop
     requestAnimationFrame((t) => this.loop(t));
@@ -81,9 +87,65 @@ class Game {
     }
   }
 
+  saveFishState() {
+    try {
+      // Only save fish that are freely swimming (not hooked)
+      const serializableFish = this.fishList
+        .filter(f => f.state === 'WANDER' || f.state === 'CURIOUS')
+        .map(f => ({
+          id: f.data.id,
+          x: Math.round(f.pos.x),
+          y: Math.round(f.pos.y),
+          facing: f.facing,
+          sizeCm: f.sizeCm,
+          isShiny: f.isShiny,
+          minSwimX: f.swimBounds?.minX,
+          maxSwimX: f.swimBounds?.maxX
+        }));
+
+      localStorage.setItem('cozy_cat_ocean_fish_v1', JSON.stringify(serializableFish));
+    } catch (e) {}
+  }
+
   spawnInitialFish() {
     this.fishList = [];
-    for (let i = 0; i < this.maxFishCount; i++) {
+    let loadedFishCount = 0;
+
+    // 1. Try to restore previous fish population
+    try {
+      const saved = localStorage.getItem('cozy_cat_ocean_fish_v1');
+      if (saved) {
+        const fishDataList = JSON.parse(saved);
+        if (Array.isArray(fishDataList) && fishDataList.length > 0) {
+          fishDataList.forEach(item => {
+            const species = FISH_SPECIES.find(s => s.id === item.id);
+            if (species) {
+              const bounds = (typeof item.minSwimX === 'number' && typeof item.maxSwimX === 'number')
+                ? { minX: item.minSwimX, maxX: item.maxSwimX }
+                : null;
+
+              const fish = new Fish(species, new Vector2(item.x, item.y), !!item.isShiny, bounds);
+              if (item.facing === 1 || item.facing === -1) fish.facing = item.facing;
+              if (typeof item.sizeCm === 'number') fish.sizeCm = item.sizeCm;
+
+              fish.onEscapeCallback = (f) => {
+                this.camera.shake(12, 0.5);
+                this.hud.showNotification(`⚠️ 너무 오래 방치하여 ${f.isBoss ? '👑 보스 ' : (f.isShiny ? '✨ 이로치 ' : '')}${f.data.name}이(가) 도망쳤습니다!`, '💨');
+              };
+
+              this.fishList.push(fish);
+              loadedFishCount++;
+            }
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to restore ocean fish population:", e);
+    }
+
+    // 2. Fill the remaining spots up to maxFishCount
+    const needed = this.maxFishCount - loadedFishCount;
+    for (let i = 0; i < needed; i++) {
       this.spawnSingleFish();
     }
   }
@@ -177,16 +239,11 @@ class Game {
   }
 
   initUIButtons() {
-    // Sound Toggle
-    const btnSound = document.getElementById('btn-sound-toggle');
+    // Sound Modal Open Button
+    const btnSound = document.getElementById('btn-sound-modal-open');
     if (btnSound) {
       btnSound.addEventListener('click', () => {
-        const isMuted = !this.sound.isMuted;
-        this.sound.setMute(isMuted);
-        btnSound.innerHTML = isMuted ? '🔇 뮤트' : '🎵 소리 ON';
-        if (!isMuted && !this.sound.isBgmPlaying) {
-          this.sound.startBgm();
-        }
+        this.modals.openSoundModal();
       });
     }
 
@@ -319,16 +376,9 @@ class Game {
         this.modals.toggleMultiplayer();
       }
 
-      // 🎵 [O] 키: 소리 ON/OFF 음소거 토글
+      // 🔊 [O] 키: 사운드 & 볼륨 설정 모달 열기 / 닫기
       if (code === 'KeyO') {
-        const isMuted = !this.sound.isMuted;
-        this.sound.setMute(isMuted);
-        const btnSound = document.getElementById('btn-sound-toggle');
-        if (btnSound) btnSound.innerHTML = isMuted ? '🔇 뮤트' : '🎵 소리 ON';
-        if (!isMuted && !this.sound.isBgmPlaying) {
-          this.sound.startBgm();
-        }
-        this.hud.showNotification(isMuted ? '🔇 배경음 & 효과음 음소거' : '🎵 소리 켜짐', isMuted ? '🔇' : '🎵');
+        this.modals.toggleSoundModal();
       }
 
       // 🏪 [R] 키: 고양이 상인 범위 안(x <= 320) 또는 이미 상점 관련 창이 열린 상태일 때 토글
@@ -465,6 +515,13 @@ class Game {
     // Maintain fish count
     while (this.fishList.length < this.maxFishCount) {
       this.spawnSingleFish();
+    }
+
+    // Periodic fish population save (every 2.5s)
+    this.fishSaveTimer += dt;
+    if (this.fishSaveTimer >= 2.5) {
+      this.fishSaveTimer = 0;
+      this.saveFishState();
     }
 
     // Camera Tracking

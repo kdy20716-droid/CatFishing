@@ -10,6 +10,7 @@ export class Environment {
 
     this.waterSurfaceY = 0;
     this.animTime = 0;
+    this.saveTimer = 0;
 
     // Ambient Particles
     this.bubbles = [];
@@ -18,8 +19,43 @@ export class Environment {
     this.clouds = [];
     this.smokeParticles = [];
 
+    // Load persisted time progress
+    this.loadTimeState();
+
     this.initClouds();
     this.initPlankton();
+
+    // Auto-save on page unload/refresh
+    window.addEventListener('beforeunload', () => {
+      this.saveTimeState();
+    });
+  }
+
+  loadTimeState() {
+    try {
+      const saved = localStorage.getItem('cozy_cat_environment_time_v1');
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (typeof data.timeProgress === 'number' && !isNaN(data.timeProgress)) {
+          this.timeProgress = Math.max(0, Math.min(1, data.timeProgress));
+          if (this.timeProgress < 0.38) this.timeOfDay = 'day';
+          else if (this.timeProgress < 0.65) this.timeOfDay = 'sunset';
+          else this.timeOfDay = 'night';
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to load environment time state:", e);
+    }
+  }
+
+  saveTimeState() {
+    try {
+      const data = {
+        timeProgress: this.timeProgress,
+        timeOfDay: this.timeOfDay
+      };
+      localStorage.setItem('cozy_cat_environment_time_v1', JSON.stringify(data));
+    } catch (e) {}
   }
 
   initClouds() {
@@ -77,6 +113,13 @@ export class Environment {
 
     if (soundEngine) {
       soundEngine.setTimeOfDay(this.timeOfDay);
+    }
+
+    // Save time progress state periodically (every 2 seconds)
+    this.saveTimer += dt;
+    if (this.saveTimer >= 2.0) {
+      this.saveTimer = 0;
+      this.saveTimeState();
     }
 
     // Update Clouds across 15000px sky

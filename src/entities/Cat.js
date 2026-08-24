@@ -15,6 +15,7 @@ export class Cat {
     this.isBlinking = false;
     this.celebrateTimer = 0;
     this.exclamationTimer = 0;
+    this.saveTimer = 0;
     
     // Facing direction: 1 (right) or -1 (left)
     this.facing = 1;
@@ -26,6 +27,44 @@ export class Cat {
 
     // Movement speed
     this.velX = 0;
+
+    // Load persisted position
+    this.loadPosition();
+
+    // Auto-save on page unload/refresh
+    window.addEventListener('beforeunload', () => {
+      this.savePosition();
+    });
+  }
+
+  loadPosition() {
+    try {
+      const saved = localStorage.getItem('cozy_cat_player_pos_v1');
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (typeof data.x === 'number' && !isNaN(data.x)) {
+          // Clamp to valid zone
+          const currentBoat = this.economy ? this.economy.getCurrentBoat() : null;
+          const maxX = currentBoat ? (currentBoat.maxTravelX || 2000) : 2000;
+          this.pos.x = Math.max(230, Math.min(maxX, data.x));
+        }
+        if (data.facing === 1 || data.facing === -1) {
+          this.facing = data.facing;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to load cat position:", e);
+    }
+  }
+
+  savePosition() {
+    try {
+      const data = {
+        x: this.pos.x,
+        facing: this.facing
+      };
+      localStorage.setItem('cozy_cat_player_pos_v1', JSON.stringify(data));
+    } catch (e) {}
   }
 
   update(dt, waterSurfaceY, boatInputAxis = 0) {
@@ -39,6 +78,13 @@ export class Cat {
     const targetVelX = boatInputAxis * speed;
     this.velX += (targetVelX - this.velX) * 0.1;
     this.pos.x += this.velX * dt;
+
+    // Periodic position save
+    this.saveTimer += dt;
+    if (this.saveTimer >= 1.5) {
+      this.saveTimer = 0;
+      this.savePosition();
+    }
 
     // Clamp boat position to allowed zone (minX is right beside the wooden dock pier)
     const minX = 230;
@@ -183,7 +229,9 @@ export class Cat {
   }
 
   drawBoat(ctx) {
+    if (!this.economy || typeof this.economy.getCurrentBoat !== 'function') return;
     const boat = this.economy.getCurrentBoat();
+    if (!boat) return;
     const type = boat.drawType || 'rowboat';
 
     ctx.save();
@@ -574,7 +622,9 @@ export class Cat {
   }
 
   drawHat(ctx) {
+    if (!this.economy || typeof this.economy.getCurrentHat !== 'function') return;
     const hat = this.economy.getCurrentHat();
+    if (!hat) return;
     const type = hat.drawType || 'none';
     if (type === 'none') return;
 
@@ -720,8 +770,9 @@ export class Cat {
 
   drawFishingRod(ctx) {
     if (this.state === 'CATCH') return; // Don't draw rod during celebration paws
-
+    if (!this.economy || typeof this.economy.getCurrentRod !== 'function') return;
     const rod = this.economy.getCurrentRod();
+    if (!rod) return;
     const rodColor = rod.color || '#8b5a2b';
 
     ctx.save();

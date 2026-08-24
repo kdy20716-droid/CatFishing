@@ -18,7 +18,7 @@ import {
   serverTimestamp 
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { Cat } from '../entities/Cat.js';
-import { CAT_SKINS } from './Economy.js';
+import { CAT_SKINS, HATS, BOATS, RODS } from './Economy.js';
 
 export class Multiplayer {
   constructor(economy, sound, hud, cloudSave) {
@@ -302,24 +302,25 @@ export class Multiplayer {
 
         let pEntry = this.otherPlayers.get(pData.id);
         if (!pEntry) {
-          // Create fake economy with dynamic skin & boat support
+          // Create fake economy with dynamic skin, hat, rod & boat support
           const fakeEconomy = {
             getCurrentBoat: () => {
-              const boats = {
-                boat_raft: { drawType: 'raft', speed: 80, maxTravelX: 1600 },
-                boat_rowboat: { drawType: 'rowboat', speed: 130, maxTravelX: 3200 },
-                boat_cruiser: { drawType: 'cruiser', speed: 200, maxTravelX: 4800 },
-                boat_submarine: { drawType: 'submarine', speed: 260, maxTravelX: 4800 }
-              };
-              return boats[pData.boatId] || boats['boat_raft'];
+              return BOATS.find(b => b.id === pData.boatId) || BOATS[0] || { drawType: 'raft', speed: 80, maxTravelX: 1600 };
             },
-            getCurrentRod: () => ({ color: '#faedcd' }),
+            getCurrentRod: () => {
+              return RODS.find(r => r.id === pData.rodId) || RODS[0] || { color: '#faedcd' };
+            },
             getCurrentCatSkin: () => {
               const sId = pData.catSkinId || 'skin_orange';
               return CAT_SKINS.find(s => s.id === sId) || CAT_SKINS[0];
             },
-            currentHatId: pData.hatId,
-            currentRodId: pData.rodId,
+            getCurrentHat: () => {
+              const hId = pData.hatId || 'hat_none';
+              return HATS.find(h => h.id === hId) || HATS[0] || { drawType: 'none' };
+            },
+            currentHatId: pData.hatId || 'hat_none',
+            currentRodId: pData.rodId || 'rod_twig',
+            currentBoatId: pData.boatId || 'boat_raft',
             catSkinId: pData.catSkinId || 'skin_orange'
           };
 

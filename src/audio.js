@@ -6,8 +6,10 @@ export class SoundEngine {
   constructor() {
     this.ctx = null;
     this.isMuted = false;
+    this.masterVolume = 1.0;
     this.bgmVolume = 0.5;
     this.sfxVolume = 0.7;
+    this.ambientVolume = 0.35;
 
     this.masterGain = null;
     this.bgmGain = null;
@@ -18,6 +20,10 @@ export class SoundEngine {
     this.bgmTimer = null;
     this.currentChordIndex = 0;
     this.timeOfDay = 'day'; // 'day', 'sunset', 'night'
+    this.forcedTheme = null; // null, 'day', 'sunset', 'night'
+
+    // Load saved sound settings from localStorage
+    this.loadSettings();
 
     // Lo-Fi Chord Progressions (Frequencies in Hz)
     // Cmaj9 -> Am9 -> Dm9 -> G13 (Day)
@@ -47,6 +53,39 @@ export class SoundEngine {
     this.initContext();
   }
 
+  loadSettings() {
+    try {
+      const saved = localStorage.getItem('cozy_cat_sound_settings_v1');
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (typeof data.isMuted === 'boolean') this.isMuted = data.isMuted;
+        if (typeof data.masterVolume === 'number') this.masterVolume = Math.max(0, Math.min(1, data.masterVolume));
+        if (typeof data.bgmVolume === 'number') this.bgmVolume = Math.max(0, Math.min(1, data.bgmVolume));
+        if (typeof data.sfxVolume === 'number') this.sfxVolume = Math.max(0, Math.min(1, data.sfxVolume));
+        if (typeof data.ambientVolume === 'number') this.ambientVolume = Math.max(0, Math.min(1, data.ambientVolume));
+        if (typeof data.forcedTheme === 'string') this.forcedTheme = data.forcedTheme;
+      }
+    } catch (e) {
+      console.warn("Failed to load sound settings:", e);
+    }
+  }
+
+  saveSettings() {
+    try {
+      const data = {
+        isMuted: this.isMuted,
+        masterVolume: this.masterVolume,
+        bgmVolume: this.bgmVolume,
+        sfxVolume: this.sfxVolume,
+        ambientVolume: this.ambientVolume,
+        forcedTheme: this.forcedTheme
+      };
+      localStorage.setItem('cozy_cat_sound_settings_v1', JSON.stringify(data));
+    } catch (e) {
+      console.warn("Failed to save sound settings:", e);
+    }
+  }
+
   initContext() {
     if (this.ctx) return;
     try {
@@ -55,7 +94,8 @@ export class SoundEngine {
       this.ctx = new AudioCtx();
 
       this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.setValueAtTime(1.0, this.ctx.currentTime);
+      const initialMaster = this.isMuted ? 0 : this.masterVolume;
+      this.masterGain.gain.setValueAtTime(initialMaster, this.ctx.currentTime);
       this.masterGain.connect(this.ctx.destination);
 
       this.bgmGain = this.ctx.createGain();
@@ -67,7 +107,7 @@ export class SoundEngine {
       this.sfxGain.connect(this.masterGain);
 
       this.ambientGain = this.ctx.createGain();
-      this.ambientGain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+      this.ambientGain.gain.setValueAtTime(this.ambientVolume, this.ctx.currentTime);
       this.ambientGain.connect(this.masterGain);
 
       // Start gentle ambient ocean waves
@@ -88,13 +128,24 @@ export class SoundEngine {
 
   setMute(mute) {
     this.isMuted = mute;
+    this.saveSettings();
     if (this.masterGain && this.ctx) {
-      this.masterGain.gain.setTargetAtTime(mute ? 0 : 1.0, this.ctx.currentTime, 0.05);
+      const target = mute ? 0 : this.masterVolume;
+      this.masterGain.gain.setTargetAtTime(target, this.ctx.currentTime, 0.05);
+    }
+  }
+
+  setMasterVolume(vol) {
+    this.masterVolume = Math.max(0, Math.min(1, vol));
+    this.saveSettings();
+    if (this.masterGain && this.ctx && !this.isMuted) {
+      this.masterGain.gain.setTargetAtTime(this.masterVolume, this.ctx.currentTime, 0.05);
     }
   }
 
   setBgmVolume(vol) {
     this.bgmVolume = Math.max(0, Math.min(1, vol));
+    this.saveSettings();
     if (this.bgmGain && this.ctx) {
       this.bgmGain.gain.setTargetAtTime(this.bgmVolume, this.ctx.currentTime, 0.05);
     }
@@ -102,9 +153,23 @@ export class SoundEngine {
 
   setSfxVolume(vol) {
     this.sfxVolume = Math.max(0, Math.min(1, vol));
+    this.saveSettings();
     if (this.sfxGain && this.ctx) {
       this.sfxGain.gain.setTargetAtTime(this.sfxVolume, this.ctx.currentTime, 0.05);
     }
+  }
+
+  setAmbientVolume(vol) {
+    this.ambientVolume = Math.max(0, Math.min(1, vol));
+    this.saveSettings();
+    if (this.ambientGain && this.ctx) {
+      this.ambientGain.gain.setTargetAtTime(this.ambientVolume, this.ctx.currentTime, 0.05);
+    }
+  }
+
+  setBgmTheme(theme) {
+    this.forcedTheme = (theme === 'auto') ? null : theme;
+    this.saveSettings();
   }
 
   setTimeOfDay(time) {
@@ -185,12 +250,26 @@ export class SoundEngine {
     }
   }
 
+  playTestSfx(type) {
+    this.ensureRunning();
+    switch (type) {
+      case 'cast': this.playCast(); break;
+      case 'bite': this.playBite(); break;
+      case 'coin': this.playCoin(); break;
+      case 'bubble': this.playBubble(); break;
+      case 'levelUp': this.playLevelUp(); break;
+      case 'splash': this.playSplash(); break;
+      default: this.playClick(); break;
+    }
+  }
+
   playNextLofiChord() {
     if (!this.isBgmPlaying || !this.ctx) return;
 
+    const activeTheme = this.forcedTheme || this.timeOfDay;
     let chords = this.dayChords;
-    if (this.timeOfDay === 'sunset') chords = this.sunsetChords;
-    if (this.timeOfDay === 'night') chords = this.nightChords;
+    if (activeTheme === 'sunset') chords = this.sunsetChords;
+    if (activeTheme === 'night') chords = this.nightChords;
 
     const chord = chords[this.currentChordIndex % chords.length];
     this.currentChordIndex++;
