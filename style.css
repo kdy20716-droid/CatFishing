@@ -471,62 +471,49 @@ html, body {
 }
 
 .tension-container {
-  width: 290px;
-  background: linear-gradient(180deg, #2b2d42 0%, #1a1b26 100%);
-  padding: 10px 16px;
-  border-radius: var(--radius-md);
-  border: 2.5px solid #4a4e69;
-  box-shadow: 0 6px 0 #11131a, 0 10px 25px rgba(0, 0, 0, 0.5);
+  width: 170px;
+  height: 8px;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  padding: 2px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
   opacity: 0;
-  transform: scale(0.9);
+  transform: translateY(-4px) scale(0.95);
   transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
 }
 
 .tension-container.visible {
   opacity: 1;
-  transform: scale(1);
+  transform: translateY(0) scale(1);
 }
 
-.tension-label-group {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  font-weight: 800;
-  color: #e2e8f0;
-  margin-bottom: 6px;
+.tension-container.high-tension {
+  border-color: #ff0054;
+  box-shadow: 0 0 14px rgba(255, 0, 84, 0.75);
+  animation: tension-pulse 0.4s infinite alternate;
 }
 
-.tension-warning-text {
-  color: #ff0054;
-  opacity: 0;
-  font-weight: 800;
-  transition: opacity 0.2s ease;
-}
-
-.tension-warning-text.blink {
-  opacity: 1;
-  animation: pulse-warn 0.5s infinite alternate;
-}
-
-@keyframes pulse-warn {
-  0% { transform: scale(0.95); opacity: 0.5; }
-  100% { transform: scale(1.08); opacity: 1; text-shadow: 0 0 10px #ff0054; }
+@keyframes tension-pulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.05); }
 }
 
 .tension-track {
   width: 100%;
-  height: 12px;
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: 8px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 6px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .tension-fill {
   width: 0%;
   height: 100%;
   background: linear-gradient(90deg, #06d6a0, #ffd166);
-  border-radius: 8px;
+  border-radius: 6px;
   transition: width 0.06s linear;
 }
 
@@ -1814,8 +1801,10 @@ html, body {
   gap: 16px;
   padding: 20px 24px;
   overflow-y: auto;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   background: #faf7f0;
+  align-content: start;
 }
 
 .shop-card {
@@ -1837,12 +1826,15 @@ html, body {
   background: #ffffff;
   border: 2.5px solid #e9ecef;
   border-radius: var(--radius-md);
-  padding: 16px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   box-shadow: 0 3px 0 #dee2e6;
   transition: all 0.15s;
+  box-sizing: border-box;
+  min-height: 310px;
+  height: 100%;
 }
 
 .shop-card:hover, .encyclo-card:hover {
@@ -2114,14 +2106,16 @@ html, body {
 
 .encyclo-preview-wrapper {
   width: 100%;
-  height: 80px;
+  height: 84px;
+  flex-shrink: 0;
   background: radial-gradient(circle, rgba(160, 220, 255, 0.35) 0%, rgba(200, 240, 255, 0.1) 70%, transparent 100%);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 4px 0 6px 0;
+  margin: 2px 0 4px 0;
   border: 1.5px solid rgba(160, 220, 255, 0.4);
+  box-sizing: border-box;
 }
 
 .encyclo-preview-wrapper.locked-preview {
@@ -2130,8 +2124,11 @@ html, body {
 }
 
 .encyclo-fish-canvas {
+  width: 140px;
+  height: 80px;
   max-width: 100%;
-  max-height: 80px;
+  max-height: 100%;
+  object-fit: contain;
   display: block;
 }
 
@@ -5101,5 +5098,450 @@ html, body {
   0% { right: 0%; }
   100% { right: 100%; }
 }
+
+/* ---------------------------------------------------------
+   🌊 Mode Voyage (Going Right ➡️ out to open ocean)
+   --------------------------------------------------------- */
+.cruise-splash-overlay.mode-voyage .cruise-ship-wrapper {
+  transform: scaleX(-1); /* Flips ship to face right */
+}
+
+.cruise-splash-overlay.mode-voyage .meter-bar-fill {
+  left: 0 !important;
+  right: auto !important;
+  background: linear-gradient(90deg, #06d6a0, #38bdf8) !important;
+}
+
+.cruise-splash-overlay.mode-voyage .meter-boat-indicator {
+  left: 0% !important;
+  right: auto !important;
+  transform: translateX(-50%) scaleX(1) !important; /* Face right towards ocean */
+  animation: meter-boat-glide-right 3.0s linear forwards !important;
+}
+
+@keyframes meter-boat-glide-right {
+  0% { left: 0%; }
+  100% { left: 100%; }
+}
+
+/* =========================================================
+   🎭 Radial Emote Wheel UI ([X] Key Hold & Release)
+   ========================================================= */
+.emote-radial-wheel {
+  position: fixed;
+  inset: 0;
+  z-index: 99990;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.16s ease;
+  user-select: none;
+}
+
+.emote-radial-wheel.visible {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+.emote-wheel-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.emote-wheel-container {
+  position: relative;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.85) 60%, rgba(15, 23, 42, 0.4) 100%);
+  border: 3px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 0 45px rgba(0, 0, 0, 0.7), inset 0 0 25px rgba(255, 255, 255, 0.05);
+  animation: wheel-pop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes wheel-pop {
+  0% { transform: scale(0.7); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Center Cancel Node */
+.emote-center-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 74px;
+  height: 74px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(30, 41, 59, 0.92);
+  border: 2px dashed rgba(255, 255, 255, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.16s ease;
+  z-index: 10;
+}
+
+.emote-center-circle .center-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.emote-center-circle .center-text {
+  font-size: 11px;
+  font-weight: 800;
+  color: #94a3b8;
+  font-family: var(--font-cute);
+  margin-top: 2px;
+}
+
+.emote-center-circle.active {
+  background: rgba(239, 68, 68, 0.9);
+  border: 2.5px solid #ffffff;
+  transform: translate(-50%, -50%) scale(1.12);
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.85);
+}
+
+.emote-center-circle.active .center-text {
+  color: #ffffff;
+}
+
+/* 5 Radial Emote Nodes */
+.emote-node {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Trigonometric Node Positions (Radius = 110px from 160, 160) */
+.emote-node.pos-joy {
+  top: 50px;
+  left: 160px;
+}
+
+.emote-node.pos-clap,
+.emote-node.pos-excited {
+  top: 126px;
+  left: 265px;
+}
+
+.emote-node.pos-tease {
+  top: 249px;
+  left: 225px;
+}
+
+.emote-node.pos-sad {
+  top: 249px;
+  left: 95px;
+}
+
+.emote-node.pos-angry {
+  top: 126px;
+  left: 55px;
+}
+
+.emote-node-bubble {
+  width: 66px;
+  height: 66px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.88);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease, border 0.15s ease, box-shadow 0.15s ease;
+}
+
+.emote-node-bubble .emote-emoji {
+  font-size: 24px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.emote-node-bubble .emote-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #f8fafc;
+  font-family: var(--font-cute);
+  margin-top: 2px;
+}
+
+/* Active Highlighted Node */
+.emote-node.active .emote-node-bubble {
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+  border: 2.5px solid #ffffff;
+  transform: translate(-50%, -50%) scale(1.24);
+  box-shadow: 0 0 28px rgba(245, 158, 11, 0.95), 0 8px 20px rgba(0, 0, 0, 0.5);
+}
+
+.emote-node.active .emote-node-bubble .emote-label {
+  color: #0f172a;
+}
+
+/* Emote Guide Tip */
+.emote-wheel-guide-tip {
+  position: absolute;
+  bottom: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(8px);
+  color: #fef08a;
+  padding: 10px 22px;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 700;
+  border: 1.5px solid rgba(254, 240, 138, 0.5);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  font-family: var(--font-cute);
+/* =========================================================
+   🎣 Authentic Stardew Valley Fishing Mini-Game UI
+   ========================================================= */
+.stardew-minigame-container {
+  position: fixed !important;
+  right: 32px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  opacity: 0;
+  pointer-events: none;
+  display: none;
+  z-index: 9999 !important;
+  user-select: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.stardew-minigame-container.visible {
+  display: flex !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.stardew-wood-box {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  background: linear-gradient(180deg, #452410 0%, #291408 100%);
+  border: 4px solid #b07d4f;
+  border-radius: 22px;
+  padding: 12px 14px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7), inset 0 0 16px rgba(0, 0, 0, 0.9), 0 0 20px rgba(176, 125, 79, 0.4);
+}
+
+.stardew-tank-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.stardew-tank-top-cap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-cute);
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffd166;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.stardew-tank-cat-icon {
+  font-size: 13px;
+}
+
+.stardew-tank-water {
+  position: relative;
+  width: 46px;
+  height: 240px;
+  background: linear-gradient(180deg, #0284c7 0%, #0369a1 35%, #0c4a6e 75%, #082f49 100%);
+  border-radius: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.8), 0 4px 12px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.stardew-water-fx {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0px,
+    rgba(255, 255, 255, 0.04) 20px,
+    transparent 20px,
+    transparent 40px
+  );
+  pointer-events: none;
+}
+
+.stardew-catch-bar {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 20px;
+  height: 48px;
+  background: linear-gradient(180deg, rgba(74, 222, 128, 0.75) 0%, rgba(34, 197, 94, 0.85) 100%);
+  border: 2px solid #86efac;
+  border-radius: 8px;
+  box-shadow: 0 0 14px rgba(74, 222, 128, 0.6), inset 0 0 6px rgba(255, 255, 255, 0.5);
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.stardew-catch-bar.in-zone {
+  background: linear-gradient(180deg, rgba(52, 211, 153, 0.95) 0%, rgba(16, 185, 129, 1) 100%);
+  border-color: #fef08a;
+  box-shadow: 0 0 22px rgba(52, 211, 153, 0.95), 0 0 10px #ffd166;
+}
+
+.catch-bar-grip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 2px;
+}
+
+.stardew-target-fish {
+  position: absolute;
+  left: 50%;
+  bottom: 70px;
+  transform: translate(-50%, 50%);
+  z-index: 4;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.9));
+  font-size: 22px;
+  animation: stardew-fish-wiggle 0.5s infinite alternate ease-in-out;
+}
+
+@keyframes stardew-fish-wiggle {
+  0% { transform: translate(-50%, 50%) rotate(-6deg) scale(0.95); }
+  100% { transform: translate(-50%, 50%) rotate(6deg) scale(1.05); }
+}
+
+.stardew-fish-spark {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 12px;
+  animation: pulse 0.8s infinite alternate;
+}
+
+.stardew-meter-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.stardew-meter-cap {
+  font-size: 13px;
+  color: #ffd166;
+}
+
+.stardew-meter-track {
+  position: relative;
+  width: 14px;
+  height: 240px;
+  background: #0f172a;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.8);
+}
+
+.stardew-meter-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 35%;
+  background: linear-gradient(180deg, #ffd166 0%, #06d6a0 60%, #059669 100%);
+  border-radius: 6px;
+  transition: height 0.08s linear, background 0.2s;
+  box-shadow: 0 0 12px rgba(6, 214, 160, 0.8);
+}
+
+.stardew-meter-fill.draining {
+  background: linear-gradient(180deg, #fb7185 0%, #f43f5e 60%, #e11d48 100%);
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.8);
+}
+
+.stardew-meter-pct {
+  font-family: var(--font-cute);
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffd166;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.stardew-control-tip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.stardew-control-tip .tip-badge {
+  background: #f59e0b;
+  color: #0f172a;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.stardew-perfect-toast {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.5);
+  background: linear-gradient(135deg, #ffd166, #ff007f);
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 900;
+  font-family: var(--font-cute);
+  box-shadow: 0 0 20px rgba(255, 209, 102, 0.9);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+  z-index: 10;
+}
+
+.stardew-perfect-toast.show {
+  transform: translate(-50%, -50%) scale(1.15);
+  opacity: 1;
+}
+
 
 

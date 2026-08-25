@@ -6,7 +6,7 @@
   <title>🐾 냥이의 바다 낚시 힐링 여행 (Cozy Cat Fishing)</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="shortcut icon" href="assets/favicon.svg">
-  <link rel="stylesheet" href="style.css?v=7.4.0">
+  <link rel="stylesheet" href="style.css?v=7.5.5">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Gothic:wght@400;700;800&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
@@ -200,12 +200,8 @@
       <!-- Depth Indicator -->
       <div id="hud-depth" class="depth-badge">수심 0.0m</div>
 
-      <!-- Line Tension Meter -->
+      <!-- Line Tension Meter (Slim Gauge Only) -->
       <div id="hud-tension-container" class="tension-container">
-        <div class="tension-label-group">
-          <span class="tension-label">줄 팽팽함 (Tension)</span>
-          <span id="hud-tension-warning" class="tension-warning-text">⚠️ 줄 끊어짐 주의!</span>
-        </div>
         <div class="tension-track">
           <div id="hud-tension-fill" class="tension-fill"></div>
         </div>
@@ -217,6 +213,54 @@
         <div class="charge-track">
           <div id="hud-charge-fill" class="charge-fill"></div>
         </div>
+      </div>
+
+    </div>
+
+    <!-- 🎣 Authentic Stardew Valley Fishing Mini-Game UI (화면 우측 수직 배치) -->
+    <div id="stardew-minigame-container" class="stardew-minigame-container">
+      <div class="stardew-wood-box">
+        <!-- Left: Water Tank Tube with Green Player Catch Bar and AI Fish -->
+        <div class="stardew-tank-frame">
+          <div class="stardew-tank-top-cap">
+            <span class="stardew-tank-cat-icon">🐾</span>
+            <span class="stardew-tank-title">REELING</span>
+          </div>
+          <div class="stardew-tank-water" id="stardew-tank-water">
+            <!-- Background Water Bubbles & Gradient Lines -->
+            <div class="stardew-water-fx"></div>
+            
+            <!-- Green Player Catch Bar (Controlled with Space / Left Mouse Hold) -->
+            <div id="stardew-catch-bar" class="stardew-catch-bar">
+              <div class="catch-bar-glow"></div>
+              <div class="catch-bar-grip"></div>
+            </div>
+
+            <!-- Target Fish (AI Controlled based on Fish Rarity) -->
+            <div id="stardew-target-fish" class="stardew-target-fish">
+              <span id="stardew-fish-icon" class="stardew-fish-icon">🐟</span>
+              <span id="stardew-fish-spark" class="stardew-fish-spark">✨</span>
+            </div>
+
+            <!-- Perfect Catch Popup -->
+            <div id="stardew-perfect-toast" class="stardew-perfect-toast">PERFECT!</div>
+          </div>
+        </div>
+
+        <!-- Right: Catch Progress Meter Tube -->
+        <div class="stardew-meter-frame">
+          <div class="stardew-meter-cap">⚓</div>
+          <div class="stardew-meter-track">
+            <div id="stardew-meter-fill" class="stardew-meter-fill"></div>
+          </div>
+          <div class="stardew-meter-pct" id="stardew-meter-pct">35%</div>
+        </div>
+      </div>
+
+      <!-- Key & Click Control Helper Tooltip -->
+      <div class="stardew-control-tip">
+        <span class="tip-badge">SPACE / 클릭</span>
+        <span class="tip-text">홀드: 바 상승 ⬆️</span>
       </div>
     </div>
 
@@ -625,6 +669,7 @@
             <p>• <strong>마우스 클릭 / 스페이스바 홀드</strong>: 게이지를 모아 원하는 거리로 낚싯바늘을 캐스팅합니다.</p>
             <p>• <strong>바늘 조절</strong>: 물속에서 클릭을 살짝씩 누르면 바늘이 떠올라 원치 않는 작은 물고기를 피할 수 있습니다.</p>
             <p>• <strong>릴링 (Reeling)</strong>: 물고기가 바늘을 물면 <strong>클릭/스페이스바를 꾹 눌러</strong> 끌어당기세요!</p>
+            <p>• <strong>🎯 퍼펙트 릴링 (Perfect Reeling)</strong>: 릴링 도중 찌 주변의 축소되는 원이 황금 테두리에 딱 겹쳤을 때 <strong>클릭/스페이스바</strong>를 타이밍에 맞춰 누르면 물고기가 탈진하며 <strong>골드 & 경험치 보너스 (+30%)</strong>를 획득합니다!</p>
           </div>
           <div class="guide-section">
             <h3>⚡ 2. 텐션(Tension) 줄다리기 & 생미끼</h3>
@@ -635,7 +680,7 @@
             <h3>🏠 3. 상인 쉼터, 가방 & 도감</h3>
             <p>• <strong>인벤토리 (E)</strong>: 지금까지 잡은 물고기 기록, 보유 미끼와 장비를 확인하고 즉시 교체합니다.</p>
             <p>• <strong>물고기 도감 (U)</strong>: 잡은 어종과 심해어 생태 정보, 특별한 ✨ 이로치 수집율을 확인합니다.</p>
-            <p>• <strong>멀티플레이 (I) & 소리 (O)</strong>: 친구와 함께 낚시하고 사운드를 편리하게 제어합니다.</p>
+            <p>• <strong>멀티플레이 (I) & 소리 (O) & 이모트 휠 (X)</strong>: [X] 키를 누르고 마우스를 움직여 기쁨/슬픔/분노/박수/조롱 감정표현을 전송하세요!</p>
             <p>• <strong>고양이 상인 (R)</strong>: 맵 왼쪽 부두막에 다가가 <strong>[R]</strong> 키를 누르면 상점 거래, 옷장, 아쿠아리움을 이용할 수 있습니다!</p>
           </div>
         </div>
@@ -932,6 +977,20 @@
             <div class="pause-banner-sub">편안하게 휴식을 취하거나 설정을 조절하세요.</div>
           </div>
 
+          <!-- 🎮 Gameplay Mini-Game Toggle Card in ESC Menu -->
+          <div class="sound-card pause-minigame-card" style="margin-bottom: 14px; border-radius: 16px; background: rgba(30, 41, 59, 0.7); border: 1.5px solid rgba(255, 255, 255, 0.12); padding: 10px 14px;">
+            <div class="sound-card-left" style="display: flex; align-items: center; gap: 10px;">
+              <span class="sound-icon-lg" style="font-size: 22px;">⭐</span>
+              <div class="sound-card-info">
+                <div class="sound-card-title" style="font-size: 14px; font-weight: 800; color: #f8fafc;">메이플 스타캐치 낚시 미니게임</div>
+                <div class="sound-card-desc" id="minigame-pause-desc" style="font-size: 11.5px; color: #94a3b8;">입질 시 별이 타겟에 왔을 때 스페이스바/클릭을 누르는 타이밍 미니게임</div>
+              </div>
+            </div>
+            <button id="btn-minigame-toggle" class="btn-sound-toggle-badge active" title="클릭하여 미니게임 켜기/끄기">
+              <span id="minigame-toggle-text">ON</span>
+            </button>
+          </div>
+
           <div class="pause-menu-list">
             <button id="btn-pause-resume" class="btn-primary pause-menu-btn">
               <span class="pause-btn-icon">▶️</span>
@@ -1036,6 +1095,63 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- 🎭 Radial Emote Wheel UI ([X] 키를 누르고 있을 때 뜨는 5방향 원형 이모트 휠) -->
+    <div id="emote-radial-wheel" class="emote-radial-wheel">
+      <div class="emote-wheel-backdrop"></div>
+      <div class="emote-wheel-container">
+        <!-- Center Cancel Circle -->
+        <div class="emote-center-circle" data-emote="cancel">
+          <span class="center-icon">❌</span>
+          <span class="center-text">취소</span>
+        </div>
+
+        <!-- 5 Radial Emote Items (Equally spaced around 360 deg) -->
+        <!-- 1. 기쁨 (Joy) - Top (-90 deg) -->
+        <div class="emote-node pos-joy" data-emote="joy" data-index="0">
+          <div class="emote-node-bubble">
+            <span class="emote-emoji">😊</span>
+            <span class="emote-label">기쁨</span>
+          </div>
+        </div>
+
+        <!-- 2. 박수 (Clap) - Top Right (-18 deg) -->
+        <div class="emote-node pos-clap" data-emote="clap" data-index="1">
+          <div class="emote-node-bubble">
+            <span class="emote-emoji">👏</span>
+            <span class="emote-label">박수</span>
+          </div>
+        </div>
+
+        <!-- 3. 조롱 (Tease) - Bottom Right (54 deg) -->
+        <div class="emote-node pos-tease" data-emote="tease" data-index="2">
+          <div class="emote-node-bubble">
+            <span class="emote-emoji">😜</span>
+            <span class="emote-label">조롱</span>
+          </div>
+        </div>
+
+        <!-- 4. 슬픔 (Sad) - Bottom Left (126 deg) -->
+        <div class="emote-node pos-sad" data-emote="sad" data-index="3">
+          <div class="emote-node-bubble">
+            <span class="emote-emoji">😭</span>
+            <span class="emote-label">슬픔</span>
+          </div>
+        </div>
+
+        <!-- 5. 분노 (Angry) - Top Left (198 deg) -->
+        <div class="emote-node pos-angry" data-emote="angry" data-index="4">
+          <div class="emote-node-bubble">
+            <span class="emote-emoji">😡</span>
+            <span class="emote-label">분노</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="emote-wheel-guide-tip">
+        <span>[X] 키를 떼면 선택된 이모션이 실행됩니다냥! 🐾</span>
       </div>
     </div>
 
@@ -1195,15 +1311,15 @@
 
       <!-- 3. Elegant Voyage Cinematic Caption & Progress -->
       <div class="cruise-cinematic-banner">
-        <div class="cruise-cinematic-title">🚢 냥이 럭셔리 크루즈 부두막 귀환 항해</div>
-        <div class="cruise-cinematic-desc">시원한 바닷바람과 함께 부두막으로 안전하게 쾌속 순항 중입니다냥... 🐾</div>
+        <div id="cruise-title" class="cruise-cinematic-title">🚢 냥이 럭셔리 크루즈 부두막 귀환 항해</div>
+        <div id="cruise-desc" class="cruise-cinematic-desc">시원한 바닷바람과 함께 부두막으로 안전하게 쾌속 순항 중입니다냥... 🐾</div>
         <div class="cruise-cinematic-meter">
-          <span class="meter-label">⚓ 부두막 (도착)</span>
+          <span id="cruise-meter-left" class="meter-label">⚓ 부두막</span>
           <div class="meter-bar-track">
             <div class="meter-bar-fill"></div>
             <div class="meter-boat-indicator">🚢</div>
           </div>
-          <span class="meter-label">🌊 먼 바다</span>
+          <span id="cruise-meter-right" class="meter-label">🌊 먼 바다</span>
         </div>
       </div>
     </div>
@@ -1211,6 +1327,6 @@
   </div>
 
   <!-- Entry Script (with cache-busting query) -->
-  <script type="module" src="src/main.js?v=7.4.0"></script>
+  <script type="module" src="src/main.js?v=7.5.5"></script>
 </body>
 </html>

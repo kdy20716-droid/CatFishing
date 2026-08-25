@@ -16,6 +16,13 @@ export class Cat {
     this.celebrateTimer = 0;
     this.exclamationTimer = 0;
     this.saveTimer = 0;
+
+    // 🎭 Radial Mood Emote System
+    this.currentEmote = null; // 'joy', 'sad', 'angry', 'excited', 'tease'
+    this.emoteTimer = 0;
+    this.emoteIcon = '';
+    this.emoteLabel = '';
+    this.emoteParticles = [];
     
     // Facing direction: 1 (right) or -1 (left)
     this.facing = 1;
@@ -98,7 +105,16 @@ export class Cat {
 
     // Gentle wave floating physics
     const waveFreq = 1.8;
-    this.bobOffset = Math.sin(this.animTime * waveFreq + this.pos.x * 0.01) * 4;
+    let extraBob = 0;    // 🎭 Emote-specific body bobs & wobbles
+    if (this.currentEmote === 'joy' && this.emoteTimer > 0) {
+      extraBob = Math.sin(this.animTime * 14) * 6; // Happy hopping!
+    } else if ((this.currentEmote === 'clap' || this.currentEmote === 'excited') && this.emoteTimer > 0) {
+      extraBob = Math.abs(Math.sin(this.animTime * 16)) * 4; // Rhythmic clapping bounce!
+    } else if (this.currentEmote === 'sad' && this.emoteTimer > 0) {
+      extraBob = 3; // Slouching down
+    }
+
+    this.bobOffset = Math.sin(this.animTime * waveFreq + this.pos.x * 0.01) * 4 + extraBob;
     this.bobAngle = Math.cos(this.animTime * waveFreq + this.pos.x * 0.01) * 0.04;
     this.pos.y = this.waterY + this.bobOffset;
 
@@ -122,6 +138,115 @@ export class Cat {
 
     if (this.exclamationTimer > 0) {
       this.exclamationTimer -= dt;
+    }
+
+    // 🎭 Update Emote Timer & Particles
+    if (this.emoteTimer > 0) {
+      this.emoteTimer -= dt;
+      if (this.emoteTimer <= 0) {
+        this.currentEmote = null;
+      }
+
+      // Continuous particle emissions
+      if (Math.random() < 0.35) {
+        if (this.currentEmote === 'joy') {
+          this.emoteParticles.push({
+            x: (Math.random() - 0.5) * 35,
+            y: -50 - Math.random() * 20,
+            vx: (Math.random() - 0.5) * 25,
+            vy: -20 - Math.random() * 25,
+            symbol: Math.random() > 0.4 ? '✨' : '💛',
+            size: 14 + Math.random() * 6,
+            alpha: 1.0,
+            fadeSpeed: 1.2
+          });
+        } else if (this.currentEmote === 'sad') {
+          this.emoteParticles.push({
+            x: (Math.random() - 0.5) * 20 + 8 * this.facing,
+            y: -30,
+            vx: (Math.random() - 0.5) * 15,
+            vy: 25 + Math.random() * 35,
+            symbol: Math.random() > 0.5 ? '💧' : '🫧',
+            size: 14 + Math.random() * 4,
+            alpha: 1.0,
+            fadeSpeed: 1.4
+          });
+        } else if (this.currentEmote === 'angry') {
+          this.emoteParticles.push({
+            x: (Math.random() - 0.5) * 30,
+            y: -55 - Math.random() * 15,
+            vx: (Math.random() - 0.5) * 20,
+            vy: -25 - Math.random() * 25,
+            symbol: Math.random() > 0.4 ? '💢' : '💨',
+            size: 15 + Math.random() * 6,
+            alpha: 1.0,
+            fadeSpeed: 1.5
+          });
+        } else if (this.currentEmote === 'clap' || this.currentEmote === 'excited') {
+          this.emoteParticles.push({
+            x: (Math.random() - 0.5) * 35,
+            y: -45 - Math.random() * 20,
+            vx: (Math.random() - 0.5) * 30,
+            vy: -25 - Math.random() * 30,
+            symbol: ['👏', '✨', '🎵', '🌟'][Math.floor(Math.random() * 4)],
+            size: 15 + Math.random() * 6,
+            alpha: 1.0,
+            fadeSpeed: 1.1
+          });
+        } else if (this.currentEmote === 'tease') {
+          this.emoteParticles.push({
+            x: (Math.random() - 0.5) * 30,
+            y: -45 - Math.random() * 20,
+            vx: (Math.random() - 0.5) * 25,
+            vy: -15 - Math.random() * 25,
+            symbol: Math.random() > 0.4 ? '🐾' : '💖',
+            size: 14 + Math.random() * 6,
+            alpha: 1.0,
+            fadeSpeed: 1.2
+          });
+        }
+      }
+    }
+
+    // Update emote particles
+    for (let i = this.emoteParticles.length - 1; i >= 0; i--) {
+      const p = this.emoteParticles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.alpha -= dt * (p.fadeSpeed || 1.2);
+      if (p.alpha <= 0) this.emoteParticles.splice(i, 1);
+    }
+  }
+
+  triggerEmote(emoteId) {
+    this.currentEmote = emoteId;
+    this.emoteTimer = 4.0;
+
+    const emoteMap = {
+      joy: { icon: '😊', label: '기쁨' },
+      clap: { icon: '👏', label: '박수' },
+      excited: { icon: '👏', label: '박수' },
+      tease: { icon: '😜', label: '조롱' },
+      sad: { icon: '😭', label: '슬픔' },
+      angry: { icon: '😡', label: '분노' }
+    };
+
+    const info = emoteMap[emoteId] || { icon: '🐾', label: '이모션' };
+    this.emoteIcon = info.icon;
+    this.emoteLabel = info.label;
+
+    // Burst initial particles
+    for (let i = 0; i < 5; i++) {
+      this.emoteParticles.push({
+        x: (Math.random() - 0.5) * 30,
+        y: -45 - Math.random() * 20,
+        vx: (Math.random() - 0.5) * 45,
+        vy: -25 - Math.random() * 35,
+        symbol: info.icon,
+        size: 16 + Math.random() * 6,
+        alpha: 1.0,
+        fadeSpeed: 1.0
+      });
     }
   }
 
@@ -793,11 +918,16 @@ export class Cat {
     }
 
     // Ears
-    // Left Ear
+    const isSad = (this.currentEmote === 'sad' && this.emoteTimer > 0);
+    const isAngry = (this.currentEmote === 'angry' && this.emoteTimer > 0);
+
+    // Left Ear (Droop if sad, flatten if angry)
+    const leftEarTipY = isSad ? -44 : (isAngry ? -45 : -54);
+    const leftEarTipX = isAngry ? -12 : -4;
     ctx.fillStyle = (skin.id === 'skin_siamese') ? stripeColor : bodyColor;
     ctx.beginPath();
     ctx.moveTo(0, -42);
-    ctx.lineTo(-4, -54);
+    ctx.lineTo(leftEarTipX, leftEarTipY);
     ctx.lineTo(6, -45);
     ctx.closePath();
     ctx.fill();
@@ -805,16 +935,18 @@ export class Cat {
     ctx.fillStyle = innerEarColor || pink;
     ctx.beginPath();
     ctx.moveTo(1, -43);
-    ctx.lineTo(-2, -50);
+    ctx.lineTo(leftEarTipX + 2, leftEarTipY + 4);
     ctx.lineTo(4, -45);
     ctx.closePath();
     ctx.fill();
 
     // Right Ear
+    const rightEarTipY = isSad ? -44 : (isAngry ? -45 : -54);
+    const rightEarTipX = isAngry ? 26 : 18;
     ctx.fillStyle = (skin.id === 'skin_siamese') ? stripeColor : bodyColor;
     ctx.beginPath();
     ctx.moveTo(12, -44);
-    ctx.lineTo(18, -54);
+    ctx.lineTo(rightEarTipX, rightEarTipY);
     ctx.lineTo(22, -41);
     ctx.closePath();
     ctx.fill();
@@ -822,7 +954,7 @@ export class Cat {
     ctx.fillStyle = innerEarColor || pink;
     ctx.beginPath();
     ctx.moveTo(13, -44);
-    ctx.lineTo(17, -50);
+    ctx.lineTo(rightEarTipX - 2, rightEarTipY + 4);
     ctx.lineTo(19, -42);
     ctx.closePath();
     ctx.fill();
@@ -840,7 +972,67 @@ export class Cat {
     }
 
     // 4. Face & Eyes
-    if (this.state === 'CATCH') {
+    if (this.currentEmote === 'joy' && this.emoteTimer > 0) {
+      // 😊 Joy: Happy `^‿^` closed smiling eyes
+      ctx.strokeStyle = '#264653';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.arc(4, -33, 3.5, Math.PI, 0, false);
+      ctx.arc(14, -33, 3.5, Math.PI, 0, false);
+      ctx.stroke();
+    } else if ((this.currentEmote === 'clap' || this.currentEmote === 'excited') && this.emoteTimer > 0) {
+      // 👏 Clap: Starry sparkle eyes `★.★`
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('★', 4, -31);
+      ctx.fillText('★', 14, -31);
+    } else if (this.currentEmote === 'tease' && this.emoteTimer > 0) {
+      // 😜 Tease: Winking left eye `>` and round right eye `.`
+      ctx.strokeStyle = '#264653';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(1, -35);
+      ctx.lineTo(6, -33);
+      ctx.lineTo(1, -31);
+      ctx.stroke();
+
+      ctx.fillStyle = '#264653';
+      ctx.beginPath();
+      ctx.arc(14, -33, 3, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (this.currentEmote === 'sad' && this.emoteTimer > 0) {
+      // 😭 Sad: Crying teardrop lines `T_T`
+      ctx.strokeStyle = '#264653';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(2, -35);
+      ctx.lineTo(6, -35);
+      ctx.moveTo(4, -35);
+      ctx.lineTo(4, -28);
+      ctx.moveTo(12, -35);
+      ctx.lineTo(16, -35);
+      ctx.moveTo(14, -35);
+      ctx.lineTo(14, -28);
+      ctx.stroke();
+
+      // Tear streaks
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(4, -27, 2, 0, Math.PI * 2);
+      ctx.arc(14, -27, 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (this.currentEmote === 'angry' && this.emoteTimer > 0) {
+      // 😡 Angry: Sharp slanted angry eyes `> <`
+      ctx.strokeStyle = '#b91c1c';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(1, -36);
+      ctx.lineTo(7, -32);
+      ctx.moveTo(17, -36);
+      ctx.lineTo(11, -32);
+      ctx.stroke();
+    } else if (this.state === 'CATCH') {
       // Happy `^‿^` closed eyes
       ctx.strokeStyle = '#264653';
       ctx.lineWidth = 2;
@@ -889,10 +1081,10 @@ export class Cat {
     }
 
     // Rosy Cheeks
-    ctx.fillStyle = 'rgba(255, 143, 163, 0.45)';
+    ctx.fillStyle = (this.currentEmote === 'joy' || this.currentEmote === 'excited') ? 'rgba(255, 90, 120, 0.65)' : 'rgba(255, 143, 163, 0.45)';
     ctx.beginPath();
-    ctx.arc(2, -28, 3, 0, Math.PI * 2);
-    ctx.arc(18, -28, 3, 0, Math.PI * 2);
+    ctx.arc(2, -28, 3.2, 0, Math.PI * 2);
+    ctx.arc(18, -28, 3.2, 0, Math.PI * 2);
     ctx.fill();
 
     // Cute Pink Nose & Whiskers
@@ -904,17 +1096,42 @@ export class Cat {
     ctx.closePath();
     ctx.fill();
 
-    // Mouth `:3`
-    ctx.strokeStyle = '#264653';
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.moveTo(10, -28);
-    ctx.lineTo(10, -26);
-    ctx.moveTo(10, -26);
-    ctx.quadraticCurveTo(7, -24, 6, -26);
-    ctx.moveTo(10, -26);
-    ctx.quadraticCurveTo(13, -24, 14, -26);
-    ctx.stroke();
+    // Mouth `:3` / Open / Tease Tongue
+    if (this.currentEmote === 'tease' && this.emoteTimer > 0) {
+      // Pink Tongue sticking out!
+      ctx.fillStyle = '#ff4d6d';
+      ctx.strokeStyle = '#c9184a';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(10, -24, 3.5, 0, Math.PI);
+      ctx.fill();
+      ctx.stroke();
+    } else if (this.currentEmote === 'sad' && this.emoteTimer > 0) {
+      // Downward mouth
+      ctx.strokeStyle = '#264653';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.arc(10, -23, 3, Math.PI, 0);
+      ctx.stroke();
+    } else if ((this.currentEmote === 'joy' || this.currentEmote === 'clap' || this.currentEmote === 'excited') && this.emoteTimer > 0) {
+      // Open happy mouth `:D`
+      ctx.fillStyle = '#d90429';
+      ctx.beginPath();
+      ctx.arc(10, -26, 3, 0, Math.PI);
+      ctx.fill();
+    } else {
+      // Default cute `:3` mouth
+      ctx.strokeStyle = '#264653';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(10, -28);
+      ctx.lineTo(10, -26);
+      ctx.moveTo(10, -26);
+      ctx.quadraticCurveTo(7, -24, 6, -26);
+      ctx.moveTo(10, -26);
+      ctx.quadraticCurveTo(13, -24, 14, -26);
+      ctx.stroke();
+    }
 
     // Whiskers
     ctx.strokeStyle = '#ffffff';
@@ -932,13 +1149,29 @@ export class Cat {
     ctx.lineTo(23, -25);
     ctx.stroke();
 
-    // 5. Paws holding rod
+    // 5. Paws holding rod / Waving in joy / Clapping
     ctx.fillStyle = skin.colors.paw || bellyColor || '#ffffff';
-    if (this.state === 'CATCH') {
-      // Raised celebration paws!
+    if ((this.currentEmote === 'clap' || this.currentEmote === 'excited') && this.emoteTimer > 0) {
+      // 👏 Rhythmic Clapping Paws in front of chest
+      const clapDist = Math.abs(Math.sin(this.animTime * 18)) * 5.5;
       ctx.beginPath();
-      ctx.arc(0, -42, 4, 0, Math.PI * 2);
-      ctx.arc(18, -42, 4, 0, Math.PI * 2);
+      ctx.arc(8 - clapDist, -22, 4.5, 0, Math.PI * 2);
+      ctx.arc(14 + clapDist, -22, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Sparkle on clap impact
+      if (clapDist < 1.2) {
+        ctx.fillStyle = '#ffd166';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('✨', 11, -26);
+      }
+    } else if (this.state === 'CATCH' || (this.currentEmote === 'joy' && this.emoteTimer > 0)) {
+      // Raised celebration paws!
+      const pawWiggle = Math.sin(this.animTime * 12) * 3;
+      ctx.beginPath();
+      ctx.arc(0, -42 + pawWiggle, 4.5, 0, Math.PI * 2);
+      ctx.arc(18, -42 - pawWiggle, 4.5, 0, Math.PI * 2);
       ctx.fill();
     } else {
       ctx.beginPath();
@@ -953,188 +1186,151 @@ export class Cat {
   drawHat(ctx) {
     if (!this.economy || typeof this.economy.getCurrentHat !== 'function') return;
     const hat = this.economy.getCurrentHat();
-    if (!hat) return;
-    const type = hat.drawType || 'none';
-    if (type === 'none') return;
+    if (!hat || hat.id === 'hat_none') return;
 
     ctx.save();
     ctx.scale(this.facing, 1);
-    ctx.translate(8, -44); // Top of head
 
+    const type = hat.drawType;
     if (type === 'straw') {
-      // Straw Hat
-      ctx.fillStyle = '#ffeaa7';
-      ctx.strokeStyle = '#fdcb6e';
-      ctx.lineWidth = 2;
-
-      // Brim
+      ctx.fillStyle = '#fef08a';
+      ctx.strokeStyle = '#ca8a04';
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.ellipse(0, 2, 22, 5, 0, 0, Math.PI * 2);
+      ctx.ellipse(8, -48, 18, 5, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
-
-      // Crown
       ctx.beginPath();
-      ctx.roundRect(-10, -10, 20, 12, 4);
+      ctx.arc(8, -50, 10, Math.PI, 0);
       ctx.fill();
       ctx.stroke();
-
-      // Red ribbon
-      ctx.fillStyle = '#e63946';
-      ctx.fillRect(-10, -2, 20, 4);
-
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(0, -50, 16, 3);
     } else if (type === 'sailor') {
-      // Sailor Cap
-      ctx.fillStyle = '#ffffff';
-      ctx.strokeStyle = '#0077b6';
-      ctx.lineWidth = 2;
-
+      ctx.fillStyle = '#f8fafc';
+      ctx.strokeStyle = '#1e3a8a';
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.ellipse(0, 0, 16, 6, 0, 0, Math.PI * 2);
+      ctx.roundRect(0, -54, 16, 10, 3);
       ctx.fill();
       ctx.stroke();
-
-      // Blue ribbon tails behind
-      ctx.fillStyle = '#03045e';
-      ctx.fillRect(-12, 2, 6, 12);
-      ctx.fillRect(-8, 2, 5, 14);
-
+      ctx.fillStyle = '#1e3a8a';
+      ctx.fillRect(0, -47, 16, 3);
     } else if (type === 'frog') {
-      // Cute Frog Hood
-      ctx.fillStyle = '#52b788';
-      ctx.strokeStyle = '#2d6a4f';
-      ctx.lineWidth = 2;
-
-      // Hood arch
+      ctx.fillStyle = '#22c55e';
       ctx.beginPath();
-      ctx.arc(0, 4, 17, Math.PI, 0, false);
+      ctx.arc(8, -48, 12, Math.PI, 0);
       ctx.fill();
-      ctx.stroke();
-
-      // Frog Eyes
       ctx.beginPath();
-      ctx.arc(-10, -8, 6, 0, Math.PI * 2);
-      ctx.arc(10, -8, 6, 0, Math.PI * 2);
+      ctx.arc(2, -54, 5, 0, Math.PI * 2);
+      ctx.arc(14, -54, 5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.stroke();
-
-      // Black pupils
-      ctx.fillStyle = '#1b4332';
+      ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(-10, -8, 2.5, 0, Math.PI * 2);
-      ctx.arc(10, -8, 2.5, 0, Math.PI * 2);
+      ctx.arc(2, -54, 3, 0, Math.PI * 2);
+      ctx.arc(14, -54, 3, 0, Math.PI * 2);
       ctx.fill();
-
-    } else if (type === 'wizard') {
-      // Wizard Cone
-      ctx.fillStyle = '#5e548e';
-      ctx.strokeStyle = '#9f86c0';
-      ctx.lineWidth = 2;
-
-      // Cone
-      ctx.beginPath();
-      ctx.moveTo(-14, 2);
-      ctx.lineTo(4, -28);
-      ctx.lineTo(14, 2);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // Gold stars on hat
-      ctx.fillStyle = '#ffbe0b';
-      ctx.beginPath();
-      ctx.arc(0, -10, 2.5, 0, Math.PI * 2);
-      ctx.arc(4, -18, 2, 0, Math.PI * 2);
-      ctx.fill();
-
-    } else if (type === 'pirate') {
-      // Pirate Tricorn
-      ctx.fillStyle = '#212529';
-      ctx.strokeStyle = '#ffd166';
-      ctx.lineWidth = 2;
-
-      ctx.beginPath();
-      ctx.moveTo(-20, 2);
-      ctx.lineTo(-14, -12);
-      ctx.lineTo(0, -8);
-      ctx.lineTo(14, -12);
-      ctx.lineTo(20, 2);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // Golden skull/paw
-      ctx.fillStyle = '#ffd166';
-      ctx.beginPath();
-      ctx.arc(0, -3, 3, 0, Math.PI * 2);
-      ctx.fill();
-
-    } else if (type === 'crown') {
-      // Golden Gem Crown
-      ctx.fillStyle = '#ffb703';
-      ctx.strokeStyle = '#fb8500';
-      ctx.lineWidth = 2;
-
-      ctx.beginPath();
-      ctx.moveTo(-12, 0);
-      ctx.lineTo(-14, -12);
-      ctx.lineTo(-6, -6);
-      ctx.lineTo(0, -15);
-      ctx.lineTo(6, -6);
-      ctx.lineTo(14, -12);
-      ctx.lineTo(12, 0);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // Red Gem
-      ctx.fillStyle = '#e63946';
-      ctx.beginPath();
-      ctx.arc(0, -4, 2.5, 0, Math.PI * 2);
-      ctx.fill();
-
-    } else if (type === 'radar') {
-      // 📡 냥냥 레이더 모자 (미니 레이더 안테나 & 회전 스캔 비콘)
-      // Headband Base
-      ctx.fillStyle = '#1e293b';
-      ctx.strokeStyle = '#00f5d4';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.roundRect(-12, -4, 24, 7, 3);
-      ctx.fill();
-      ctx.stroke();
-
-      // Mini Screen / Center Core
       ctx.fillStyle = '#0f172a';
       ctx.beginPath();
-      ctx.arc(0, -1, 3.5, 0, Math.PI * 2);
+      ctx.arc(2, -54, 1.5, 0, Math.PI * 2);
+      ctx.arc(14, -54, 1.5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#00f5d4';
+    } else if (type === 'wizard') {
+      // 🧙‍♂️ Starlight Wizard Hat (별빛 마법사 고깔모자)
+      // 1. Hat Brim (신비로운 우주 보라빛 타원 챙)
+      ctx.fillStyle = '#2e1065';
+      ctx.strokeStyle = '#ffd166';
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.arc(0, -1, 1.8, 0, Math.PI * 2);
+      ctx.ellipse(8, -47, 18, 5.5, -0.05, 0, Math.PI * 2);
       ctx.fill();
-
-      // Antenna Rod
-      ctx.strokeStyle = '#94a3b8';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.moveTo(0, -4);
-      ctx.lineTo(0, -16);
       ctx.stroke();
 
-      // Radar Dish / Scanning Arc
-      const scanAngle = (Date.now() / 300) % (Math.PI * 2);
-      ctx.strokeStyle = '#00f5d4';
+      // 2. Wizard Hat Cone (위로 귀엽게 꺾인 마법 고깔)
+      ctx.fillStyle = '#4c1d95';
+      ctx.beginPath();
+      ctx.moveTo(-2, -47);
+      ctx.quadraticCurveTo(2, -60, 16, -68);
+      ctx.quadraticCurveTo(12, -56, 18, -47);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // 3. Golden Ribbon Band
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.ellipse(8, -48, 11, 2.5, -0.05, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 4. Sparkling Star at the Cone Tip
+      const starPulse = 1.0 + Math.sin(this.animTime * 5) * 0.15;
+      ctx.save();
+      ctx.translate(16, -68);
+      ctx.scale(starPulse, starPulse);
+      ctx.shadowColor = '#ffd166';
+      ctx.shadowBlur = 8;
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('⭐', 0, 0);
+      ctx.restore();
+
+      // 5. Floating Starlight Sparkle
+      const sparkY = -56 + Math.sin(this.animTime * 3) * 3;
+      ctx.fillStyle = '#fef08a';
+      ctx.font = '8px sans-serif';
+      ctx.fillText('✨', 3, sparkY);
+    } else if (type === 'pirate') {
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = '#f59e0b';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(0, -16, 7, scanAngle, scanAngle + Math.PI * 0.9);
+      ctx.moveTo(-6, -46);
+      ctx.lineTo(8, -62);
+      ctx.lineTo(22, -46);
+      ctx.closePath();
+      ctx.fill();
       ctx.stroke();
-
-      // Blinking Top LED Beacon
-      const isBlink = Math.floor(Date.now() / 400) % 2 === 0;
-      ctx.fillStyle = isBlink ? '#ff0054' : '#ffd166';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('☠️', 8, -48);
+    } else if (type === 'crown') {
+      ctx.fillStyle = '#facc15';
+      ctx.strokeStyle = '#ca8a04';
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.arc(0, -16, 3, 0, Math.PI * 2);
+      ctx.moveTo(-2, -46);
+      ctx.lineTo(-4, -56);
+      ctx.lineTo(2, -50);
+      ctx.lineTo(8, -60);
+      ctx.lineTo(14, -50);
+      ctx.lineTo(20, -56);
+      ctx.lineTo(18, -46);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(8, -52, 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (type === 'radar') {
+      ctx.fillStyle = '#38bdf8';
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(8, -48, 11, Math.PI, 0);
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(8, -48);
+      ctx.lineTo(8, -62);
+      ctx.stroke();
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(8, -62, 3, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -1237,6 +1433,64 @@ export class Cat {
       ctx.font = 'bold 13px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('냐앙~! 🐟', 0, -68);
+      ctx.restore();
+    }
+
+    // 3. 🎭 Active Mood Emote Floating Badge & Particles
+    if (this.emoteTimer > 0 && this.emoteIcon) {
+      ctx.save();
+      const floatY = -85 + Math.sin(this.animTime * 4) * 3;
+      const alpha = Math.min(1.0, this.emoteTimer * 2.0);
+      ctx.globalAlpha = alpha;
+
+      // Floating Emote Bubble Card
+      const badgeWidth = 60;
+      const badgeHeight = 28;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = 'rgba(245, 158, 11, 0.4)';
+      ctx.shadowBlur = 10;
+
+      ctx.beginPath();
+      ctx.roundRect(-badgeWidth / 2, floatY - badgeHeight / 2, badgeWidth, badgeHeight, 14);
+      ctx.fill();
+      ctx.stroke();
+
+      // Tail triangle pointing to cat
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.moveTo(-4, floatY + badgeHeight / 2);
+      ctx.lineTo(4, floatY + badgeHeight / 2);
+      ctx.lineTo(0, floatY + badgeHeight / 2 + 5);
+      ctx.closePath();
+      ctx.fill();
+
+      // Emoji & Label Text
+      ctx.shadowColor = 'transparent';
+      ctx.font = '16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(this.emoteIcon, -12, floatY);
+
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 11px "Pretendard", "Segoe UI", sans-serif';
+      ctx.fillText(this.emoteLabel, 12, floatY);
+
+      ctx.restore();
+    }
+
+    // 4. Draw Emote Floating Particles
+    if (this.emoteParticles && this.emoteParticles.length > 0) {
+      ctx.save();
+      this.emoteParticles.forEach(p => {
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        ctx.font = `${p.size}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(p.symbol, p.x, p.y);
+      });
       ctx.restore();
     }
   }

@@ -16,6 +16,7 @@ import { HUD } from './ui/HUD.js?v=7.4.0';
 import { Modals } from './ui/Modals.js?v=7.4.0';
 import { CloudSave } from './systems/CloudSave.js?v=7.4.0';
 import { Multiplayer } from './systems/Multiplayer.js?v=7.4.0';
+import { StarCatchMinigame } from './systems/StarCatchMinigame.js?v=7.6.0';
 
 class Game {
   constructor() {
@@ -23,7 +24,7 @@ class Game {
     this.ctx = this.canvas.getContext('2d');
 
     this.lastTime = 0;
-    this.maxFishCount = 400; // Balanced, comfortable ocean with rich deep-sea life across 32,000px wide & 750m deep waters!
+    this.maxFishCount = 600; // Balanced, comfortable ocean with 1.5x rich deep-sea life (600 fish total)!
     this.fishList = [];
     this.prevTimeOfDay = 'day';
 
@@ -55,6 +56,7 @@ class Game {
     this.cloudSave = new CloudSave(this.economy, this.encyclopedia, this.aquarium, this.hud, this.sound);
     this.multiplayer = new Multiplayer(this.economy, this.sound, this.hud, this.cloudSave);
     this.modals = new Modals(this.economy, this.encyclopedia, this.aquarium, this.sound, this.hud, this.cloudSave);
+    this.starCatchMinigame = new StarCatchMinigame();
 
     this.hud.setRod(this.rod);
     this.modals.setRod(this.rod);
@@ -73,6 +75,82 @@ class Game {
 
     // Populate initial ocean fish (or restore previous fish population)
     this.spawnInitialFish();
+
+    // 🌊 Multiplayer Shared Ocean Callbacks
+    if (this.multiplayer) {
+      // 1. Host exports ocean world state when creating room
+      this.multiplayer.getOceanWorldState = () => {
+        return {
+          fishList: this.fishList.map(f => ({
+            uid: f.uid,
+            id: f.data.id,
+            x: Math.round(f.pos.x),
+            y: Math.round(f.pos.y),
+            facing: f.facing,
+            sizeCm: f.sizeCm,
+            isShiny: !!f.isShiny,
+            minSwimX: f.swimBounds?.minX,
+            maxSwimX: f.swimBounds?.maxX
+          })),
+          timeOfDay: this.environment.timeOfDay,
+          timeProgress: this.environment.timeProgress
+        };
+      };
+
+      // 2. Guest receives and loads Host's shared ocean fish population & atmosphere
+      this.multiplayer.onSyncOceanWorld = (sharedFishList, worldData) => {
+        if (Array.isArray(sharedFishList) && sharedFishList.length > 0) {
+          this.fishList = [];
+          sharedFishList.forEach(item => {
+            const species = FISH_SPECIES.find(s => s.id === item.id);
+            if (species) {
+              let bounds = { minX: item.minSwimX || -600, maxX: item.maxSwimX || 32000 };
+              const fish = new Fish(species, new Vector2(item.x, item.y), !!item.isShiny, bounds, item.uid);
+              if (item.facing === 1 || item.facing === -1) fish.facing = item.facing;
+              if (typeof item.sizeCm === 'number') fish.sizeCm = item.sizeCm;
+              fish.onEscapeCallback = (f) => {
+                this.camera.shake(12, 0.5);
+                this.hud.showNotification(`⚠️ 너무 오래 방치하여 ${f.isBoss ? '👑 보스 ' : (f.isShiny ? '✨ 이로치 ' : '')}${f.data.name}이(가) 도망쳤습니다!`, '💨');
+              };
+              this.fishList.push(fish);
+            }
+          });
+          this.saveFishState();
+        }
+        if (worldData && worldData.timeOfDay) {
+          this.environment.timeOfDay = worldData.timeOfDay;
+          if (typeof worldData.timeProgress === 'number') {
+            this.environment.timeProgress = worldData.timeProgress;
+          }
+        }
+      };
+
+      // 3. Remove caught fish from ocean when another player catches it
+      this.multiplayer.onRemoteFishCaught = (ev) => {
+        const idx = this.fishList.findIndex(f => f.uid === ev.fishUid || (f.data.id === ev.speciesId && f.pos.dist(this.cat.pos) > 80));
+        if (idx !== -1) {
+          const removed = this.fishList.splice(idx, 1)[0];
+          if (this.rod && removed) {
+            for (let i = 0; i < 6; i++) {
+              this.rod.waterParticles.push({
+                x: removed.pos.x + (Math.random() - 0.5) * 20,
+                y: removed.pos.y,
+                vx: (Math.random() - 0.5) * 40,
+                vy: -20 - Math.random() * 30,
+                alpha: 1.0
+              });
+            }
+          }
+        }
+      };
+
+      // 4. Guest receives newly spawned fish from Host
+      this.multiplayer.onRemoteFishSpawned = (fishData) => {
+        if (fishData && !this.fishList.some(f => f.uid === fishData.uid)) {
+          this.spawnSingleFish(false, fishData);
+        }
+      };
+    }
 
     // Hook inputs & buttons
     this.initUIButtons();
@@ -104,6 +182,7 @@ class Game {
       const serializableFish = this.fishList
         .filter(f => f.state === 'WANDER' || f.state === 'CURIOUS')
         .map(f => ({
+          uid: f.uid,
           id: f.data.id,
           x: Math.round(f.pos.x),
           y: Math.round(f.pos.y),
@@ -114,7 +193,7 @@ class Game {
           maxSwimX: f.swimBounds?.maxX
         }));
 
-      localStorage.setItem('cozy_cat_ocean_fish_v4', JSON.stringify(serializableFish));
+      localStorage.setItem('cozy_cat_ocean_fish_v5', JSON.stringify(serializableFish));
     } catch (e) {}
   }
 
@@ -124,7 +203,7 @@ class Game {
 
     // 1. Try to restore previous fish population
     try {
-      const saved = localStorage.getItem('cozy_cat_ocean_fish_v4');
+      const saved = localStorage.getItem('cozy_cat_ocean_fish_v5');
       if (saved) {
         const fishDataList = JSON.parse(saved);
         if (Array.isArray(fishDataList) && fishDataList.length > 0) {
@@ -144,7 +223,7 @@ class Game {
                 }
               }
 
-              const fish = new Fish(species, new Vector2(spawnX, item.y), !!item.isShiny, bounds);
+              const fish = new Fish(species, new Vector2(spawnX, item.y), !!item.isShiny, bounds, item.uid);
               if (item.facing === 1 || item.facing === -1) fish.facing = item.facing;
               if (typeof item.sizeCm === 'number') fish.sizeCm = item.sizeCm;
 
@@ -170,7 +249,22 @@ class Game {
     }
   }
 
-  spawnSingleFish(forceBoss = false) {
+  spawnSingleFish(forceBoss = false, explicitData = null) {
+    if (explicitData) {
+      const species = FISH_SPECIES.find(s => s.id === explicitData.id);
+      if (!species) return null;
+      let bounds = { minX: explicitData.minSwimX || -600, maxX: explicitData.maxSwimX || 32000 };
+      const fish = new Fish(species, new Vector2(explicitData.x, explicitData.y), !!explicitData.isShiny, bounds, explicitData.uid);
+      if (explicitData.facing === 1 || explicitData.facing === -1) fish.facing = explicitData.facing;
+      if (typeof explicitData.sizeCm === 'number') fish.sizeCm = explicitData.sizeCm;
+      fish.onEscapeCallback = (f) => {
+        this.camera.shake(12, 0.5);
+        this.hud.showNotification(`⚠️ 너무 오래 방치하여 ${f.isBoss ? '👑 보스 ' : (f.isShiny ? '✨ 이로치 ' : '')}${f.data.name}이(가) 도망쳤습니다!`, '💨');
+      };
+      this.fishList.push(fish);
+      return fish;
+    }
+
     let chosen = null;
     const bossSpecies = FISH_SPECIES.filter(f => f.isBoss);
     const regularSpecies = FISH_SPECIES.filter(f => !f.isBoss);
@@ -179,7 +273,7 @@ class Game {
     const existingBossIds = activeBosses.map(f => f.data.id);
     const availableBossSpecies = bossSpecies.filter(b => !existingBossIds.includes(b.id));
 
-    const bossChance = this.economy.getBossChance(); // 👑 기본 0.1% (0.001) + 행운 배율
+    const bossChance = this.economy.getBossChance(); // 👑 기본 0.6% + 행운 배율
     const rollBoss = Math.random();
 
     // 맵 전체에 보스는 최대 2마리까지만 동시 출현하도록 제어 (과밀 스폰 방지)
@@ -189,13 +283,13 @@ class Game {
       // 👑 10대 전설 신화 보스 소환 (현재 없는 보스 중 무작위 선택)
       chosen = availableBossSpecies[Math.floor(Math.random() * availableBossSpecies.length)];
     } else {
-      // 🌊 수심대별 목표 개체수: 100m 이하 심해(deep, abyss, hadal)에 320마리(80%) 균형 배치!
+      // 🌊 수심대별 목표 개체수: 1.5배 증원 (총 600마리, 100m 이하 심해 480마리(80%) 배치!)
       const targetZoneCounts = {
-        shallow: 30,  // 표층 0 ~ 30m
-        mid: 50,      // 중층 30 ~ 100m
-        deep: 100,    // 심해 어둠층 100 ~ 250m
-        abyss: 110,   // 심연의 해구 250 ~ 400m
-        hadal: 110    // 미지의 초심연 400 ~ 750m
+        shallow: 45,  // 표층 0 ~ 30m
+        mid: 75,      // 중층 30 ~ 100m
+        deep: 150,    // 심해 어둠층 100 ~ 250m
+        abyss: 165,   // 심연의 해구 250 ~ 400m
+        hadal: 165    // 미지의 초심연 400 ~ 750m
       };
 
       const currentZoneCounts = { shallow: 0, mid: 0, deep: 0, abyss: 0, hadal: 0 };
@@ -267,7 +361,7 @@ class Game {
     const maxY = Math.min(15000, (chosen.maxDepth || 750) * 20);
     const startY = minY + Math.random() * (maxY - minY);
 
-    // ✨ Shiny (이로치) check (낮: 1.0%, 밤: 3.0%)
+    // ✨ Shiny (이로치) check (0.1% ~ 5.0% 범위)
     const isNight = this.environment && this.environment.timeOfDay === 'night';
     const isShiny = Math.random() < this.economy.getShinyChance(isNight);
 
@@ -283,6 +377,23 @@ class Game {
     }
 
     this.fishList.push(fish);
+
+    // 🌊 Host in Multiplayer: Broadcast newly spawned fish to room guests
+    if (this.multiplayer && this.multiplayer.isConnected && this.multiplayer.isHost) {
+      this.multiplayer.broadcastFishSpawned({
+        uid: fish.uid,
+        id: fish.data.id,
+        x: Math.round(fish.pos.x),
+        y: Math.round(fish.pos.y),
+        facing: fish.facing,
+        sizeCm: fish.sizeCm,
+        isShiny: fish.isShiny,
+        minSwimX: swimBounds.minX,
+        maxSwimX: swimBounds.maxX
+      });
+    }
+
+    return fish;
   }
 
   initUIButtons() {
@@ -355,6 +466,12 @@ class Game {
       if (this.rod.state === 'READY') {
         this.rod.startCharging();
         this.cat.state = 'CHARGE';
+      } else if (this.rod.state === 'FISHING') {
+        // 🎯 Perfect Reeling Rhythm Timing Tap!
+        const hitResult = this.rod.checkRhythmHit();
+        if (hitResult) {
+          this.camera.shake(hitResult === 'PERFECT' ? 8 : 4, 0.25);
+        }
       }
     });
 
@@ -428,23 +545,33 @@ class Game {
     this.hud.onDepthLockTrigger = () => this.handleDepthLockAction();
     this.hud.onItemUseTrigger = () => this.handleUseItemAction();
 
-    // 🚢 Cruise Fast-Travel to Dock Pier (Lv * 1,000 G + 3s Splash Screen Voyage)
+    // 🚢 / 🌊 Cruise Fast-Travel (부두 귀환 vs 먼 바다 출항)
     this.hud.onCruiseTrigger = () => {
       if (this.aquarium.isOpen || this.isCruiseTraveling) return;
 
       const cost = this.economy.level * 1000;
-      const isAtDock = this.cat.pos.x <= 260;
-
-      if (isAtDock) {
-        this.sound.playClick();
-        this.hud.showNotification('이미 부두막에 도착해 있습니다냥! 🏪', '🐾');
-        return;
-      }
+      const isAtDock = (this.cat.pos.x <= 320);
 
       if (this.economy.gold < cost) {
         this.sound.playClick();
         this.hud.showNotification(`골드가 부족합니다냥! (필요: ${cost.toLocaleString()} G)`, '⚠️');
         return;
+      }
+
+      // Determine Destination & Voyage Direction
+      let destX = 240;
+      let isVoyageOut = false;
+
+      if (isAtDock) {
+        // 🌊 먼 바다 출항: 현재 배의 최대 이동 거리에서 살짝 왼쪽으로 이동
+        isVoyageOut = true;
+        const currentBoat = this.economy.getCurrentBoat();
+        const maxDist = currentBoat?.maxTravelX || 1600;
+        destX = Math.max(800, maxDist - 250);
+      } else {
+        // 🚢 부두 귀환: 부두막(x=240)으로 복귀
+        destX = 240;
+        isVoyageOut = false;
       }
 
       // Deduct gold & save
@@ -464,32 +591,59 @@ class Game {
       this.sound.playCruiseHorn();
       this.sound.playSplash(1.5);
 
-      // 2. Display 3-Second Grand Cruise Sailing Left Animation Screen
+      // 2. Display 3-Second Grand Cruise Sailing Animation Screen
       const splashOverlay = document.getElementById('cruise-splash-overlay');
       if (splashOverlay) {
-        // Set dynamic theme matching current in-game time of day (day / sunset / night)
         const currentTheme = this.environment.timeOfDay || 'day';
         splashOverlay.dataset.theme = currentTheme;
 
-        // Reset Ship Sailing & Meter Animations
+        // Toggle Direction Mode (mode-voyage vs mode-dock)
+        if (isVoyageOut) {
+          splashOverlay.classList.remove('mode-dock');
+          splashOverlay.classList.add('mode-voyage');
+        } else {
+          splashOverlay.classList.remove('mode-voyage');
+          splashOverlay.classList.add('mode-dock');
+        }
+
+        // Update Banner Text
+        const titleEl = document.getElementById('cruise-title');
+        const descEl = document.getElementById('cruise-desc');
+        const meterLeft = document.getElementById('cruise-meter-left');
+        const meterRight = document.getElementById('cruise-meter-right');
+
+        if (isVoyageOut) {
+          if (titleEl) titleEl.innerText = '🌊 냥이 쾌속 크루즈 먼 바다 대항해 출항!';
+          if (descEl) descEl.innerText = `거친 파도를 가르며 현재 보트의 최대 탐험 해역(${(destX / 20).toFixed(0)}m)으로 쾌속 출항합니다냥! 🐾`;
+          if (meterLeft) meterLeft.innerText = '⚓ 부두막 (출발)';
+          if (meterRight) meterRight.innerText = `🌊 먼 바다 (${(destX / 20).toFixed(0)}m)`;
+        } else {
+          if (titleEl) titleEl.innerText = '🚢 냥이 럭셔리 크루즈 부두막 귀환 항해';
+          if (descEl) descEl.innerText = '시원한 바닷바람과 함께 부두막으로 안전하게 쾌속 순항 중입니다냥... 🐾';
+          if (meterLeft) meterLeft.innerText = '⚓ 부두막 (도착)';
+          if (meterRight) meterRight.innerText = '🌊 먼 바다';
+        }
+
+        // Reset Animations
         const ship = splashOverlay.querySelector('.cruise-grand-ship');
         const meterFill = splashOverlay.querySelector('.meter-bar-fill');
         const meterBoat = splashOverlay.querySelector('.meter-boat-indicator');
 
         if (ship) {
           ship.style.animation = 'none';
-          void ship.offsetWidth; // force DOM reflow
+          void ship.offsetWidth;
           ship.style.animation = 'cruise-sail-left 3.0s cubic-bezier(0.12, 0.95, 0.35, 1) forwards, cruise-ship-bob 1.2s ease-in-out infinite alternate';
         }
         if (meterFill) {
           meterFill.style.animation = 'none';
-          void meterFill.offsetWidth; // force DOM reflow
+          void meterFill.offsetWidth;
           meterFill.style.animation = 'meter-progress-fill 3.0s linear forwards';
         }
         if (meterBoat) {
           meterBoat.style.animation = 'none';
-          void meterBoat.offsetWidth; // force DOM reflow
-          meterBoat.style.animation = 'meter-boat-glide 3.0s linear forwards';
+          void meterBoat.offsetWidth;
+          const glideAnim = isVoyageOut ? 'meter-boat-glide-right 3.0s linear forwards' : 'meter-boat-glide 3.0s linear forwards';
+          meterBoat.style.animation = glideAnim;
         }
 
         splashOverlay.classList.add('visible');
@@ -497,14 +651,15 @@ class Game {
 
       // 3. Move player & camera in background while sailing
       setTimeout(() => {
-        this.cat.pos.x = 240;
+        this.cat.pos.x = destX;
+        this.cat.facing = isVoyageOut ? 1 : 1;
         this.cat.velX = 0;
         this.cat.savePosition();
         this.camera.pos.set(this.cat.pos.x, this.cat.pos.y);
         this.camera.setTarget(this.cat.pos.x + 80 * this.cat.facing, this.cat.pos.y - 40, 1.0);
       }, 1500);
 
-      // 4. Complete Voyage at 3.0 seconds -> Dock Arrival Celebration
+      // 4. Complete Voyage at 3.0 seconds
       setTimeout(() => {
         if (splashOverlay) {
           splashOverlay.classList.remove('visible');
@@ -515,7 +670,11 @@ class Game {
         this.sound.playCoin();
         this.camera.shake(6, 0.4);
 
-        this.hud.showNotification(`🚢 부두막에 무사히 도착했습니다냥! (-${cost.toLocaleString()} G)`, '✨');
+        if (isVoyageOut) {
+          this.hud.showNotification(`🌊 먼 바다(${(destX / 20).toFixed(0)}m) 해역에 쾌속 출항 완료했습니다냥! (-${cost.toLocaleString()} G)`, '✨');
+        } else {
+          this.hud.showNotification(`🚢 부두막에 무사히 도착했습니다냥! (-${cost.toLocaleString()} G)`, '✨');
+        }
       }, 3000);
     };
 
@@ -534,6 +693,23 @@ class Game {
           if (aquaUI) aquaUI.classList.remove('visible');
         }
         return;
+      }
+
+      // 🛑 [S] / [ArrowDown] 키: 찌 침강 정지 (수심 고정 락) / 침강 재개
+      if (code === 'KeyS' || code === 'ArrowDown') {
+        if (this.rod.state === 'FISHING' && this.rod.isSubmerged) {
+          this.handleDepthLockAction();
+        }
+      }
+
+      // 🎯 [Space] 키: 릴링 중 리듬 서클 타이밍 맞추기
+      if (code === 'Space') {
+        if (this.rod.state === 'FISHING') {
+          const hitResult = this.rod.checkRhythmHit();
+          if (hitResult) {
+            this.camera.shake(hitResult === 'PERFECT' ? 8 : 4, 0.25);
+          }
+        }
       }
 
       // 💖 / 💣 [Q] 키: 수중 특수 아이템 사용 전용
@@ -574,9 +750,16 @@ class Game {
         }
       }
 
+      // 🎭 [X] 키: 원형 이모트 휠 열기 (누르고 있을 때)
+      if (code === 'KeyX' && !this.isEmoteWheelOpen) {
+        this.openEmoteWheel();
+      }
+
       if (code === 'KeyH') this.modals.openGuide();
       if (code === 'Escape') {
-        if (this.modals.isPauseOpen()) {
+        if (this.isEmoteWheelOpen) {
+          this.closeEmoteWheel(true);
+        } else if (this.modals.isPauseOpen()) {
           this.modals.closeAll();
           this.isPaused = false;
         } else if (this.modals.hasAnyModalOpen()) {
@@ -588,9 +771,114 @@ class Game {
         }
       }
     });
+
+    // KeyUp for [X] key emote release
+    this.input.on('keyup', (code) => {
+      if (code === 'KeyX' && this.isEmoteWheelOpen) {
+        this.closeEmoteWheel(false);
+      }
+    });
+
+    // Mouse tracking for radial emote wheel slice selection
+    window.addEventListener('mousemove', (e) => {
+      if (this.isEmoteWheelOpen) {
+        this.updateEmoteWheelHover(e.clientX, e.clientY);
+      }
+    });
+
+    window.addEventListener('blur', () => {
+      if (this.isEmoteWheelOpen) {
+        this.closeEmoteWheel(true);
+      }
+    });
   }
 
-  handleFishCaught(fish) {
+  openEmoteWheel() {
+    this.isEmoteWheelOpen = true;
+    this.selectedEmote = 'cancel';
+
+    const wheelEl = document.getElementById('emote-radial-wheel');
+    if (wheelEl) {
+      wheelEl.classList.add('visible');
+      const centerCircle = wheelEl.querySelector('.emote-center-circle');
+      if (centerCircle) centerCircle.classList.add('active');
+      const nodes = wheelEl.querySelectorAll('.emote-node');
+      nodes.forEach(n => n.classList.remove('active'));
+    }
+  }
+
+  updateEmoteWheelHover(clientX, clientY) {
+    const wheelEl = document.getElementById('emote-radial-wheel');
+    if (!wheelEl) return;
+    const container = wheelEl.querySelector('.emote-wheel-container');
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = clientX - centerX;
+    const dy = clientY - centerY;
+    const dist = Math.hypot(dx, dy);
+
+    let activeEmote = 'cancel';
+    if (dist >= 42) {
+      // Calculate angle in degrees [-180, 180]
+      const deg = Math.atan2(dy, dx) * 180 / Math.PI;
+      // Rotate so Top (-90 deg) is 0 deg: [0, 360)
+      const normDeg = (deg + 90 + 360) % 360;
+
+      // Sector 0 (324° ~ 36°): joy (😊 기쁨 - Top)
+      // Sector 1 (36° ~ 108°): clap (👏 박수 - Top Right)
+      // Sector 2 (108° ~ 180°): tease (😜 조롱 - Bottom Right)
+      // Sector 3 (180° ~ 252°): sad (😭 슬픔 - Bottom Left)
+      // Sector 4 (252° ~ 324°): angry (😡 분노 - Top Left)
+      if (normDeg >= 324 || normDeg < 36) {
+        activeEmote = 'joy';
+      } else if (normDeg >= 36 && normDeg < 108) {
+        activeEmote = 'clap';
+      } else if (normDeg >= 108 && normDeg < 180) {
+        activeEmote = 'tease';
+      } else if (normDeg >= 180 && normDeg < 252) {
+        activeEmote = 'sad';
+      } else {
+        activeEmote = 'angry';
+      }
+    }
+
+    this.selectedEmote = activeEmote;
+
+    // Update UI active highlights
+    const centerNode = wheelEl.querySelector('.emote-center-circle');
+    if (centerNode) {
+      centerNode.classList.toggle('active', activeEmote === 'cancel');
+    }
+    const nodes = wheelEl.querySelectorAll('.emote-node');
+    nodes.forEach(node => {
+      node.classList.toggle('active', node.dataset.emote === activeEmote);
+    });
+  }
+
+  closeEmoteWheel(cancelOnly = false) {
+    if (!this.isEmoteWheelOpen) return;
+    this.isEmoteWheelOpen = false;
+
+    const wheelEl = document.getElementById('emote-radial-wheel');
+    if (wheelEl) {
+      wheelEl.classList.remove('visible');
+    }
+
+    if (!cancelOnly && this.selectedEmote && this.selectedEmote !== 'cancel') {
+      this.cat.triggerEmote(this.selectedEmote);
+      this.sound.playClick();
+
+      // Broadcast emote across room players
+      if (this.multiplayer && this.multiplayer.isConnected) {
+        this.multiplayer.broadcastEmote(this.selectedEmote);
+      }
+    }
+  }
+
+  handleFishCaught(fish, isPerfect = false) {
     this.sound.playCatch((fish.isBoss || fish.isShiny) ? 'mythic' : fish.data.rarity);
     this.cat.triggerCatch();
     this.camera.shake(fish.isBoss ? 16 : (fish.isShiny ? 10 : 6), 0.55);
@@ -603,13 +891,25 @@ class Game {
       exp = Math.round(exp * 3.0);
     }
 
+    // 🎯 Perfect Catch Bonus (+30% G & EXP)
+    const hasRhythmBonus = isPerfect || (this.rod.rhythmRing?.totalHits || 0) > 0;
+    if (hasRhythmBonus) {
+      price = Math.round(price * 1.30);
+      exp = Math.round(exp * 1.30);
+    }
+
     const leveledUp = this.economy.addExp(exp);
 
     // 🧺 어획 바구니에 물고기 보관 (부두 상인에게 가서 판매하거나 아쿠아리움에 수집!)
     const basketItem = this.economy.addFishToBasket(fish, price, exp);
 
     const result = this.encyclopedia.recordCatch(fish.data.id, fish.sizeCm, price, fish.isShiny);
-    this.hud.showCatchPopup(fish, { ...result, basketPrice: price });
+    this.hud.showCatchPopup(fish, { ...result, basketPrice: price, hasRhythmBonus });
+
+    if (hasRhythmBonus) {
+      this.hud.showNotification(`🎯 퍼펙트 캐치 보너스 달성! (+30% 골드 & 경험치 획득)`, '✨');
+      this.hud.triggerCatchFireworks();
+    }
 
     if (fish.isBoss) {
       this.hud.showNotification(`👑 대박! 전설의 보스 [${fish.data.name}] 포획 성공! (+${price} G)`, '🏆');
@@ -623,12 +923,27 @@ class Game {
       this.hud.showNotification(`🎉 레벨 업! Lv.${this.economy.level} 달성!`, '⭐');
     }
 
-    // Remove caught fish from active ocean list & spawn replacement
+    // 🌊 Broadcast fish caught event in multiplayer room
+    if (this.multiplayer && this.multiplayer.isConnected) {
+      this.multiplayer.broadcastFishCaught({
+        fishUid: fish.uid,
+        speciesId: fish.data.id,
+        speciesName: fish.data.name,
+        isShiny: !!fish.isShiny,
+        isBoss: !!fish.isBoss
+      });
+    }
+
+    // Remove caught fish from active ocean list & spawn replacement (Host or Singleplayer spawns)
     const idx = this.fishList.indexOf(fish);
     if (idx !== -1) {
       this.fishList.splice(idx, 1);
     }
-    this.spawnSingleFish(false);
+
+    const isClientInMultiplayer = (this.multiplayer && this.multiplayer.isConnected && !this.multiplayer.isHost);
+    if (!isClientInMultiplayer) {
+      this.spawnSingleFish(false);
+    }
   }
 
   loop(currentTime) {
@@ -654,7 +969,7 @@ class Game {
     // Notify player on night arrival (Shiny Fever Time!)
     if (this.environment.timeOfDay !== this.prevTimeOfDay) {
       if (this.environment.timeOfDay === 'night') {
-        this.hud.showNotification('🌌 밤이 찾아왔습니다! 황금빛 이로치 물고기 출현 확률이 3%로 대폭 상승합니다! ✨', '🌟');
+        this.hud.showNotification('🌌 밤이 찾아왔습니다! 황금빛 이로치 물고기 출현 확률이 5배 상승합니다! ✨', '🌟');
       }
       this.prevTimeOfDay = this.environment.timeOfDay;
     }
@@ -686,6 +1001,47 @@ class Game {
       (caughtFish) => this.handleFishCaught(caughtFish)
     );
 
+    // 🌟 MapleStory-Style Star Catch Fishing Mini-game Control
+    const isMinigameEnabled = this.economy ? (this.economy.isMinigameEnabled !== false) : true;
+    const primaryHookedFish = (this.rod.allHookedFishes && this.rod.allHookedFishes.length > 0) 
+      ? this.rod.allHookedFishes[0] 
+      : (this.rod.hookedFish || (this.rod.hooks && this.rod.hooks.find(h => h.hookedFish)?.hookedFish));
+
+    if (isMinigameEnabled && this.rod.state === 'FISHING' && primaryHookedFish) {
+      if (!this.starCatchMinigame.isActive) {
+        this.starCatchMinigame.start(primaryHookedFish, this.economy, this.environment.waterSurfaceY);
+      }
+      
+      const minigameResult = this.starCatchMinigame.update(
+        dt, 
+        this.input, 
+        this.sound, 
+        this.rod, 
+        this.cat, 
+        this.environment.waterSurfaceY
+      );
+
+      if (minigameResult) {
+        if (minigameResult.status === 'CAUGHT') {
+          const caughtFish = minigameResult.fish;
+          this.rod.reset(this.cat);
+          this.handleFishCaught(caughtFish, minigameResult.isPerfect);
+        } else if (minigameResult.status === 'ESCAPED') {
+          const escapingFish = minigameResult.fish;
+          if (escapingFish) {
+            escapingFish.state = 'FLEE';
+          }
+          this.sound.playSplash();
+          this.rod.reset(this.cat);
+          this.hud.showNotification('🐟 아쉽다냥! 물고기가 힘차게 빠져나갔습니다냥!', '💨');
+        }
+      }
+    } else {
+      if (this.starCatchMinigame.isActive) {
+        this.starCatchMinigame.stop();
+      }
+    }
+
     // Hook nibble alert
     if (this.rod.hookedFish && this.cat.state !== 'CATCH' && this.cat.state !== 'REELING') {
       this.cat.triggerNibble();
@@ -695,9 +1051,12 @@ class Game {
     const oceanBounds = { left: -800, right: 32000, top: 0, bottom: 15800 };
     this.fishList.forEach(fish => fish.update(dt, this.rod, oceanBounds, this.cat));
 
-    // Maintain lively fish population (0.1% boss chance + luck multiplier on every spawn)
-    while (this.fishList.length < this.maxFishCount) {
-      this.spawnSingleFish();
+    // Maintain lively fish population (Host in multiplayer or Singleplayer spawns new fish)
+    const isGuestInMultiplayer = (this.multiplayer && this.multiplayer.isConnected && !this.multiplayer.isHost);
+    if (!isGuestInMultiplayer) {
+      while (this.fishList.length < this.maxFishCount) {
+        this.spawnSingleFish();
+      }
     }
 
     // Periodic fish population save (every 2.5s)
@@ -727,6 +1086,9 @@ class Game {
     if (this.multiplayer) {
       this.multiplayer.update(dt, this.cat, this.rod, this.economy);
     }
+
+    // End of Frame Input Buffer Clear
+    this.input.clearFrame();
   }
 
   render() {
@@ -787,6 +1149,17 @@ class Game {
 
     // 9. Screen Space HUD: Boss Tracking Radar Arrow (for 📡 hat_radar)
     this.drawBossRadarArrow(this.ctx);
+
+    // 🌟 10. Draw Star Catch Mini-Game Screen Overlay
+    if (this.starCatchMinigame && this.starCatchMinigame.isActive) {
+      this.starCatchMinigame.draw(
+        this.ctx, 
+        this.canvas.width, 
+        this.canvas.height, 
+        this.rod, 
+        this.environment.waterSurfaceY
+      );
+    }
   }
 
   drawSonarEffect(ctx, bounds) {

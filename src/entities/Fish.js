@@ -5,7 +5,8 @@
 import { Vector2 } from '../engine/Vector.js?v=5.0.0';
 
 export class Fish {
-  constructor(speciesData, startPos, isShiny = false, swimBounds = null) {
+  constructor(speciesData, startPos, isShiny = false, swimBounds = null, uid = null) {
+    this.uid = uid || ('f_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now());
     this.data = speciesData;
     this.pos = (startPos && typeof startPos.clone === 'function') 
       ? startPos.clone() 

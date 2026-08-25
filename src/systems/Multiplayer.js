@@ -45,6 +45,15 @@ export class Multiplayer {
       this.broadcastChannel.onmessage = (e) => this.handleBroadcastMessage(e.data);
     } catch (e) {}
 
+    // Ocean World & Fish Synchronization Callbacks
+    this.onSyncOceanWorld = null;    // (fishList, envData) => void
+    this.onRemoteFishCaught = null;   // (event) => void
+    this.onRemoteFishSpawned = null;  // (fishData) => void
+    this.getOceanWorldState = null;   // () => { fishList, timeOfDay, timeProgress }
+
+    this.unsubscribeEvents = null;
+    this.unsubscribeWorld = null;
+
     // Chat
     this.messages = [];
     this.myChatBubble = { text: '', timer: 0 };
@@ -155,6 +164,9 @@ export class Multiplayer {
     this.isHost = true;
     this.isConnected = true;
 
+    // 🌊 Host: Export initial ocean fish state to share with guests
+    const worldData = (typeof this.getOceanWorldState === 'function') ? this.getOceanWorldState() : null;
+
     if (db) {
       try {
         const roomRef = doc(db, 'cozy_fishing_rooms', cleanCode);
@@ -165,6 +177,19 @@ export class Multiplayer {
           createdAt: serverTimestamp(),
           lastActivity: Date.now()
         }, { merge: true });
+
+        // Save shared ocean world state in room
+        if (worldData && Array.isArray(worldData.fishList)) {
+          const worldRef = doc(db, 'cozy_fishing_rooms', cleanCode, 'world', 'ocean');
+          await setDoc(worldRef, {
+            fishList: worldData.fishList,
+            timeOfDay: worldData.timeOfDay || 'day',
+            timeProgress: worldData.timeProgress || 0,
+            hostId: this.playerId,
+            hostName: this.playerName,
+            updatedAt: serverTimestamp()
+          });
+        }
 
         await this.joinPlayerToRoom(cleanCode);
         this.startListening(cleanCode);
@@ -179,12 +204,13 @@ export class Multiplayer {
         type: 'ROOM_CREATED',
         roomId: cleanCode,
         hostId: this.playerId,
-        hostName: this.playerName
+        hostName: this.playerName,
+        worldData: worldData
       });
     }
 
     this.updateMultiplayerUI();
-    this.hud.showNotification(`🎉 방 [${cleanCode}] 개설 완료! 친구에게 방 코드를 알려주세요.`, '🌐');
+    this.hud.showNotification(`🎉 방 [${cleanCode}] 개설 완료! 같은 바다를 공유합니다.`, '🌊');
     this.appendSystemChatMessage(`방 [${cleanCode}]이 개설되었습니다! 친구를 초대해보세요.`);
     return { success: true, roomId: cleanCode };
   }
@@ -217,6 +243,22 @@ export class Multiplayer {
           this.roomId = cleanCode;
           this.isHost = (roomSnap.data().hostId === this.playerId);
           this.isConnected = true;
+
+          // 🌊 Guest: Fetch Host's shared ocean fish population & atmosphere
+          try {
+            const worldRef = doc(db, 'cozy_fishing_rooms', cleanCode, 'world', 'ocean');
+            const worldSnap = await getDoc(worldRef);
+            if (worldSnap.exists()) {
+              const sharedWorld = worldSnap.data();
+              if (sharedWorld && Array.isArray(sharedWorld.fishList) && sharedWorld.fishList.length > 0) {
+                if (typeof this.onSyncOceanWorld === 'function') {
+                  this.onSyncOceanWorld(sharedWorld.fishList, sharedWorld);
+                }
+              }
+            }
+          } catch (worldErr) {
+            console.warn("Could not fetch shared ocean world:", worldErr);
+          }
 
           await this.joinPlayerToRoom(cleanCode);
           this.startListening(cleanCode);
@@ -252,8 +294,8 @@ export class Multiplayer {
     }
 
     this.updateMultiplayerUI();
-    this.hud.showNotification(`🚀 방 [${cleanCode}] 입장 성공! 즐거운 낚시되세요!`, '✨');
-    this.appendSystemChatMessage(`방 [${cleanCode}]에 입장했습니다!`);
+    this.hud.showNotification(`🚀 방 [${cleanCode}] 입장 성공! 같은 바다에서 낚시합니다!`, '🌊');
+    this.appendSystemChatMessage(`방 [${cleanCode}]에 입장했습니다! 방장과 같은 바다를 공유합니다.`);
     return { success: true, roomId: cleanCode };
   }
 
@@ -407,6 +449,45 @@ export class Multiplayer {
       console.warn("Multiplayer messages snapshot error:", error);
     });
 
+    // 3. 🌊 Listen for Realtime Shared Ocean Fish Events (Fish Caught & Fish Spawned)
+    const eventsRef = collection(db, 'cozy_fishing_rooms', roomId, 'events');
+    const evQuery = query(eventsRef, orderBy('createdAt', 'desc'), limit(15));
+    let isFirstEvLoad = true;
+
+    this.unsubscribeEvents = onSnapshot(evQuery, (snapshot) => {
+      if (isFirstEvLoad) {
+        isFirstEvLoad = false;
+        return;
+      }
+
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added') {
+          const ev = change.doc.data();
+          if (ev.senderId === this.playerId || ev.caughtById === this.playerId) return;
+
+          if (ev.type === 'FISH_CAUGHT') {
+            if (typeof this.onRemoteFishCaught === 'function') {
+              this.onRemoteFishCaught(ev);
+            }
+            this.hud.showNotification(`🎉 [${ev.caughtBy}]님이 ${ev.isBoss ? '👑 보스 ' : (ev.isShiny ? '✨ 이로치 ' : '')}[${ev.speciesName}]을(를) 낚았습니다냥!`, '🎣');
+            this.appendSystemChatMessage(`🎣 [${ev.caughtBy}]님이 [${ev.speciesName}] 획득!`);
+            this.sound.playCoin();
+          } else if (ev.type === 'FISH_SPAWNED' && !this.isHost) {
+            if (typeof this.onRemoteFishSpawned === 'function' && ev.fishData) {
+              this.onRemoteFishSpawned(ev.fishData);
+            }
+          } else if (ev.type === 'EMOTE') {
+            const pEntry = this.otherPlayers.get(ev.senderId);
+            if (pEntry && pEntry.remoteCat) {
+              pEntry.remoteCat.triggerEmote(ev.emote);
+            }
+          }
+        }
+      });
+    }, (error) => {
+      console.warn("Multiplayer events snapshot error:", error);
+    });
+
     // Show Chat Widget UI
     const chatWidget = document.getElementById('ingame-chat-container');
     if (chatWidget) chatWidget.classList.add('visible');
@@ -421,6 +502,26 @@ export class Multiplayer {
       const pEntry = this.otherPlayers.get(msg.senderId);
       if (pEntry) {
         pEntry.chatBubble = { text: msg.text, timer: 5.0 };
+      }
+    } else if (msg.type === 'EMOTE') {
+      const pEntry = this.otherPlayers.get(msg.senderId);
+      if (pEntry && pEntry.remoteCat) {
+        pEntry.remoteCat.triggerEmote(msg.emote);
+      }
+    } else if (msg.type === 'OCEAN_SYNC' && !this.isHost) {
+      if (typeof this.onSyncOceanWorld === 'function' && Array.isArray(msg.fishList)) {
+        this.onSyncOceanWorld(msg.fishList, msg);
+      }
+    } else if (msg.type === 'FISH_CAUGHT') {
+      if (typeof this.onRemoteFishCaught === 'function') {
+        this.onRemoteFishCaught(msg);
+      }
+      this.hud.showNotification(`🎉 [${msg.caughtBy}]님이 ${msg.isBoss ? '👑 보스 ' : (msg.isShiny ? '✨ 이로치 ' : '')}[${msg.speciesName}]을(를) 낚았습니다냥!`, '🎣');
+      this.appendSystemChatMessage(`🎣 [${msg.caughtBy}]님이 [${msg.speciesName}] 획득!`);
+      this.sound.playCoin();
+    } else if (msg.type === 'FISH_SPAWNED' && !this.isHost) {
+      if (typeof this.onRemoteFishSpawned === 'function' && msg.fishData) {
+        this.onRemoteFishSpawned(msg.fishData);
       }
     } else if (msg.type === 'PLAYER_STATE' && msg.playerData) {
       const pData = msg.playerData;
@@ -450,6 +551,80 @@ export class Multiplayer {
         pEntry.targetY = pData.y || 0;
         pEntry.lastSeen = Date.now();
       }
+    }
+  }
+
+  async broadcastEmote(emoteId) {
+    if (!this.isConnected || !this.roomId) return;
+    const payload = {
+      type: 'EMOTE',
+      roomId: this.roomId,
+      senderId: this.playerId,
+      senderName: this.playerName,
+      emote: emoteId,
+      timestamp: Date.now()
+    };
+
+    if (this.broadcastChannel) {
+      this.broadcastChannel.postMessage(payload);
+    }
+
+    const db = this.getDb();
+    if (db) {
+      try {
+        const eventsRef = collection(db, 'cozy_fishing_rooms', this.roomId, 'events');
+        await addDoc(eventsRef, { ...payload, createdAt: serverTimestamp() });
+      } catch (e) {}
+    }
+  }
+
+  async broadcastFishCaught(event) {
+    if (!this.isConnected || !this.roomId) return;
+    const payload = {
+      type: 'FISH_CAUGHT',
+      roomId: this.roomId,
+      senderId: this.playerId,
+      caughtById: this.playerId,
+      caughtBy: this.playerName,
+      ...event,
+      timestamp: Date.now()
+    };
+
+    if (this.broadcastChannel) {
+      this.broadcastChannel.postMessage(payload);
+    }
+
+    const db = this.getDb();
+    if (db) {
+      try {
+        const eventsRef = collection(db, 'cozy_fishing_rooms', this.roomId, 'events');
+        await addDoc(eventsRef, { ...payload, createdAt: serverTimestamp() });
+      } catch (e) {
+        console.warn("Failed to broadcast fish caught to firestore:", e);
+      }
+    }
+  }
+
+  async broadcastFishSpawned(fishData) {
+    if (!this.isConnected || !this.roomId || !this.isHost) return;
+    const payload = {
+      type: 'FISH_SPAWNED',
+      roomId: this.roomId,
+      senderId: this.playerId,
+      fishData: fishData,
+      timestamp: Date.now()
+    };
+
+    if (this.broadcastChannel) {
+      this.broadcastChannel.postMessage(payload);
+    }
+
+    const db = this.getDb();
+    if (db) {
+      try {
+        const eventsRef = collection(db, 'cozy_fishing_rooms', this.roomId, 'events');
+        await addDoc(eventsRef, { ...payload, createdAt: serverTimestamp() });
+      } catch (e) {}
     }
   }
 
@@ -546,6 +721,14 @@ export class Multiplayer {
     if (this.unsubscribeMessages) {
       this.unsubscribeMessages();
       this.unsubscribeMessages = null;
+    }
+    if (this.unsubscribeEvents) {
+      this.unsubscribeEvents();
+      this.unsubscribeEvents = null;
+    }
+    if (this.unsubscribeWorld) {
+      this.unsubscribeWorld();
+      this.unsubscribeWorld = null;
     }
   }
 

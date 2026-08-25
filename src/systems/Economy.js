@@ -303,7 +303,7 @@ export const BAITS = [
     category: 'item',
     price: 450,
     countPerBuy: 3,
-    description: '물속에서 [Q] 키 (또는 클릭) 시 강력한 매혹 페로몬을 방출하여 주변 넓은 범위의 모든 물고기들이 미끼로 쇄도합니다!',
+    description: '물속에서 [Q] 키 입력 시 강력한 매혹 페로몬을 방출하여 주변 넓은 범위의 모든 물고기들이 미끼로 쇄도합니다!',
     icon: '💖',
     sinkSpeed: 1.0
   },
@@ -323,7 +323,7 @@ export const BAITS = [
     category: 'item',
     price: 250,
     countPerBuy: 2,
-    description: '물속에서 [Q] 키 (또는 클릭) 시 폭발하여 주변의 방해 물고기를 즉시 퇴치합니다!',
+    description: '물속에서 [Q] 키 입력 시 폭발하여 주변의 방해 물고기를 즉시 퇴치합니다!',
     icon: '💣',
     sinkSpeed: 1.0
   },
@@ -464,7 +464,7 @@ export const PASSIVE_UPGRADES = [
     basePrice: 300,
     priceMult: 1.75,
     icon: '🍀',
-    description: '행운 확률을 레벨당 +1%씩만 점진적으로 증가시킵니다.'
+    description: '행운 배율을 레벨당 +15%씩 대폭 증가시킵니다. (15Lv 풀업 시 +225% = 3.25배 행운 증폭 & 이로치 확률 상승!)'
   },
   {
     id: 'aquarium_prosperity',
@@ -674,6 +674,9 @@ export class Economy {
 
     // 🧺 Caught Fish Basket (잡은 물고기 보관 바구니: 상인에게 판매하거나 아쿠아리움에 수집)
     this.caughtFishBasket = [];
+
+    // 🎯 Mini-Game ON/OFF setting
+    this.isMinigameEnabled = localStorage.getItem('cozy_cat_minigame_enabled') !== 'false';
 
     this.loadFromStorage();
   }
@@ -1125,9 +1128,9 @@ export class Economy {
   }
 
   getLuckMultiplier() {
-    // 🍀 행운의 네잎클로버 1업당 행운 +1% 증가 (+0.01 per lv)
-    let mult = 1 + (this.upgradeLevels.lucky_clover || 0) * 0.01;
-    if (this.currentHatId === 'hat_pirate') mult *= 1.5;
+    // 🍀 행운의 네잎클로버 1업당 행운 +15% 증가 (15Lv 풀업 시 +225% = 3.25배)
+    let mult = 1 + (this.upgradeLevels.lucky_clover || 0) * 0.15;
+    if (this.currentHatId === 'hat_pirate') mult *= 1.4;
     return mult;
   }
 
@@ -1137,19 +1140,19 @@ export class Economy {
   }
 
   getBossChance() {
-    // 👑 10대 전설 신화 보스 스폰 기본 확률 0.1% (0.001) + 행운 배율 연동
-    const base = 0.001;
+    // 👑 10대 전설 신화 보스 스폰 기본 확률 0.6% (0.006) + 행운 배율 연동
+    const base = 0.006;
     let mult = this.getLuckMultiplier();
-    if (this.currentBaitId === 'golden') mult *= 2.0; // 황금 미끼 2배
+    if (this.currentBaitId === 'golden') mult *= 2.0; // 황금 미끼는 보스 유인 전용 2배 유지
     return base * mult;
   }
 
   getShinyChance(isNight = false) {
-    // ✨ 이로치(Shiny) 기본 확률 0.05% (0.0005), 밤 0.15% (0.0015) + 행운 배율 연동
-    const baseChance = isNight ? 0.0015 : 0.0005;
-    let multiplier = this.getLuckMultiplier();
-    if (this.currentBaitId === 'golden') multiplier *= 2.5; // 황금 미끼 사용 시 2.5배 보너스!
-    return baseChance * multiplier;
+    // ✨ 이로치(Shiny) 확률: 낮 0.1% (0.001), 밤 0.5% (0.005) + 네잎클로버 업그레이드 비중 대폭 연동 (0.1% ~ 5.0% 사이로 엄격 제어)
+    const baseChance = isNight ? 0.005 : 0.001;
+    const multiplier = this.getLuckMultiplier(); // 네잎클로버 업그레이드 연동 (황금 미끼 보너스 제거)
+    const calculated = baseChance * multiplier;
+    return Math.max(0.001, Math.min(0.05, calculated));
   }
 
   getAttractionRadiusBonus() {

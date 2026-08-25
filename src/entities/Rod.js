@@ -62,6 +62,19 @@ export class Rod {
     this.isReeling = false;
     this.isJiggling = false;
     this.jiggleTimer = 0;
+
+    // 🎯 Perfect Reeling Rhythm Ring System (퍼펙트 릴링 & 리듬 타이밍)
+    this.rhythmRing = {
+      active: false,
+      timer: 1.2,
+      targetRadius: 26,
+      currentRadius: 75,
+      shrinkSpeed: 48, // takes ~1.0s to hit sweet spot (26px)
+      feedback: null, // { text: '✨ PERFECT!', color: '#ffd166', timer: 0, x: 0, y: 0, scale: 1.0 }
+      particles: [],
+      combo: 0,
+      totalHits: 0
+    };
   }
 
   initHooks() {
@@ -145,6 +158,15 @@ export class Rod {
     // Equip current selected bait (consumed only when a fish bites!)
     this.currentBaitId = this.economy.currentBaitId || 'bread';
 
+    // Reset Rhythm Ring
+    this.rhythmRing.active = false;
+    this.rhythmRing.timer = 1.2;
+    this.rhythmRing.currentRadius = 75;
+    this.rhythmRing.combo = 0;
+    this.rhythmRing.totalHits = 0;
+    this.rhythmRing.feedback = null;
+    this.rhythmRing.particles = [];
+
     // Sound
     if (!this.isRocketPowered) {
       this.sound.playCast();
@@ -165,6 +187,7 @@ export class Rod {
 
     slot.hookedFish = fish;
     this.hookedFish = fish;
+    this.initialCatchDepth = Math.max(80, this.hookPos.y - this.waterY);
     this.sound.playBite();
 
     // 💖 물고기가 미끼를 무는 즉시 현혹 페로몬 효과 즉시 종료!
@@ -294,6 +317,14 @@ export class Rod {
     this.tension = 0;
     this.tensionSnapTimer = 0;
     this.isSnapped = false;
+    this.initialCatchDepth = 0;
+    this.rhythmRing.active = false;
+    this.rhythmRing.timer = 1.2;
+    this.rhythmRing.currentRadius = 75;
+    this.rhythmRing.combo = 0;
+    this.rhythmRing.totalHits = 0;
+    this.rhythmRing.feedback = null;
+    this.rhythmRing.particles = [];
   }
 
   update(dt, cat, isReelingInput, waterSurfaceY, onCatchCallback) {
@@ -366,6 +397,26 @@ export class Rod {
       p.alpha -= dt * 2.2;
       p.size = Math.max(1, p.size - dt * 6);
       if (p.alpha <= 0) this.rocketParticles.splice(i, 1);
+    }
+
+    // 🎯 Update Rhythm Ring Feedback & Sparks
+    if (this.rhythmRing.feedback) {
+      this.rhythmRing.feedback.timer -= dt;
+      this.rhythmRing.feedback.y -= 22 * dt;
+      this.rhythmRing.feedback.scale = Math.min(1.3, this.rhythmRing.feedback.scale + dt * 0.7);
+      if (this.rhythmRing.feedback.timer <= 0) {
+        this.rhythmRing.feedback = null;
+      }
+    }
+
+    for (let i = this.rhythmRing.particles.length - 1; i >= 0; i--) {
+      const p = this.rhythmRing.particles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx *= 0.94;
+      p.vy *= 0.94;
+      p.alpha -= dt * 1.8;
+      if (p.alpha <= 0) this.rhythmRing.particles.splice(i, 1);
     }
 
     if (this.state === 'READY') {
@@ -465,22 +516,38 @@ export class Rod {
         });
         avgFacing = Math.sign(avgFacing) || 1;
 
-        if (isReelingInput) {
-          // Reeling battle! (⚡ 1.35x Smooth Reel Boost during Stun/Exhausted state)
-          let reelPower = this.economy.getEffectiveReelSpeed();
-          if (hasExhaustedFish) {
-            reelPower *= 1.35; // Gentle controlled boost during stun
-          }
+        // 🎯 Mini-game active vs Classic Reeling Mode
+        const isMinigameOn = (this.economy && this.economy.isMinigameEnabled !== false);
 
+        if (isMinigameOn) {
+          const reelPower = this.economy.getEffectiveReelSpeed();
+          const toCat = Vector2.sub(rodTip, this.hookPos).normalize();
+
+          if (isReelingInput) {
+            // Normal base reeling works continuously
+            this.hookVel.set(
+              toCat.x * reelPower * 0.65 + avgFacing * 10,
+              toCat.y * reelPower * 0.65 + Math.sin(cat.animTime * 6) * 12
+            );
+            this.sound.playReelClick();
+          } else {
+            // Gentle water struggle when not holding reel
+            this.hookVel.set(
+              avgFacing * 12,
+              Math.sin(cat.animTime * 6) * 10
+            );
+          }
+          this.tension = 35 + Math.sin(cat.animTime * 5) * 12;
+        } else if (isReelingInput) {
+          // Classic Reeling battle!
+          const reelPower = this.economy.getEffectiveReelSpeed();
           const toCat = Vector2.sub(rodTip, this.hookPos).normalize();
           
-          // 🎣 손맛 넘치는 릴링 속도 계산 (작은 물고기부터 묵직한 보스까지 쫀득한 손맛 제공)
           this.hookVel.set(
             toCat.x * reelPower * 0.75 + avgFacing * totalFishPull * 0.20,
             toCat.y * reelPower * 0.75 + totalFishPull * 0.35
           );
 
-          // 🧲 Landing Attraction: Gently guide fish onto deck only right next to boat
           const distToBoat = Math.hypot(this.hookPos.x - cat.pos.x, this.hookPos.y - this.waterY);
           if (distToBoat < 65) {
             const magnetPull = Math.min(160, (70 - distToBoat) * 2.2);
@@ -489,22 +556,19 @@ export class Rod {
             this.hookVel.y += toBoatDir.y * magnetPull;
           }
 
-          // Build tension with fish rage multiplier
+          // Build tension
           const effectiveMaxTension = this.economy.getEffectiveTensionMax();
           let tensionRate = (totalFishPull / effectiveMaxTension) * 45;
-
           if (maxRage > 0 && !hasExhaustedFish) {
             const rageMultiplier = 1.0 + (maxRage / 100) * 2.2;
             tensionRate *= rageMultiplier;
           }
-
           this.tension = Math.min(100, this.tension + tensionRate * dt);
           this.sound.playReelClick();
 
-          // Check if reeled in close to boat (Smooth magnetic landing)
+          // Check if reeled in close to boat
           const distToCat = this.hookPos.dist(rodTip);
           if (distToCat < 75 || distToBoat < 65) {
-            // All caught fish landed!
             const caughtFishes = [...hookedList];
             this.reset(cat);
             if (onCatchCallback) {
@@ -513,10 +577,9 @@ export class Rod {
             return;
           }
         } else {
-          // Releasing reel relaxes tension faster
+          // Releasing reel relaxes tension faster (Classic Mode)
           this.tension = Math.max(0, this.tension - 60 * dt);
 
-          // 🪝 Multi-Hook continuous sinking: If there are still empty hooks on the rig, keep sinking downward!
           const emptySlotCount = this.hooks.filter(h => !h.hookedFish).length;
           const multiSinkBonus = emptySlotCount > 0 ? (55 * sinkSpeedMultiplier) : 0;
 
@@ -526,20 +589,22 @@ export class Rod {
           );
         }
 
-        // Tension Overload & Snap check
-        if (this.tension >= 95) {
-          this.tensionSnapTimer += dt;
-          if (this.tensionSnapTimer >= 1.5) {
-            // Line Snapped!
-            this.isSnapped = true;
-            hookedList.forEach(fish => {
-              fish.state = 'FLEE';
-            });
-            this.reset(cat);
-            return;
+        // Tension Overload & Snap check (Classic Mode only; Mini-game handles escape on 0% progress)
+        if (!isMinigameOn) {
+          if (this.tension >= 95) {
+            this.tensionSnapTimer += dt;
+            if (this.tensionSnapTimer >= 1.5) {
+              // Line Snapped!
+              this.isSnapped = true;
+              hookedList.forEach(fish => {
+                fish.state = 'FLEE';
+              });
+              this.reset(cat);
+              return;
+            }
+          } else {
+            this.tensionSnapTimer = Math.max(0, this.tensionSnapTimer - dt * 2);
           }
-        } else {
-          this.tensionSnapTimer = Math.max(0, this.tensionSnapTimer - dt * 2);
         }
 
       } else {
@@ -793,6 +858,183 @@ export class Rod {
       ctx.fill();
 
       ctx.restore();
+    }
+
+    // 🎯 7. Draw Perfect Reeling Rhythm Ring & Feedback
+    if (this.state === 'FISHING' && this.allHookedFishes.length > 0) {
+      const bx = this.bobberPos.x;
+      const by = this.bobberPos.y;
+
+      if (this.rhythmRing.active) {
+        ctx.save();
+
+        // Target Golden Ring (Fixed sweet spot zone)
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 3.5;
+        ctx.shadowColor = '#f59e0b';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(bx, by, this.rhythmRing.targetRadius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Target dashed outer glow ring
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.arc(bx, by, this.rhythmRing.targetRadius + 3, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Shrinking Pulse Ring
+        const diff = Math.abs(this.rhythmRing.currentRadius - this.rhythmRing.targetRadius);
+        let ringColor = '#38bdf8';
+        if (diff <= 8.5) ringColor = '#10b981'; // Green inside sweet spot!
+        else if (diff <= 18) ringColor = '#facc15'; // Gold near sweet spot!
+
+        ctx.strokeStyle = ringColor;
+        ctx.lineWidth = 3.0;
+        ctx.shadowColor = ringColor;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(bx, by, Math.max(3, this.rhythmRing.currentRadius), 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Central Timing Prompt Icon/Text
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = '#000000';
+        ctx.shadowBlur = 4;
+        ctx.fillText('CLICK', bx, by + 4);
+
+        ctx.restore();
+      }
+
+      // Rhythm Sparks
+      if (this.rhythmRing.particles.length > 0) {
+        ctx.save();
+        this.rhythmRing.particles.forEach(p => {
+          ctx.globalAlpha = Math.max(0, p.alpha);
+          ctx.fillStyle = p.color;
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = 6;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.restore();
+      }
+
+      // Rhythm Feedback Text
+      if (this.rhythmRing.feedback) {
+        ctx.save();
+        const fb = this.rhythmRing.feedback;
+        ctx.globalAlpha = Math.max(0, Math.min(1, fb.timer / 0.7));
+        ctx.font = `bold ${Math.round(15 * fb.scale)}px sans-serif`;
+        ctx.fillStyle = fb.color;
+        ctx.shadowColor = '#000000';
+        ctx.shadowBlur = 6;
+        ctx.textAlign = 'center';
+        ctx.fillText(fb.text, fb.x, fb.y);
+        ctx.restore();
+      }
+    }
+  }
+
+  checkRhythmHit() {
+    if (this.economy && this.economy.isMinigameEnabled === false) return false;
+    if (this.state !== 'FISHING' || !this.rhythmRing.active || this.allHookedFishes.length === 0) {
+      return false;
+    }
+
+    const ring = this.rhythmRing;
+    const diff = Math.abs(ring.currentRadius - ring.targetRadius);
+
+    if (diff <= 8.5) {
+      // ✨ PERFECT HIT!
+      ring.active = false;
+      ring.combo++;
+      ring.totalHits++;
+      const comboText = ring.combo > 1 ? ` (${ring.combo}x COMBO!)` : '';
+      this.showRhythmFeedback(`✨ PERFECT!${comboText}`, '#ffd166');
+      
+      if (this.sound && typeof this.sound.playCoin === 'function') {
+        this.sound.playCoin();
+      }
+
+      // Stun all hooked fishes for 1.4s
+      this.allHookedFishes.forEach(f => {
+        if (f.hasStruggleGauge) {
+          f.isExhausted = true;
+          f.exhaustTimer = 1.4;
+          f.rage = Math.max(0, f.rage - 35);
+        }
+      });
+
+      // Quick burst reel pull upwards
+      this.hookPos.y = Math.max(this.waterY + 10, this.hookPos.y - 45);
+      this.tension = Math.max(0, this.tension - 20);
+      this.spawnRhythmSparks(this.bobberPos.x, this.bobberPos.y, '#ffd166');
+      return true;
+    } else if (diff <= 18.0) {
+      // 🌟 GREAT HIT!
+      ring.active = false;
+      ring.combo++;
+      ring.totalHits++;
+      const comboText = ring.combo > 1 ? ` (${ring.combo}x)` : '';
+      this.showRhythmFeedback(`🌟 GREAT!${comboText}`, '#38bdf8');
+      
+      if (this.sound && typeof this.sound.playClick === 'function') {
+        this.sound.playClick();
+      }
+
+      this.allHookedFishes.forEach(f => {
+        if (f.hasStruggleGauge) {
+          f.isExhausted = true;
+          f.exhaustTimer = 0.7;
+        }
+      });
+
+      this.hookPos.y = Math.max(this.waterY + 10, this.hookPos.y - 25);
+      this.tension = Math.max(0, this.tension - 10);
+      this.spawnRhythmSparks(this.bobberPos.x, this.bobberPos.y, '#38bdf8');
+      return true;
+    } else if (diff > 25.0) {
+      // Early tap
+      ring.active = false;
+      ring.combo = 0;
+      this.showRhythmFeedback('EARLY 💨', '#ef4444');
+      return false;
+    }
+
+    return false;
+  }
+
+  showRhythmFeedback(text, color) {
+    this.rhythmRing.feedback = {
+      text,
+      color,
+      timer: 0.85,
+      x: this.bobberPos.x,
+      y: this.bobberPos.y - 35,
+      scale: 1.0
+    };
+  }
+
+  spawnRhythmSparks(x, y, color) {
+    for (let i = 0; i < 12; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = 35 + Math.random() * 80;
+      this.rhythmRing.particles.push({
+        x,
+        y,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd,
+        size: 3 + Math.random() * 3,
+        alpha: 1.0,
+        color
+      });
     }
   }
 

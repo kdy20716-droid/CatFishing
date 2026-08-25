@@ -47,12 +47,22 @@ export class HUD {
     this.onDepthLockTrigger = null;
     this.onItemUseTrigger = null;
 
-    // 🚢 Cruise Fast-Travel to Dock Button
+    // 🚢 Cruise Fast-Travel to Dock / Voyage Out Button
     this.cruiseBtn = document.getElementById('btn-dock-cruise');
     this.cruisePriceBadge = document.getElementById('hud-cruise-price');
     this.onCruiseTrigger = null;
     if (this.cruiseBtn) {
       this.cruiseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.onCruiseTrigger) {
+          this.onCruiseTrigger();
+        }
+      });
+    }
+
+    const dockDistEl = document.getElementById('dock-distance-indicator');
+    if (dockDistEl) {
+      dockDistEl.addEventListener('click', (e) => {
         e.stopPropagation();
         if (this.onCruiseTrigger) {
           this.onCruiseTrigger();
@@ -181,10 +191,10 @@ export class HUD {
           this.toggleRocketItem();
         } else if (bait.id === 'allure') {
           this.sound.playClick();
-          this.showNotification('💖 현혹 페로몬: 물속에서 [Q] 키 (또는 클릭) 시 주변 모든 물고기가 미끼로 쇄도합니다!', '💡');
+          this.showNotification('💖 현혹 페로몬: 물속에서 [Q] 키 입력 시 주변 모든 물고기가 미끼로 쇄도합니다!', '💡');
         } else if (bait.id === 'bomb') {
           this.sound.playClick();
-          this.showNotification('💣 폭탄: 물속에서 [Q] 키 (또는 클릭) 시 주변 방해 물고기를 퇴치합니다!', '💡');
+          this.showNotification('💣 폭탄: 물속에서 [Q] 키 입력 시 주변 방해 물고기를 퇴치합니다!', '💡');
         } else if (bait.id === 'multi_hook_2') {
           this.selectHookCount(2);
         } else if (bait.id === 'multi_hook_3') {
@@ -375,14 +385,15 @@ export class HUD {
           this.tensionFill.style.width = `${rod.tension}%`;
           if (rod.tension > 75) {
             this.tensionFill.style.background = 'linear-gradient(90deg, #ff9e00, #d90429)';
-            if (this.tensionWarning) this.tensionWarning.classList.add('blink');
+            this.tensionContainer.classList.add('high-tension');
           } else {
             this.tensionFill.style.background = 'linear-gradient(90deg, #06d6a0, #ffd166)';
-            if (this.tensionWarning) this.tensionWarning.classList.remove('blink');
+            this.tensionContainer.classList.remove('high-tension');
           }
         }
       } else {
         this.tensionContainer.classList.remove('visible');
+        this.tensionContainer.classList.remove('high-tension');
       }
     }
 
@@ -403,7 +414,23 @@ export class HUD {
       this._updateClockWidgets(environment);
     }
 
-    // 7. ⬅️ Update Dock Distance Indicator (부두막 방향 & 거리 알림: 50m 초과 시 표시, 50m 이내 접근 시 숨김)
+    // 7. 🚢 / 🌊 Update Cruise Travel Button (부두 근처에서는 '먼 바다 출항', 먼 바다에서는 '부두 귀환')
+    const isAtDock = cat ? (cat.pos.x <= 320) : false;
+    if (this.cruiseBtn) {
+      const cruiseIcon = this.cruiseBtn.querySelector('.pill-icon');
+      const cruiseLabel = this.cruiseBtn.querySelector('.cruise-label');
+      if (isAtDock) {
+        if (cruiseIcon) cruiseIcon.innerText = '🌊';
+        if (cruiseLabel) cruiseLabel.innerText = '먼 바다 출항';
+        this.cruiseBtn.title = '현재 보트의 최대 탐험 해역으로 쾌속 출항 (클릭 시 이동)';
+      } else {
+        if (cruiseIcon) cruiseIcon.innerText = '🚢';
+        if (cruiseLabel) cruiseLabel.innerText = '부두 귀환';
+        this.cruiseBtn.title = '부두막으로 즉시 귀환 크루즈 탑승 (클릭 시 이동)';
+      }
+    }
+
+    // ⬅️ Update Dock Distance Indicator (부두막 방향 & 거리 알림)
     const dockDistEl = document.getElementById('dock-distance-indicator');
     if (dockDistEl && cat) {
       const dockX = 200; // Dock wooden pier center
@@ -444,17 +471,17 @@ export class HUD {
           }
         }
 
-        // 8-B. Update [Right-Click] Depth Lock STOP/SINK Button (Always available during fishing)
+        // 8-B. Update [S] / [Right-Click] Depth Lock STOP/SINK Button (Always available during fishing)
         if (this.rightActionBtn) {
           this.rightActionBtn.className = 'right-action-btn';
           if (rod.isDepthLocked) {
             this.rightActionBtn.classList.add('mode-locked');
             if (this.rightActionIcon) this.rightActionIcon.innerText = '▶️';
-            if (this.rightActionLabel) this.rightActionLabel.innerText = 'SINK';
+            if (this.rightActionLabel) this.rightActionLabel.innerText = '[S] SINK';
           } else {
             this.rightActionBtn.classList.add('mode-stop');
             if (this.rightActionIcon) this.rightActionIcon.innerText = '🛑';
-            if (this.rightActionLabel) this.rightActionLabel.innerText = 'STOP';
+            if (this.rightActionLabel) this.rightActionLabel.innerText = '[S] STOP';
           }
         }
       } else {
@@ -569,6 +596,7 @@ export class HUD {
         </div>
 
         <p class="catch-desc">${data.description}</p>
+        ${catchResult.hasRhythmBonus ? '<div class="rhythm-bonus-badge" style="background: linear-gradient(90deg, #f59e0b, #ec4899); color: #fff; font-weight: 800; font-size: 12px; padding: 4px 14px; border-radius: 12px; margin: 2px 0 4px 0; display: inline-block; box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);">🎯 퍼펙트 릴링 보너스 (+30% 골드 & EXP 증폭!)</div>' : ''}
         <div class="basket-stored-banner" style="font-size: 12px; color: #94a3b8; margin: 2px 0;">🧺 어획 바구니에 보관되었습니다. (부두 상인에게 판매/수집 가능)</div>
         ${isFirstTime ? '<div class="first-caught-banner">📖 새로운 어종 도감 등록 완료! ✨</div>' : ''}
 

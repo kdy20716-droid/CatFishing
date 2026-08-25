@@ -143,8 +143,9 @@ export class Input {
     if (this.keys['KeyA'] || this.keys['ArrowLeft']) h -= 1;
     if (this.keys['KeyD'] || this.keys['ArrowRight']) h += 1;
     this.horizontalAxis = h;
+  }
 
-    // Reset frame-specific triggers
+  clearFrame() {
     this.mouseJustPressed = false;
     this.mouseJustReleased = false;
     this.keysJustPressed = {};

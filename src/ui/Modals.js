@@ -796,6 +796,25 @@ export class Modals {
     if (soundText && this.sound) {
       soundText.innerText = this.sound.isMuted ? '🎵 사운드 켜기 (현재 음소거)' : '🔇 사운드 끄기 (현재 소리 켜짐)';
     }
+
+    // Mini-game Setting Toggle in ESC Menu
+    const btnMinigame = document.getElementById('btn-minigame-toggle');
+    const minigameText = document.getElementById('minigame-toggle-text');
+    const minigameDesc = document.getElementById('minigame-pause-desc');
+    const isMinigameOn = (this.economy && this.economy.isMinigameEnabled !== false);
+
+    if (btnMinigame) {
+      btnMinigame.classList.toggle('active', isMinigameOn);
+      btnMinigame.classList.toggle('muted', !isMinigameOn);
+    }
+    if (minigameText) {
+      minigameText.textContent = isMinigameOn ? 'ON' : 'OFF';
+    }
+    if (minigameDesc) {
+      minigameDesc.textContent = isMinigameOn
+        ? '입질 시 별이 타겟에 왔을 때 스페이스바/클릭을 누르는 타이밍 미니게임'
+        : '미니게임 없이 조용하고 편안하게 릴링하는 클래식 모드';
+    }
   }
 
   initPauseEvents() {
@@ -846,6 +865,25 @@ export class Modals {
       btnCloud.addEventListener('click', () => {
         this.sound.playClick();
         this.openAuthModal();
+      });
+    }
+
+    // 6. Mini-game ON/OFF Toggle in ESC Menu
+    const btnMinigameToggle = document.getElementById('btn-minigame-toggle');
+    if (btnMinigameToggle) {
+      btnMinigameToggle.addEventListener('click', () => {
+        const isEnabled = this.economy ? (this.economy.isMinigameEnabled !== false) : true;
+        const nextState = !isEnabled;
+        if (this.economy) this.economy.isMinigameEnabled = nextState;
+        localStorage.setItem('cozy_cat_minigame_enabled', nextState ? 'true' : 'false');
+        this.sound.playClick();
+        this.updatePauseModalUI();
+        this.hud.showNotification(
+          nextState 
+            ? '⭐ 메이플 스타캐치 낚시 미니게임이 활성화되었습니다!' 
+            : '💡 스타캐치 미니게임이 비활성화되었습니다 (클래식 모드)',
+          '🎮'
+        );
       });
     }
   }
@@ -925,7 +963,6 @@ export class Modals {
         if (!isMuted && !this.sound.isBgmPlaying) {
           this.sound.startBgm();
         }
-        this.sound.playClick();
         this.updateSoundModalUI();
         this.hud.showNotification(isMuted ? '🔇 마스터 사운드 음소거' : '🔊 마스터 사운드 켜짐', isMuted ? '🔇' : '🔊');
       });
