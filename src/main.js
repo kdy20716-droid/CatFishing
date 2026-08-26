@@ -958,6 +958,88 @@ class Game {
       btnRight.addEventListener('pointercancel', handleRightEnd);
       btnRight.addEventListener('pointerleave', handleRightEnd);
     }
+
+    // Main Mobile Action Button (🎣 찌 던지기 ➔ ⚡ 릴 땡기기)
+    const btnMobileAction = document.getElementById('btn-mobile-action');
+    if (btnMobileAction) {
+      const handleActionStart = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (this.aquarium.isOpen || this.isCruiseTraveling) return;
+
+        if (this.rod.state === 'READY') {
+          // Start charging cast
+          this.rod.startCharging();
+          this.cat.state = 'CHARGE';
+          btnMobileAction.classList.add('active');
+        } else if (this.rod.state === 'FISHING' || this.rod.state === 'FLYING' || this.rod.state === 'REELING_IN') {
+          // Reeling in line
+          this.input.setVirtualReel(true);
+          btnMobileAction.classList.add('active', 'reeling');
+
+          // Trigger timing rhythm tap if in fishing mode
+          if (this.rod.state === 'FISHING') {
+            const hitResult = this.rod.checkRhythmHit();
+            if (hitResult) {
+              this.camera.shake(hitResult === 'PERFECT' ? 8 : 4, 0.25);
+            }
+            if (this.starCatchMinigame && this.starCatchMinigame.isActive) {
+              this.starCatchMinigame.pendingTrigger = true;
+            }
+          }
+        }
+      };
+
+      const handleActionEnd = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        btnMobileAction.classList.remove('active', 'reeling');
+
+        if (this.rod.state === 'CHARGING') {
+          this.rod.cast(this.cat);
+          this.cat.state = 'CAST';
+          setTimeout(() => {
+            if (this.cat.state === 'CAST') this.cat.state = 'IDLE';
+          }, 500);
+        } else {
+          this.input.setVirtualReel(false);
+        }
+      };
+
+      btnMobileAction.addEventListener('pointerdown', handleActionStart);
+      btnMobileAction.addEventListener('pointerup', handleActionEnd);
+      btnMobileAction.addEventListener('pointercancel', handleActionEnd);
+      btnMobileAction.addEventListener('pointerleave', handleActionEnd);
+      btnMobileAction.addEventListener('contextmenu', (e) => e.preventDefault());
+    }
+  }
+
+  updateMobileActionButton() {
+    const btn = document.getElementById('btn-mobile-action');
+    if (!btn) return;
+
+    const isReady = (this.rod.state === 'READY' || this.rod.state === 'CHARGING');
+    const isSubmergedOrFishing = (this.rod.state === 'FISHING' || this.rod.state === 'FLYING' || this.rod.state === 'REELING_IN');
+
+    if (isReady) {
+      if (!btn.classList.contains('mode-cast')) {
+        btn.className = 'mobile-action-btn mode-cast';
+        const iconEl = btn.querySelector('.mobile-action-icon');
+        const textEl = btn.querySelector('.mobile-action-text');
+        if (iconEl) iconEl.textContent = '🎣';
+        if (textEl) textEl.textContent = '찌 던지기';
+      }
+    } else if (isSubmergedOrFishing) {
+      if (!btn.classList.contains('mode-reel')) {
+        btn.className = 'mobile-action-btn mode-reel';
+        const iconEl = btn.querySelector('.mobile-action-icon');
+        const textEl = btn.querySelector('.mobile-action-text');
+        if (iconEl) iconEl.textContent = '⚡';
+        if (textEl) textEl.textContent = '릴 땡기기';
+      }
+    }
   }
 
   openEmoteWheel() {
@@ -1167,6 +1249,9 @@ class Game {
       this.environment.waterSurfaceY,
       (caughtFish) => this.handleFishCaught(caughtFish)
     );
+
+    // Update Mobile Action Button (찌 던지기 ➔ 릴 땡기기)
+    this.updateMobileActionButton();
 
     // 🌟 MapleStory-Style Star Catch Fishing Mini-game Control (Default: OFF)
     const isMinigameEnabled = this.economy ? (this.economy.isMinigameEnabled === true) : false;

@@ -24,6 +24,7 @@ export class Input {
     // Movement axes
     this.horizontalAxis = 0; // -1 (left), +1 (right)
     this.virtualHorizontalAxis = 0; // for on-screen touch buttons
+    this.virtualReel = false; // for mobile on-screen reel button
 
     // Callbacks
     this.listeners = new Map();
@@ -33,6 +34,10 @@ export class Input {
 
   setVirtualAxis(val) {
     this.virtualHorizontalAxis = Math.max(-1, Math.min(1, val));
+  }
+
+  setVirtualReel(val) {
+    this.virtualReel = !!val;
   }
 
   isTypingInInput(target) {
@@ -158,7 +163,7 @@ export class Input {
   }
 
   isReeling() {
-    return this.isMouseDown || this.keys['Space'] || this.keys['KeyW'] || this.keys['ArrowUp'];
+    return this.isMouseDown || this.keys['Space'] || this.keys['KeyW'] || this.keys['ArrowUp'] || this.virtualReel;
   }
 
   isKeyHeld(code) {
