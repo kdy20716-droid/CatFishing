@@ -675,8 +675,8 @@ export class Economy {
     // 🧺 Caught Fish Basket (잡은 물고기 보관 바구니: 상인에게 판매하거나 아쿠아리움에 수집)
     this.caughtFishBasket = [];
 
-    // 🎯 Mini-Game ON/OFF setting
-    this.isMinigameEnabled = localStorage.getItem('cozy_cat_minigame_enabled') !== 'false';
+    // 🎯 Mini-Game ON/OFF setting (Default: OFF)
+    this.isMinigameEnabled = localStorage.getItem('cozy_cat_minigame_enabled') === 'true';
 
     this.loadFromStorage();
   }

@@ -5616,6 +5616,11 @@ html, body {
   border-color: #ffd166;
 }
 
+/* Mobile Profile Settings Button (Default: Hidden on PC) */
+.mobile-profile-settings-btn {
+  display: none;
+}
+
 /* Hide warning overlays on desktop by default */
 .mobile-rotate-overlay,
 .mobile-controls-overlay {
@@ -5624,6 +5629,48 @@ html, body {
 
 /* Mobile & Small Screen Breakpoint */
 @media (max-width: 1080px), (max-height: 640px), (hover: none) and (pointer: coarse) {
+  /* Mobile Settings Button right under User Profile */
+  .auth-hud-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  .mobile-profile-settings-btn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: rgba(15, 23, 42, 0.90);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1.5px solid #f59e0b;
+    border-radius: 12px;
+    padding: 3px 8px;
+    color: #fef08a;
+    font-family: var(--font-cute);
+    font-size: 10.5px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    touch-action: manipulation;
+    user-select: none;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .mobile-profile-settings-btn:active {
+    transform: scale(0.92);
+    background: rgba(245, 158, 11, 0.85);
+    color: #0f172a;
+    border-color: #ffffff;
+  }
+
+  .mobile-profile-settings-btn .settings-icon {
+    font-size: 11px;
+    line-height: 1;
+  }
+
   /* 2. Mobile On-Screen Virtual Controls */
   .mobile-controls-overlay {
     display: block !important;

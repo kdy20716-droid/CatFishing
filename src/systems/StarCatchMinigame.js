@@ -343,8 +343,8 @@ export class StarCatchMinigame {
     const isBoss = this.fish?.isBoss;
     const isShiny = this.fish?.isShiny;
     const titleText = isBoss 
-      ? `👑 [보스] ${fishName} 줄다리기 스타캐치!` 
-      : (isShiny ? `✨ [이로치] ${fishName} 줄다리기 스타캐치!` : `🎣 ${fishName} 줄다리기 스타캐치!`);
+      ? `👑 [보스] ${fishName} 줄다리기 미니게임!` 
+      : (isShiny ? `✨ [이로치] ${fishName} 줄다리기 미니게임!` : `🎣 ${fishName} 낚시 미니게임!`);
     ctx.fillText(titleText, canvasWidth / 2, boxY + 12);
 
     // Current Remaining Depth Indicator

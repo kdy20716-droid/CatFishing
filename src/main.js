@@ -758,18 +758,7 @@ class Game {
 
       if (code === 'KeyH') this.modals.openGuide();
       if (code === 'Escape') {
-        if (this.isEmoteWheelOpen) {
-          this.closeEmoteWheel(true);
-        } else if (this.modals.isPauseOpen()) {
-          this.modals.closeAll();
-          this.isPaused = false;
-        } else if (this.modals.hasAnyModalOpen()) {
-          this.modals.closeAll();
-          this.isPaused = false;
-        } else {
-          this.isPaused = true;
-          this.modals.openPauseModal();
-        }
+        this.togglePauseMenu();
       }
     });
 
@@ -794,9 +783,26 @@ class Game {
     });
   }
 
+  togglePauseMenu() {
+    this.sound.playClick();
+    if (this.isEmoteWheelOpen) {
+      this.closeEmoteWheel(true);
+    } else if (this.modals.isPauseOpen()) {
+      this.modals.closeAll();
+      this.isPaused = false;
+    } else if (this.modals.hasAnyModalOpen()) {
+      this.modals.closeAll();
+      this.isPaused = false;
+    } else {
+      this.isPaused = true;
+      this.modals.openPauseModal();
+    }
+  }
+
   initMobileControls() {
     const btnMobileLandscape = document.getElementById('btn-mobile-landscape');
     const btnTopbarMobile = document.getElementById('btn-topbar-mobile');
+    const btnMobileProfileSettings = document.getElementById('btn-mobile-profile-settings');
     const btnRotateForce = document.getElementById('btn-rotate-force-landscape');
     const rotateOverlay = document.getElementById('mobile-rotate-prompt');
     const btnLeft = document.getElementById('btn-mobile-left');
@@ -857,6 +863,13 @@ class Game {
       btnTopbarMobile.addEventListener('click', (e) => {
         e.stopPropagation();
         toggleFullscreenLandscape();
+      });
+    }
+
+    if (btnMobileProfileSettings) {
+      btnMobileProfileSettings.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.togglePauseMenu();
       });
     }
 
@@ -1155,8 +1168,8 @@ class Game {
       (caughtFish) => this.handleFishCaught(caughtFish)
     );
 
-    // 🌟 MapleStory-Style Star Catch Fishing Mini-game Control
-    const isMinigameEnabled = this.economy ? (this.economy.isMinigameEnabled !== false) : true;
+    // 🌟 MapleStory-Style Star Catch Fishing Mini-game Control (Default: OFF)
+    const isMinigameEnabled = this.economy ? (this.economy.isMinigameEnabled === true) : false;
     const primaryHookedFish = (this.rod.allHookedFishes && this.rod.allHookedFishes.length > 0) 
       ? this.rod.allHookedFishes[0] 
       : (this.rod.hookedFish || (this.rod.hooks && this.rod.hooks.find(h => h.hookedFish)?.hookedFish));

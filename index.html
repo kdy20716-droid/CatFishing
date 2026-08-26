@@ -78,6 +78,12 @@
             <span class="user-menu-arrow">▼</span>
           </div>
 
+          <!-- Mobile Only Settings/Pause Button right below profile -->
+          <button id="btn-mobile-profile-settings" class="mobile-profile-settings-btn" title="설정 및 일시정지 메뉴">
+            <span class="settings-icon">⚙️</span>
+            <span class="settings-text">설정</span>
+          </button>
+
           <!-- User Dropdown Menu -->
           <div id="user-dropdown-menu" class="user-dropdown-menu hidden">
             <div class="dropdown-header">
@@ -1012,12 +1018,12 @@
             <div class="sound-card-left" style="display: flex; align-items: center; gap: 10px;">
               <span class="sound-icon-lg" style="font-size: 22px;">⭐</span>
               <div class="sound-card-info">
-                <div class="sound-card-title" style="font-size: 14px; font-weight: 800; color: #f8fafc;">메이플 스타캐치 낚시 미니게임</div>
-                <div class="sound-card-desc" id="minigame-pause-desc" style="font-size: 11.5px; color: #94a3b8;">입질 시 별이 타겟에 왔을 때 스페이스바/클릭을 누르는 타이밍 미니게임</div>
+                <div class="sound-card-title" style="font-size: 14px; font-weight: 800; color: #f8fafc;">낚시 미니게임</div>
+                <div class="sound-card-desc" id="minigame-pause-desc" style="font-size: 11.5px; color: #94a3b8;">미니게임 없이 조용하고 편안하게 릴링하는 클래식 모드</div>
               </div>
             </div>
-            <button id="btn-minigame-toggle" class="btn-sound-toggle-badge active" title="클릭하여 미니게임 켜기/끄기">
-              <span id="minigame-toggle-text">ON</span>
+            <button id="btn-minigame-toggle" class="btn-sound-toggle-badge muted" title="클릭하여 미니게임 켜기/끄기">
+              <span id="minigame-toggle-text">OFF</span>
             </button>
           </div>
 

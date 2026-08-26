@@ -801,7 +801,7 @@ export class Modals {
     const btnMinigame = document.getElementById('btn-minigame-toggle');
     const minigameText = document.getElementById('minigame-toggle-text');
     const minigameDesc = document.getElementById('minigame-pause-desc');
-    const isMinigameOn = (this.economy && this.economy.isMinigameEnabled !== false);
+    const isMinigameOn = (this.economy && this.economy.isMinigameEnabled === true);
 
     if (btnMinigame) {
       btnMinigame.classList.toggle('active', isMinigameOn);
@@ -872,7 +872,7 @@ export class Modals {
     const btnMinigameToggle = document.getElementById('btn-minigame-toggle');
     if (btnMinigameToggle) {
       btnMinigameToggle.addEventListener('click', () => {
-        const isEnabled = this.economy ? (this.economy.isMinigameEnabled !== false) : true;
+        const isEnabled = this.economy ? (this.economy.isMinigameEnabled === true) : false;
         const nextState = !isEnabled;
         if (this.economy) this.economy.isMinigameEnabled = nextState;
         localStorage.setItem('cozy_cat_minigame_enabled', nextState ? 'true' : 'false');
@@ -880,8 +880,8 @@ export class Modals {
         this.updatePauseModalUI();
         this.hud.showNotification(
           nextState 
-            ? '⭐ 메이플 스타캐치 낚시 미니게임이 활성화되었습니다!' 
-            : '💡 스타캐치 미니게임이 비활성화되었습니다 (클래식 모드)',
+            ? '⭐ 낚시 미니게임이 활성화되었습니다!' 
+            : '💡 낚시 미니게임이 비활성화되었습니다 (클래식 모드)',
           '🎮'
         );
       });
