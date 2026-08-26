@@ -901,18 +901,24 @@ class Game {
     document.addEventListener('webkitfullscreenchange', updateFullscreenState);
     document.addEventListener('mozfullscreenchange', updateFullscreenState);
 
-    // Orientation change check
+    // Orientation & Mobile Controls overlay sync
+    const controlsOverlay = document.getElementById('mobile-controls-overlay');
     const checkOrientation = () => {
-      const isMobileSize = window.innerWidth <= 920 || window.innerHeight <= 520;
+      const isMobileSize = window.innerWidth <= 1200 || window.innerHeight <= 800 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
       const isPortrait = window.innerHeight > window.innerWidth;
 
       if (rotateOverlay) {
-        if (isMobileSize && isPortrait) {
+        if (isMobileSize && isPortrait && window.innerWidth <= 920) {
           rotateOverlay.classList.remove('hidden');
         } else {
           rotateOverlay.classList.add('hidden');
         }
       }
+
+      if (controlsOverlay) {
+        controlsOverlay.style.display = isMobileSize ? 'block' : 'none';
+      }
+
       this.resizeCanvas();
     };
 
