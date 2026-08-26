@@ -50,6 +50,7 @@
 
         <!-- 접히는 메뉴 영역 -->
         <div class="hud-right-menu" id="hud-right-menu">
+          <button id="btn-topbar-mobile" class="hud-btn mobile-mode-btn" data-tooltip="가로 전체화면 모드 토글">📱 가로 모드</button>
           <button id="btn-sound-modal-open" class="hud-btn sound-btn" data-tooltip="사운드 & 볼륨 설정 [O]">🔊 사운드</button>
           <!-- Active Multiplayer Room Badge (방 개설/입장 시 상단에 상시 표시) -->
           <button id="topbar-multi-badge" class="hud-btn multi-active-badge hidden" title="클릭하여 방 코드 복사 및 멀티플레이 관리">
@@ -185,6 +186,35 @@
           </svg>
         </div>
         <span class="clock-title-badge" id="time-label-text">☀️ 아침</span>
+      </div>
+    </div>
+
+    <!-- 📱 Mobile Floating Landscape Fullscreen Button (화면 좌측 플로팅, 모바일/작은 화면에서만 노출) -->
+    <button id="btn-mobile-landscape" class="mobile-landscape-btn" title="모바일 가로 전체화면으로 플레이">
+      <span class="mobile-btn-icon">📱</span>
+      <span class="mobile-btn-text">가로 전체화면</span>
+    </button>
+
+    <!-- 🔄 Mobile Portrait Warning Overlay (스마트폰 세로 파지 시 가로 회전 안내) -->
+    <div id="mobile-rotate-prompt" class="mobile-rotate-overlay hidden">
+      <div class="rotate-card">
+        <div class="rotate-anim-icon">📲</div>
+        <div class="rotate-title">가로 모드로 돌려주세요냥!</div>
+        <div class="rotate-desc">더 넓은 바다 시야와 쾌적한 조작을 위해 스마트폰을 가로로 돌려 플레이하세요.</div>
+        <button id="btn-rotate-force-landscape" class="btn-primary rotate-btn">📱 가로 전체화면 전환</button>
+      </div>
+    </div>
+
+    <!-- 🎮 Mobile On-Screen Touch Controls (모바일 가상 컨트롤러) -->
+    <div id="mobile-controls-overlay" class="mobile-controls-overlay">
+      <!-- Left: Boat Steering Buttons (좌/우 방향키) -->
+      <div class="mobile-steering-pad">
+        <button id="btn-mobile-left" class="mobile-touch-btn btn-steer-left" aria-label="왼쪽 이동">
+          <span>◀</span>
+        </button>
+        <button id="btn-mobile-right" class="mobile-touch-btn btn-steer-right" aria-label="오른쪽 이동">
+          <span>▶</span>
+        </button>
       </div>
     </div>
 

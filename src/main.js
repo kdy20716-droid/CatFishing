@@ -155,6 +155,7 @@ class Game {
     // Hook inputs & buttons
     this.initUIButtons();
     this.initInputHandlers();
+    this.initMobileControls();
 
     // Init collapsible panel toggles, clock dock, bait peekup
     this.hud.initPanelToggles();
@@ -791,6 +792,159 @@ class Game {
         this.closeEmoteWheel(true);
       }
     });
+  }
+
+  initMobileControls() {
+    const btnMobileLandscape = document.getElementById('btn-mobile-landscape');
+    const btnTopbarMobile = document.getElementById('btn-topbar-mobile');
+    const btnRotateForce = document.getElementById('btn-rotate-force-landscape');
+    const rotateOverlay = document.getElementById('mobile-rotate-prompt');
+    const btnLeft = document.getElementById('btn-mobile-left');
+    const btnRight = document.getElementById('btn-mobile-right');
+
+    const toggleFullscreenLandscape = async () => {
+      this.sound.playClick();
+      try {
+        const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
+        if (!isFull) {
+          const docEl = document.documentElement;
+          if (docEl.requestFullscreen) {
+            await docEl.requestFullscreen();
+          } else if (docEl.webkitRequestFullscreen) {
+            await docEl.webkitRequestFullscreen();
+          } else if (docEl.mozRequestFullScreen) {
+            await docEl.mozRequestFullScreen();
+          }
+
+          // Lock landscape orientation if supported
+          if (screen.orientation && screen.orientation.lock) {
+            try {
+              await screen.orientation.lock('landscape');
+            } catch (err) {
+              console.warn('Orientation lock failed:', err);
+            }
+          }
+
+          if (rotateOverlay) rotateOverlay.classList.add('hidden');
+          this.hud.showNotification('📱 가로 전체화면 모드로 전환되었습니다냥!', '✨');
+        } else {
+          if (document.exitFullscreen) {
+            await document.exitFullscreen();
+          } else if (document.webkitExitFullscreen) {
+            await document.webkitExitFullscreen();
+          } else if (document.mozCancelFullScreen) {
+            await document.mozCancelFullScreen();
+          }
+
+          if (screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
+          }
+          this.hud.showNotification('📴 전체화면 모드가 종료되었습니다냥.', '💡');
+        }
+      } catch (e) {
+        console.error('Fullscreen toggle error:', e);
+      }
+    };
+
+    if (btnMobileLandscape) {
+      btnMobileLandscape.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleFullscreenLandscape();
+      });
+    }
+
+    if (btnTopbarMobile) {
+      btnTopbarMobile.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleFullscreenLandscape();
+      });
+    }
+
+    if (btnRotateForce) {
+      btnRotateForce.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleFullscreenLandscape();
+      });
+    }
+
+    // Update button text on fullscreen change
+    const updateFullscreenState = () => {
+      const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
+      if (btnMobileLandscape) {
+        const iconEl = btnMobileLandscape.querySelector('.mobile-btn-icon');
+        const textEl = btnMobileLandscape.querySelector('.mobile-btn-text');
+        if (isFull) {
+          if (iconEl) iconEl.innerText = '📴';
+          if (textEl) textEl.innerText = '전체화면 종료';
+        } else {
+          if (iconEl) iconEl.innerText = '📱';
+          if (textEl) textEl.innerText = '가로 전체화면';
+        }
+      }
+      setTimeout(() => this.resizeCanvas(), 100);
+    };
+
+    document.addEventListener('fullscreenchange', updateFullscreenState);
+    document.addEventListener('webkitfullscreenchange', updateFullscreenState);
+    document.addEventListener('mozfullscreenchange', updateFullscreenState);
+
+    // Orientation change check
+    const checkOrientation = () => {
+      const isMobileSize = window.innerWidth <= 920 || window.innerHeight <= 520;
+      const isPortrait = window.innerHeight > window.innerWidth;
+
+      if (rotateOverlay) {
+        if (isMobileSize && isPortrait) {
+          rotateOverlay.classList.remove('hidden');
+        } else {
+          rotateOverlay.classList.add('hidden');
+        }
+      }
+      this.resizeCanvas();
+    };
+
+    window.addEventListener('resize', checkOrientation);
+    window.addEventListener('orientationchange', checkOrientation);
+    checkOrientation();
+
+    // Virtual Steering Touch Controls
+    if (btnLeft) {
+      const handleLeftStart = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.input.setVirtualAxis(-1);
+        btnLeft.classList.add('active');
+      };
+      const handleLeftEnd = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.input.setVirtualAxis(0);
+        btnLeft.classList.remove('active');
+      };
+      btnLeft.addEventListener('pointerdown', handleLeftStart);
+      btnLeft.addEventListener('pointerup', handleLeftEnd);
+      btnLeft.addEventListener('pointercancel', handleLeftEnd);
+      btnLeft.addEventListener('pointerleave', handleLeftEnd);
+    }
+
+    if (btnRight) {
+      const handleRightStart = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.input.setVirtualAxis(1);
+        btnRight.classList.add('active');
+      };
+      const handleRightEnd = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.input.setVirtualAxis(0);
+        btnRight.classList.remove('active');
+      };
+      btnRight.addEventListener('pointerdown', handleRightStart);
+      btnRight.addEventListener('pointerup', handleRightEnd);
+      btnRight.addEventListener('pointercancel', handleRightEnd);
+      btnRight.addEventListener('pointerleave', handleRightEnd);
+    }
   }
 
   openEmoteWheel() {

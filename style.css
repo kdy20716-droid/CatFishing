@@ -5303,6 +5303,8 @@ html, body {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
   pointer-events: none;
   font-family: var(--font-cute);
+}
+
 /* =========================================================
    🎣 Authentic Stardew Valley Fishing Mini-Game UI
    ========================================================= */
@@ -5543,5 +5545,236 @@ html, body {
   opacity: 1;
 }
 
+/* =========================================================
+   📱 Mobile Responsive & Landscape Fullscreen Mode
+   ========================================================= */
 
+/* 1. Floating Mobile Landscape Button on Left Edge (화면 좌측 상시 노출) */
+.mobile-landscape-btn {
+  display: flex !important;
+  position: fixed !important;
+  left: 16px !important;
+  top: 42% !important;
+  transform: translateY(-50%) !important;
+  z-index: 99999 !important;
+  background: rgba(15, 23, 42, 0.92) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 2.5px solid #38bdf8 !important;
+  border-radius: 20px !important;
+  padding: 10px 14px !important;
+  color: #f8fafc !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 4px !important;
+  cursor: pointer !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.7), 0 0 20px rgba(56, 189, 248, 0.45) !important;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
+  user-select: none;
+  touch-action: manipulation;
+  animation: mobile-btn-pulse 2.2s infinite alternate ease-in-out;
+}
 
+@keyframes mobile-btn-pulse {
+  0% { transform: translateY(-50%) scale(1); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.7), 0 0 16px rgba(56, 189, 248, 0.35); }
+  100% { transform: translateY(-50%) scale(1.06); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8), 0 0 26px rgba(56, 189, 248, 0.7); }
+}
+
+.mobile-landscape-btn:hover,
+.mobile-landscape-btn:active {
+  background: rgba(30, 41, 59, 0.98) !important;
+  border-color: #ffd166 !important;
+  transform: translateY(-50%) scale(1.1) !important;
+  box-shadow: 0 0 28px rgba(255, 209, 102, 0.8) !important;
+}
+
+.mobile-btn-icon {
+  font-size: 22px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+.mobile-btn-text {
+  font-family: var(--font-cute);
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffd166;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
+.hud-btn.mobile-mode-btn {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  border-color: #38bdf8;
+  color: #f0f9ff;
+  font-weight: 800;
+}
+
+.hud-btn.mobile-mode-btn:hover {
+  background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+  border-color: #ffd166;
+}
+
+/* Hide warning overlays on desktop by default */
+.mobile-rotate-overlay,
+.mobile-controls-overlay {
+  display: none;
+}
+
+/* Mobile & Small Screen Breakpoint */
+@media (max-width: 1080px), (max-height: 640px), (hover: none) and (pointer: coarse) {
+  /* 2. Mobile On-Screen Virtual Controls */
+  .mobile-controls-overlay {
+    display: block !important;
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 80;
+  }
+
+  .mobile-steering-pad {
+    position: absolute;
+    bottom: 20px;
+    left: 18px;
+    display: flex;
+    gap: 12px;
+    pointer-events: auto;
+  }
+
+  .mobile-touch-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    transition: transform 0.1s ease, background 0.1s ease, border-color 0.1s ease;
+  }
+
+  .mobile-touch-btn:active,
+  .mobile-touch-btn.active {
+    transform: scale(0.90);
+    background: rgba(56, 189, 248, 0.85);
+    border-color: #ffd166;
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.8);
+  }
+
+  /* 3. Compact HUD for Small / Mobile Screens */
+  .hud-top {
+    padding: 6px 12px;
+    gap: 8px;
+  }
+
+  .hud-stat-pill {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+
+  .hud-btn {
+    padding: 4px 10px;
+    font-size: 11.5px;
+  }
+
+  .clock-widgets-container {
+    top: 56px;
+    right: 12px;
+    transform: scale(0.85);
+    transform-origin: top right;
+  }
+
+  .right-action-widget {
+    bottom: 20px;
+    right: 18px;
+    gap: 8px;
+  }
+
+  .right-action-btn {
+    width: 52px;
+    height: 52px;
+  }
+}
+
+/* 4. Portrait Warning Screen (세로 모드 진입 시 가로 회전 안내) */
+@media (max-width: 920px) and (orientation: portrait) {
+  .mobile-rotate-overlay:not(.hidden) {
+    display: flex !important;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(10, 15, 30, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    box-sizing: border-box;
+    animation: rotate-overlay-fade 0.3s ease-out;
+  }
+
+  @keyframes rotate-overlay-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .rotate-card {
+    background: rgba(30, 41, 59, 0.95);
+    border: 2px solid #38bdf8;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(56, 189, 248, 0.3);
+    padding: 30px 24px;
+    max-width: 340px;
+    width: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .rotate-anim-icon {
+    font-size: 48px;
+    line-height: 1;
+    animation: phone-rotate-hint 2.2s infinite ease-in-out;
+  }
+
+  @keyframes phone-rotate-hint {
+    0%, 20% { transform: rotate(0deg); }
+    50%, 80% { transform: rotate(-90deg); }
+    100% { transform: rotate(0deg); }
+  }
+
+  .rotate-title {
+    font-family: var(--font-cute);
+    font-size: 20px;
+    font-weight: 800;
+    color: #fde047;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+  }
+
+  .rotate-desc {
+    font-size: 13px;
+    color: #cbd5e1;
+    line-height: 1.5;
+    font-weight: 600;
+  }
+
+  .rotate-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 14px;
+    margin-top: 6px;
+  }
+}

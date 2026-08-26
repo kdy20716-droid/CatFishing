@@ -23,11 +23,16 @@ export class Input {
 
     // Movement axes
     this.horizontalAxis = 0; // -1 (left), +1 (right)
+    this.virtualHorizontalAxis = 0; // for on-screen touch buttons
 
     // Callbacks
     this.listeners = new Map();
 
     this.initListeners();
+  }
+
+  setVirtualAxis(val) {
+    this.virtualHorizontalAxis = Math.max(-1, Math.min(1, val));
   }
 
   isTypingInInput(target) {
@@ -142,7 +147,8 @@ export class Input {
     let h = 0;
     if (this.keys['KeyA'] || this.keys['ArrowLeft']) h -= 1;
     if (this.keys['KeyD'] || this.keys['ArrowRight']) h += 1;
-    this.horizontalAxis = h;
+    if (this.virtualHorizontalAxis) h += this.virtualHorizontalAxis;
+    this.horizontalAxis = Math.max(-1, Math.min(1, h));
   }
 
   clearFrame() {
