@@ -788,6 +788,20 @@ html, body {
   animation: drawer-pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+.modal-close-btn,
+.fish-detail-close-btn {
+  background: none;
+  border: none;
+  font-size: 32px;
+  color: #8d99ae;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.modal-close-btn:hover,
+.fish-detail-close-btn:hover { color: #ff4d6d; }
+
 .bait-drawer.open {
   display: flex;
 }
@@ -1809,8 +1823,8 @@ html, body {
 
 .encyclo-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+  gap: 14px;
   padding: 20px 24px;
   overflow-y: auto;
   flex: 1 1 auto;
@@ -1836,23 +1850,28 @@ html, body {
 
 .encyclo-card {
   background: #ffffff;
-  border: 2.5px solid #e9ecef;
-  border-radius: var(--radius-md);
-  padding: 14px 16px;
+  border: 2.5px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  box-shadow: 0 3px 0 #dee2e6;
-  transition: all 0.15s;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  box-shadow: 0 3px 0 #cbd5e1;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease, border-color 0.15s ease;
   box-sizing: border-box;
-  min-height: 310px;
-  height: 100%;
+  cursor: pointer;
+  user-select: none;
+  min-height: unset !important;
+  height: auto !important;
+  position: relative;
 }
 
 .shop-card:hover, .encyclo-card:hover {
-  transform: translateY(-3px);
-  border-color: var(--accent-gold);
-  box-shadow: 0 6px 0 #e09f3e;
+  transform: translateY(-4px) scale(1.02);
+  border-color: #f59e0b;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12), 0 3px 0 #d97706;
 }
 
 .shop-card.equipped {
@@ -2070,55 +2089,55 @@ html, body {
 }
 
 .encyclo-badge {
-  display: inline-block;
-  align-self: flex-start;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 800;
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: #e9ecef;
-  color: #495057;
+  padding: 1.5px 6px;
+  border-radius: 6px;
+  background: #e2e8f0;
+  color: #475569;
+  letter-spacing: -0.2px;
 }
 
+.encyclo-badge.zone-shallow { background: #e0f2fe; color: #0369a1; }
+.encyclo-badge.zone-mid { background: #dbeafe; color: #1d4ed8; }
+.encyclo-badge.zone-deep { background: #ede9fe; color: #6d28d9; }
+.encyclo-badge.zone-abyss { background: #fce7f3; color: #be185d; }
+.encyclo-badge.zone-hadal { background: #fef3c7; color: #b45309; }
+
 .encyclo-title {
+  font-family: var(--font-cute);
   font-weight: 800;
-  font-size: 16px;
-  color: #2b2d42;
+  font-size: 13.5px;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  line-height: 1.2;
 }
 
 .mystery-title {
-  color: #adb5bd;
+  color: #94a3b8;
 }
 
-.encyclo-eng {
-  font-size: 11px;
-  color: #adb5bd;
-}
-
-.encyclo-details {
-  font-size: 12px;
-  color: #495057;
-  line-height: 1.5;
-  background: #f8f9fa;
-  padding: 8px;
-  border-radius: var(--radius-sm);
-}
-
-.encyclo-desc {
-  font-size: 12px;
-  color: #6c757d;
-  line-height: 1.4;
-}
-
-.encyclo-hint {
-  font-size: 12px;
-  color: #ff9e00;
+.encyclo-sub-tag {
+  font-size: 10px;
+  color: #94a3b8;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  line-height: 1;
+}
+
+.locked-sub {
+  color: #cbd5e1;
 }
 
 .encyclo-preview-wrapper {
   width: 100%;
-  height: 84px;
+  height: 68px;
   flex-shrink: 0;
   background: radial-gradient(circle, rgba(160, 220, 255, 0.35) 0%, rgba(200, 240, 255, 0.1) 70%, transparent 100%);
   border-radius: var(--radius-md);
@@ -5483,7 +5502,6 @@ html, body {
   overflow: hidden;
   box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.8);
 }
-
 .stardew-meter-fill {
   position: absolute;
   bottom: 0;
@@ -5494,6 +5512,318 @@ html, body {
   border-radius: 6px;
   transition: height 0.08s linear, background 0.2s;
   box-shadow: 0 0 12px rgba(6, 214, 160, 0.8);
+}
+
+.encyclo-preview-wrapper .encyclo-fish-canvas-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1px 0 3px 0;
+  border: 1.5px solid rgba(160, 220, 255, 0.4);
+  box-sizing: border-box;
+}
+
+.encyclo-preview-wrapper.locked-preview {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.encyclo-fish-canvas {
+  width: 130px;
+  height: 74px;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.encyclo-card.locked {
+  background: #f8fafc;
+  border-style: dashed;
+}
+
+/* =========================================================
+   Fish Detail Info Modal (상세 설명 팝업)
+   ========================================================= */
+.fish-detail-backdrop {
+  z-index: 10005 !important;
+}
+
+.fish-detail-window {
+  max-width: 540px !important;
+  width: 90vw !important;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.4), 0 0 0 4px rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  animation: modal-pop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modal-pop {
+  0% { transform: scale(0.92); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.fish-detail-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1 1 auto;
+  max-height: calc(88vh - 120px);
+}
+
+.fish-detail-hero-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 2px solid #bae6fd;
+  border-radius: 16px;
+  padding: 12px 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.fish-detail-hero-box.shiny-hero {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border-color: #fde68a;
+  box-shadow: 0 0 16px rgba(253, 230, 138, 0.5);
+}
+
+.fish-detail-hero-box.locked-hero {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.fish-detail-canvas-wrap {
+  width: 170px;
+  height: 95px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(224, 242, 254, 0.4) 100%);
+  border-radius: 12px;
+  border: 1.5px solid rgba(186, 230, 253, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.fish-detail-canvas-wrap.locked-canvas-wrap {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: #e2e8f0;
+}
+
+.detail-shiny-tag {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #b45309;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 1px 6px;
+  border-radius: 8px;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.detail-locked-tag {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #64748b;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 1px 6px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.fish-detail-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.detail-badge-pill-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.detail-rarity-pill {
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.detail-rarity-pill.rarity-common { background: #e2e8f0; color: #475569; }
+.detail-rarity-pill.rarity-uncommon { background: #dcfce7; color: #15803d; }
+.detail-rarity-pill.rarity-rare { background: #dbeafe; color: #1d4ed8; }
+.detail-rarity-pill.rarity-epic { background: #f3e8ff; color: #7e22ce; }
+.detail-rarity-pill.rarity-legendary { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+.detail-rarity-pill.rarity-mythic { background: #ffe4e6; color: #be123c; border: 1px solid #fecdd3; }
+
+.detail-zone-pill {
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #0284c7;
+}
+
+.detail-boss-pill {
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.detail-name-large {
+  font-family: var(--font-cute);
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.detail-eng-large {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.header-eng-sub {
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: normal;
+  margin-left: 6px;
+}
+
+.fish-detail-grid-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.detail-spec-card {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 10px 14px;
+}
+
+.spec-card-title {
+  font-family: var(--font-cute);
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #334155;
+  margin-bottom: 6px;
+  border-bottom: 1.5px dashed #cbd5e1;
+  padding-bottom: 3px;
+}
+
+.spec-card-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.spec-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #475569;
+}
+
+.spec-label {
+  font-weight: 700;
+  color: #64748b;
+}
+
+.spec-val {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.highlight-cyan { color: #0284c7; }
+.highlight-gold { color: #d97706; }
+.highlight-amber { color: #b45309; }
+.highlight-bait { color: #059669; }
+
+.fish-detail-desc-box {
+  background: #fffdf5;
+  border: 1.5px solid #fde68a;
+  border-radius: 14px;
+  padding: 12px 16px;
+}
+
+.desc-box-title {
+  font-family: var(--font-cute);
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #92400e;
+  margin-bottom: 6px;
+}
+
+.desc-box-content {
+  font-size: 13px;
+  color: #451a03;
+  line-height: 1.6;
+  font-family: 'Nanum Gothic', sans-serif;
+  word-break: keep-all;
+}
+
+.locked-hint-box {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.locked-hint-box .desc-box-title {
+  color: #475569;
+}
+
+.locked-hint-box .desc-box-content {
+  color: #64748b;
+}
+
+.fish-detail-footer {
+  padding: 10px 20px 14px 20px;
+  display: flex;
+  justify-content: center;
+  background: #fafafa;
+  border-top: 1.5px solid #e2e8f0;
+}
+
+@media (max-width: 560px) {
+  .fish-detail-hero-box {
+    flex-direction: column;
+    text-align: center;
+  }
+  .detail-badge-pill-row {
+    justify-content: center;
+  }
+  .fish-detail-grid-section {
+    grid-template-columns: 1fr;
+  }
 }
 
 .stardew-meter-fill.draining {
@@ -5561,9 +5891,9 @@ html, body {
    📱 Mobile Responsive & Landscape Fullscreen Mode
    ========================================================= */
 
-/* 1. Floating Mobile Landscape Button on Left Edge (화면 좌측 상시 노출) */
+/* 1. Floating Mobile Landscape Button on Left Edge (Default: Hidden on PC, Shown on Mobile) */
 .mobile-landscape-btn {
-  display: flex !important;
+  display: none !important;
   position: fixed !important;
   left: 16px !important;
   top: 42% !important;
@@ -5629,7 +5959,6 @@ html, body {
 }
 
 /* Mobile Profile Settings Button (Default: Hidden on PC) */
-/* Mobile Profile Settings Button (Default: Hidden on PC) */
 .mobile-profile-settings-btn {
   display: none;
 }
@@ -5640,15 +5969,19 @@ html, body {
 }
 
 .mobile-controls-overlay {
-  display: none;
+  display: none !important;
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 99990;
 }
 
-/* Mobile & Small Screen Breakpoint */
-@media (max-width: 1200px), (max-height: 800px), (hover: none), (pointer: coarse) {
+/* Mobile & Small Screen Breakpoint (Strictly for mobile/tablets, hidden on PC) */
+@media (max-width: 920px), (max-height: 520px), ((hover: none) and (pointer: coarse) and (max-width: 1200px)) {
+  .mobile-landscape-btn {
+    display: flex !important;
+  }
+
   /* Mobile Settings Button right under User Profile */
   .auth-hud-container {
     display: flex;

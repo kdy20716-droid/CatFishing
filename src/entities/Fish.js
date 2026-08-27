@@ -120,6 +120,13 @@ export class Fish {
   }
 
   updateWander(dt, bounds) {
+    if (this.isNonLiving) {
+      // 🎁 무생물(보물상자, 유리병 편지, 고대 유물): 유영하거나 배회하지 않고 제자리에 완전히 고정
+      this.vel.x = 0;
+      this.vel.y = 0;
+      return;
+    }
+
     this.wanderTimer -= dt;
     if (this.wanderTimer <= 0) {
       this.wanderTimer = 3 + Math.random() * 4;
@@ -184,12 +191,47 @@ export class Fish {
     const currentBaitId = hook.currentBaitId;
     const liveBaitData = hook.liveBaitFish ? hook.liveBaitFish.data : null;
 
+    // 🎁 0. 무생물 오브젝트(보물상자, 유리병 편지, 아틀란티스 고대 유물) 특수 처리
+    if (this.isNonLiving) {
+      // 아틀란티스 고대 유물은 오직 황금 지렁이(golden)에만 반응!
+      if (this.data.id === 'ancient_relic' || this.data.drawType === 'relic') {
+        if (currentBaitId !== 'golden') {
+          return;
+        }
+      }
+
+      // 미끼를 가져다 대기만 하면 입질/지연/줄다리기 없이 즉시 낚아 올림!
+      let freeSlot = null;
+      if (hook.hooks && hook.hooks.length > 0) {
+        const emptySlots = hook.hooks.filter(h => !h.hookedFish);
+        if (emptySlots.length === 0) return;
+        freeSlot = emptySlots.reduce((closest, slot) => {
+          const slotPos = slot.pos || hook.hookPos;
+          const d = this.pos.dist(slotPos);
+          return (!closest || d < closest.dist) ? { slot, dist: d } : closest;
+        }, null)?.slot;
+      } else {
+        freeSlot = !hook.hookedFish ? { pos: hook.hookPos } : null;
+      }
+      if (!freeSlot) return;
+
+      const targetPos = freeSlot.pos || hook.hookPos || hook.pos;
+      if (!targetPos) return;
+
+      const dist = this.pos.dist(targetPos);
+      if (dist < 46) {
+        const attached = hook.attachFish(this, freeSlot);
+        if (attached) {
+          this.state = 'HOOKED';
+          this.isInspecting = false;
+        }
+      }
+      return;
+    }
+
     let isAttractive = false;
 
-    // 🎁 0. 보물상자, 유리병 편지, 고대 유물 등 무생물 오브젝트는 기본 미끼(식빵) 포함 모든 미끼에 100% 걸림!
-    if (this.isNonLiving) {
-      isAttractive = true;
-    } else if (hook.isAllureActive) {
+    if (hook.isAllureActive) {
       // 💖 1. 환상의 현혹 페로몬 활성화 시 반경 내 모든 물고기 즉시 매혹
       isAttractive = true;
     } else if (isLiveBait && liveBaitData) {
@@ -1953,6 +1995,357 @@ export class Fish {
         break;
       }
 
+      case 'lionfish': {
+        // Striped Lionfish (화려한 쏠배감펭)
+        ctx.save();
+        ctx.strokeStyle = c.fin || '#e76f51';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = -14; i <= 6; i += 4) {
+          const spineWiggle = Math.sin(this.animTime * 6 + i) * 3;
+          ctx.moveTo(i, -6);
+          ctx.lineTo(i - 4, -22 + spineWiggle);
+        }
+        ctx.stroke();
+
+        ctx.fillStyle = c.body || '#e63946';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 16, 11, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = c.pattern || '#ffffff';
+        [-8, -2, 4].forEach(sx => {
+          ctx.fillRect(sx, -9, 2.5, 18);
+        });
+
+        ctx.fillStyle = c.fin || '#e76f51';
+        ctx.beginPath();
+        ctx.moveTo(0, 2);
+        ctx.lineTo(-14, 18 + tailWag * 8);
+        ctx.lineTo(-2, 14);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(-14, 0);
+        ctx.lineTo(-24, -10 + tailWag * 10);
+        ctx.lineTo(-20, 0);
+        ctx.lineTo(-24, 10 + tailWag * 10);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#111';
+        ctx.beginPath();
+        ctx.arc(10, -2, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        break;
+      }
+
+      case 'tuna': {
+        // Bluefin Tuna (용맹한 참다랑어)
+        ctx.save();
+        ctx.fillStyle = c.body || '#001e3d';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 26, 13, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = c.belly || '#b0c4de';
+        ctx.beginPath();
+        ctx.ellipse(0, 4, 24, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = c.fin || '#ffcc00';
+        ctx.beginPath();
+        ctx.moveTo(-4, -12);
+        ctx.lineTo(-10, -22);
+        ctx.lineTo(2, -12);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(-2, 12);
+        ctx.lineTo(-8, 20);
+        ctx.lineTo(4, 12);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#ffcc00';
+        [-14, -18, -22].forEach(fx => {
+          ctx.fillRect(fx, -5, 2, 2);
+          ctx.fillRect(fx, 3, 2, 2);
+        });
+
+        ctx.beginPath();
+        ctx.moveTo(-24, 0);
+        ctx.lineTo(-34, -16 + tailWag * 12);
+        ctx.lineTo(-28, 0);
+        ctx.lineTo(-34, 16 + tailWag * 12);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(18, -2, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000814';
+        ctx.beginPath();
+        ctx.arc(19, -2, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        break;
+      }
+
+      case 'sailfish': {
+        // Azure Sailfish (바람의 돛새치)
+        ctx.save();
+        ctx.fillStyle = c.fin || '#0077b6';
+        ctx.strokeStyle = '#00b4d8';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-22, -6);
+        ctx.quadraticCurveTo(-6, -32 + Math.sin(this.animTime * 5) * 3, 14, -8);
+        ctx.lineTo(14, -4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = c.body || '#023e8a';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 30, 9, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = c.belly || '#48cae4';
+        ctx.beginPath();
+        ctx.ellipse(0, 3, 26, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = c.beak || '#03045e';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(26, -1);
+        ctx.lineTo(52, -2);
+        ctx.stroke();
+
+        ctx.fillStyle = c.fin || '#0077b6';
+        ctx.beginPath();
+        ctx.moveTo(-28, 0);
+        ctx.lineTo(-40, -18 + tailWag * 12);
+        ctx.lineTo(-34, 0);
+        ctx.lineTo(-40, 18 + tailWag * 12);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(20, -2, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(21, -2, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        break;
+      }
+
+      case 'nautilus': {
+        // Ancient Nautilus (신비한 앵무조개)
+        ctx.save();
+        ctx.fillStyle = c.body || '#ffffff';
+        ctx.strokeStyle = '#ced4da';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.ellipse(-4, 0, 18, 16, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.strokeStyle = c.stripe || '#d9480f';
+        ctx.lineWidth = 3;
+        for (let angle = 0.6; angle < 2.6; angle += 0.4) {
+          ctx.beginPath();
+          ctx.arc(-4, 0, 17, angle, angle + 0.2);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = c.tentacle || '#ffd8a8';
+        ctx.beginPath();
+        ctx.moveTo(8, -8);
+        ctx.lineTo(16, -6);
+        ctx.lineTo(18, 6);
+        ctx.lineTo(8, 8);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = c.tentacle || '#ffd8a8';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        for (let t = -4; t <= 4; t += 2.5) {
+          const tWave = Math.sin(this.animTime * 6 + t) * 4;
+          ctx.beginPath();
+          ctx.moveTo(16, t);
+          ctx.quadraticCurveTo(24, t + tWave, 28, t);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = c.eye || '#1a1a1a';
+        ctx.beginPath();
+        ctx.arc(10, 0, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        break;
+      }
+
+      case 'frilled_shark': {
+        // Ancient Frilled Shark (고대 주름상어)
+        ctx.save();
+        ctx.fillStyle = c.body || '#2b2d42';
+        ctx.beginPath();
+        ctx.moveTo(30, 0);
+        ctx.quadraticCurveTo(15, -9, -5, -7 + tailWag * 4);
+        ctx.quadraticCurveTo(-25, -5 + tailWag * 10, -45, tailWag * 16);
+        ctx.quadraticCurveTo(-25, 5 + tailWag * 10, -5, 7 + tailWag * 4);
+        ctx.quadraticCurveTo(15, 9, 30, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = '#e63946';
+        ctx.lineWidth = 1.5;
+        for (let g = 8; g <= 24; g += 3) {
+          ctx.beginPath();
+          ctx.moveTo(g, -5);
+          ctx.lineTo(g - 2, 5);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(26, -2, 3, 4);
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(22, -4, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        break;
+      }
+
+      case 'chimaera': {
+        // Silver Chimaera (은상어 키메라)
+        ctx.save();
+        ctx.fillStyle = c.body || '#e0e1dd';
+        ctx.beginPath();
+        ctx.moveTo(22, 0);
+        ctx.quadraticCurveTo(8, -11, -8, -6);
+        ctx.lineTo(-40, tailWag * 10);
+        ctx.lineTo(-8, 6);
+        ctx.quadraticCurveTo(8, 11, 22, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = c.fin || '#778da9';
+        ctx.beginPath();
+        ctx.moveTo(2, -2);
+        ctx.lineTo(-10, -18 + tailWag * 6);
+        ctx.lineTo(-4, 0);
+        ctx.lineTo(-10, 18 + tailWag * 6);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = '#415a77';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(6, -8);
+        ctx.lineTo(0, -20);
+        ctx.stroke();
+
+        ctx.fillStyle = c.eye || '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(14, -3, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#0d1b2a';
+        ctx.beginPath();
+        ctx.arc(14.5, -3, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        break;
+      }
+
+      case 'tripod_fish': {
+        // Abyssal Tripod Fish (심해 세발치)
+        ctx.save();
+        ctx.fillStyle = c.body || '#b8c0ff';
+        ctx.beginPath();
+        ctx.ellipse(0, -6, 22, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = c.fin || '#c8b6ff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(4, -10);
+        ctx.lineTo(8, -26);
+        ctx.moveTo(0, -10);
+        ctx.lineTo(2, -24);
+        ctx.stroke();
+
+        ctx.strokeStyle = c.stilt || '#ffd6ff';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(6, 0);
+        ctx.lineTo(4, 32);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-2, 0);
+        ctx.lineTo(-6, 32);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-20, -6);
+        ctx.lineTo(-30, 32);
+        ctx.stroke();
+
+        ctx.fillStyle = '#2b2d42';
+        ctx.beginPath();
+        ctx.arc(15, -7, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        break;
+      }
+
+      case 'moray': {
+        // Moonlight Ghost Moray (달빛 유령 곰치)
+        ctx.save();
+        ctx.fillStyle = c.body || '#03045e';
+        ctx.strokeStyle = c.glow || '#90e0ef';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(32, 0);
+        ctx.quadraticCurveTo(16, -10, 0, -6 + tailWag * 6);
+        ctx.quadraticCurveTo(-18, -4 + tailWag * 12, -40, tailWag * 18);
+        ctx.quadraticCurveTo(-18, 4 + tailWag * 12, 0, 6 + tailWag * 6);
+        ctx.quadraticCurveTo(16, 10, 32, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = c.glow || '#90e0ef';
+        ctx.beginPath();
+        ctx.moveTo(20, -6);
+        ctx.lineTo(-38, tailWag * 18 - 4);
+        ctx.lineTo(-36, tailWag * 18);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(24, -3, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#00f5d4';
+        ctx.beginPath();
+        ctx.arc(24.5, -3, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        break;
+      }
+
       default:
         ctx.fillStyle = '#adb5bd';
         ctx.beginPath();
@@ -1979,7 +2372,11 @@ export class Fish {
 
     // Scaling based on species size to fit preview canvas
     let scale = 1.35;
-    if (species.drawType === 'leviathan' || species.drawType === 'megalodon' || species.drawType === 'oarfish') {
+    if (species.drawType === 'leviathan' || species.drawType === 'megalodon' || species.drawType === 'oarfish' || species.drawType === 'sailfish' || species.drawType === 'frilled_shark' || species.drawType === 'moray') {
+      scale = 0.55;
+    } else if (species.drawType === 'coelacanth' || species.drawType === 'sunfish' || species.drawType === 'whale_shark' || species.drawType === 'tuna' || species.drawType === 'chimaera') {
+      scale = 0.75;
+    } else if (species.drawType === 'bream' || species.drawType === 'mackerel' || species.drawType === 'squid' || species.drawType === 'lionfish' || species.drawType === 'tripod_fish' || species.drawType === 'nautilus') {
       scale = 0.55;
     } else if (species.drawType === 'coelacanth' || species.drawType === 'sunfish' || species.drawType === 'whale_shark') {
       scale = 0.75;

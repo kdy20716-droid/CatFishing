@@ -821,7 +821,7 @@ export class HUD {
     }
 
     // 📱 Default Collapsed State on Mobile
-    const isMobile = window.innerWidth <= 1200 || window.innerHeight <= 800 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    const isMobile = window.innerWidth <= 920 || window.innerHeight <= 520;
     if (isMobile) {
       if (leftPanel) leftPanel.classList.add('collapsed');
       if (rightPanel) rightPanel.classList.add('collapsed');

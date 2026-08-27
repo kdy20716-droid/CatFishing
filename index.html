@@ -53,7 +53,7 @@
 
         <!-- 접히는 메뉴 영역 -->
         <div class="hud-right-menu" id="hud-right-menu">
-          <button id="btn-topbar-mobile" class="hud-btn mobile-mode-btn" data-tooltip="가로 전체화면 모드 토글">📱 가로 모드</button>
+          <button id="btn-topbar-mobile" class="hud-btn mobile-mode-btn" data-tooltip="전체화면 모드 토글 [F11]">🖥️ 전체화면</button>
           <button id="btn-sound-modal-open" class="hud-btn sound-btn" data-tooltip="사운드 & 볼륨 설정 [O]">🔊 사운드</button>
           <!-- Active Multiplayer Room Badge (방 개설/입장 시 상단에 상시 표시) -->
           <button id="topbar-multi-badge" class="hud-btn multi-active-badge hidden" title="클릭하여 방 코드 복사 및 멀티플레이 관리">
@@ -689,7 +689,7 @@
         </div>
         <div id="encyclopedia-stats" class="encyclo-stats-bar"></div>
         <div class="encyclo-filters">
-          <button class="filter-btn active" data-zone="all">전체 어종 (36종)</button>
+          <button class="filter-btn active" data-zone="all">전체 어종 (64종)</button>
           <button class="filter-btn" data-zone="shallow">표층 (0~30m)</button>
           <button class="filter-btn" data-zone="mid">중층 (30~100m)</button>
           <button class="filter-btn" data-zone="deep">심해 (100~250m)</button>
@@ -697,6 +697,22 @@
           <button class="filter-btn" data-zone="hadal">초심연 (400~500m+)</button>
         </div>
         <div id="encyclopedia-grid" class="encyclo-grid"></div>
+      </div>
+    </div>
+
+    <!-- 🐟 Fish Detail Info Modal (도감 상세 설명 팝업) -->
+    <div id="fish-detail-modal" class="modal-backdrop fish-detail-backdrop">
+      <div class="modal-window fish-detail-window">
+        <div class="modal-header">
+          <h2 id="fish-detail-header-title">📖 물고기 상세 정보</h2>
+          <button class="fish-detail-close-btn" id="btn-close-fish-detail">&times;</button>
+        </div>
+        <div id="fish-detail-content" class="fish-detail-body">
+          <!-- Dynamic Content Rendered by Modals.js -->
+        </div>
+        <div class="modal-footer fish-detail-footer">
+          <button class="btn-primary fish-detail-confirm-btn" id="btn-confirm-fish-detail" style="min-width: 110px;">확인</button>
+        </div>
       </div>
     </div>
 

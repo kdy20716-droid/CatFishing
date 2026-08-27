@@ -17,6 +17,7 @@ export class Modals {
 
     this.shopModal = document.getElementById('shop-modal');
     this.encyclopediaModal = document.getElementById('encyclopedia-modal');
+    this.fishDetailModal = document.getElementById('fish-detail-modal');
     this.aquariumUI = document.getElementById('aquarium-controls-ui');
     this.aquariumManageModal = document.getElementById('aquarium-manage-modal');
     this.soundModal = document.getElementById('sound-modal');
@@ -76,13 +77,34 @@ export class Modals {
   }
 
   initEventListeners() {
-    // Close modal buttons
+    // Close modal buttons (Global)
     document.querySelectorAll('.modal-close-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         this.sound.playClick();
         this.closeAll();
       });
     });
+
+    // 🐟 Fish detail modal exclusive close (keeps encyclopedia open!)
+    const closeFishDetail = (e) => {
+      if (e) e.stopPropagation();
+      this.sound.playClick();
+      if (this.fishDetailModal) {
+        this.fishDetailModal.classList.remove('visible');
+      }
+    };
+
+    document.querySelectorAll('.fish-detail-close-btn, .fish-detail-confirm-btn').forEach(btn => {
+      btn.addEventListener('click', closeFishDetail);
+    });
+
+    if (this.fishDetailModal) {
+      this.fishDetailModal.addEventListener('click', (e) => {
+        if (e.target === this.fishDetailModal) {
+          closeFishDetail(e);
+        }
+      });
+    }
 
     const btnInvOpen = document.getElementById('btn-open-inventory');
     if (btnInvOpen) {
@@ -738,6 +760,7 @@ export class Modals {
   closeAll() {
     if (this.shopModal) this.shopModal.classList.remove('visible');
     if (this.encyclopediaModal) this.encyclopediaModal.classList.remove('visible');
+    if (this.fishDetailModal) this.fishDetailModal.classList.remove('visible');
     if (this.guideModal) this.guideModal.classList.remove('visible');
     if (this.authModal) this.authModal.classList.remove('visible');
     if (this.conflictModal) this.conflictModal.classList.remove('visible');
@@ -761,6 +784,7 @@ export class Modals {
     return (
       (this.shopModal && this.shopModal.classList.contains('visible')) ||
       (this.encyclopediaModal && this.encyclopediaModal.classList.contains('visible')) ||
+      (this.fishDetailModal && this.fishDetailModal.classList.contains('visible')) ||
       (this.guideModal && this.guideModal.classList.contains('visible')) ||
       (this.authModal && this.authModal.classList.contains('visible')) ||
       (this.conflictModal && this.conflictModal.classList.contains('visible')) ||
@@ -2239,46 +2263,50 @@ export class Modals {
       return f.zone === this.currentEncyclopediaFilter;
     });
 
+    const zoneNames = {
+      shallow: '표층',
+      mid: '중층',
+      deep: '심해',
+      abyss: '심연',
+      hadal: '초심연'
+    };
+
     filtered.forEach(species => {
       const record = this.encyclopedia.getRecord(species.id);
       const isDiscovered = record.caughtCount > 0;
       const hasShiny = (record.shinyCount || 0) > 0;
+      const zoneTag = zoneNames[species.zone] || species.zone.toUpperCase();
 
       const card = document.createElement('div');
       card.className = `encyclo-card ${isDiscovered ? 'unlocked' : 'locked'} ${hasShiny ? 'has-shiny' : ''} rarity-${species.rarity}`;
+      card.title = isDiscovered ? `${species.name} (클릭하여 상세 정보 보기)` : `미발견 어종 (클릭하여 서식 정보 보기)`;
 
       if (isDiscovered) {
         card.innerHTML = `
           <div class="encyclo-badge-row">
-            <span class="encyclo-badge">${species.zone.toUpperCase()}</span>
-            ${hasShiny ? '<span class="shiny-star-badge" title="특별한 빛을 품은 물고기 해금!">✨</span>' : ''}
+            <span class="encyclo-badge zone-${species.zone}">${zoneTag}</span>
+            <div class="encyclo-icon-badges">
+              ${species.isBoss ? '<span class="boss-crown-badge" title="보스 물고기">👑</span>' : ''}
+              ${hasShiny ? '<span class="shiny-star-badge" title="특별한 빛을 품은 물고기 해금!">✨</span>' : ''}
+            </div>
           </div>
           <div class="encyclo-preview-wrapper ${hasShiny ? 'shiny-preview' : ''}">
-            <canvas class="encyclo-fish-canvas" width="140" height="80"></canvas>
+            <canvas class="encyclo-fish-canvas" width="130" height="74"></canvas>
           </div>
           <div class="encyclo-title">${species.name}</div>
-          <div class="encyclo-eng">${species.engName}</div>
-          <div class="encyclo-details">
-            <div>서식 수심: <strong>${species.minDepth}m ~ ${species.maxDepth}m</strong></div>
-            <div>최대 크기: <strong>${record.maxSize} cm</strong></div>
-            <div>잡은 횟수: <strong>${record.caughtCount} 회</strong></div>
-            <div>기본 가격: <strong>${species.basePrice} G</strong></div>
-          </div>
-          <div class="encyclo-desc">${species.description}</div>
+          <div class="encyclo-sub-tag">${species.engName}</div>
         `;
       } else {
         card.innerHTML = `
-          <div class="encyclo-badge">${species.zone.toUpperCase()}</div>
+          <div class="encyclo-badge-row">
+            <span class="encyclo-badge zone-${species.zone} locked-badge">${zoneTag}</span>
+            <span class="locked-lock-icon">🔒</span>
+          </div>
           <div class="encyclo-preview-wrapper locked-preview">
-            <canvas class="encyclo-fish-canvas" width="140" height="80"></canvas>
+            <canvas class="encyclo-fish-canvas" width="130" height="74"></canvas>
           </div>
           <div class="encyclo-title mystery-title">???</div>
-          <div class="encyclo-eng">???</div>
-          <div class="encyclo-details">
-            <div>서식 수심: <strong>${species.minDepth}m ~ ${species.maxDepth}m</strong></div>
-            <div>상태: <strong>미발견 🔒</strong></div>
-          </div>
-          <div class="encyclo-hint">이 수심대에서 적절한 미끼로 낚아보세요!</div>
+          <div class="encyclo-sub-tag locked-sub">미발견</div>
         `;
       }
 
@@ -2288,7 +2316,188 @@ export class Modals {
         Fish.drawPreview(canvas, species, isDiscovered, hasShiny);
       }
 
+      // Click card to open full detailed modal
+      card.addEventListener('click', () => {
+        this.sound.playClick();
+        this.openFishDetailModal(species);
+      });
+
       container.appendChild(card);
     });
+  }
+
+  openFishDetailModal(species) {
+    if (!this.fishDetailModal) return;
+    const content = document.getElementById('fish-detail-content');
+    const headerTitle = document.getElementById('fish-detail-header-title');
+    if (!content) return;
+
+    const record = this.encyclopedia.getRecord(species.id);
+    const isDiscovered = record.caughtCount > 0;
+    const hasShiny = (record.shinyCount || 0) > 0;
+
+    const zoneNames = {
+      shallow: '🌊 표층 바다 (0m ~ 30m)',
+      mid: '🐟 중층 바다 (30m ~ 100m)',
+      deep: '⚓ 심해층 (100m ~ 250m)',
+      abyss: '🌌 심연의 바다 (250m ~ 400m)',
+      hadal: '👑 초심연 해구 (400m ~ 500m+)'
+    };
+
+    const rarityNames = {
+      common: '일반 (Common)',
+      uncommon: '고급 (Uncommon)',
+      rare: '희귀 (Rare)',
+      epic: '영웅 (Epic)',
+      legendary: '전설 (Legendary)',
+      mythic: '신화 (Mythic)'
+    };
+
+    const baitMap = {
+      bread: '🍞 식빵',
+      worm: '🪱 갯지렁이',
+      shrimp: '🦐 싱싱한 크릴새우',
+      squid_bait: '🦑 쫄깃 오징어',
+      golden: '✨ 황금 지렁이',
+      allure: '💖 현혹 페로몬',
+      bomb: '💣 어군 폭탄'
+    };
+
+    const favBaitsStr = (species.favBait && species.favBait.length > 0)
+      ? species.favBait.map(b => baitMap[b] || b).join(', ')
+      : '모든 미끼';
+
+    if (headerTitle) {
+      headerTitle.innerHTML = isDiscovered
+        ? `${species.isBoss ? '👑 [보스] ' : ''}📖 ${species.name} <span class="header-eng-sub">${species.engName}</span>`
+        : '📖 미발견 물고기 정보';
+    }
+
+    if (isDiscovered) {
+      content.innerHTML = `
+        <div class="fish-detail-hero-box ${hasShiny ? 'shiny-hero' : ''}">
+          <div class="fish-detail-canvas-wrap">
+            <canvas id="fish-detail-large-canvas" width="220" height="120"></canvas>
+            ${hasShiny ? '<div class="detail-shiny-tag">✨ 특별한 빛을 품은 물고기 발견!</div>' : ''}
+          </div>
+          <div class="fish-detail-header-info">
+            <div class="detail-badge-pill-row">
+              <span class="detail-rarity-pill rarity-${species.rarity}">${rarityNames[species.rarity] || species.rarity.toUpperCase()}</span>
+              <span class="detail-zone-pill">${zoneNames[species.zone] || species.zone}</span>
+              ${species.isBoss ? '<span class="detail-boss-pill">👑 바다의 제왕 (보스)</span>' : ''}
+            </div>
+            <div class="detail-name-large">${species.name}</div>
+            <div class="detail-eng-large">${species.engName}</div>
+          </div>
+        </div>
+
+        <div class="fish-detail-grid-section">
+          <!-- 1. 생태 & 가치 스펙 -->
+          <div class="detail-spec-card">
+            <div class="spec-card-title">🌊 생태 & 서식 정보</div>
+            <div class="spec-card-rows">
+              <div class="spec-row">
+                <span class="spec-label">서식 수심</span>
+                <span class="spec-val highlight-cyan">${species.minDepth}m ~ ${species.maxDepth}m</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">자연 크기</span>
+                <span class="spec-val">${species.sizeRange[0]}cm ~ ${species.sizeRange[1]}cm</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">추천 미끼</span>
+                <span class="spec-val highlight-bait">${favBaitsStr}</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">기본 가치</span>
+                <span class="spec-val highlight-gold">💰 ${species.basePrice} G / ⭐ ${species.baseExp} EXP</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. 나의 어획 기록 -->
+          <div class="detail-spec-card record-card">
+            <div class="spec-card-title">🏆 나의 어획 기록</div>
+            <div class="spec-card-rows">
+              <div class="spec-row">
+                <span class="spec-label">최대 크기 기록</span>
+                <span class="spec-val highlight-gold">${record.maxSize > 0 ? record.maxSize + ' cm' : '기록 없음'}</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">총 포획 횟수</span>
+                <span class="spec-val">${record.caughtCount} 회</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">이로치 발견 횟수</span>
+                <span class="spec-val ${hasShiny ? 'highlight-amber' : ''}">${record.shinyCount || 0} 회</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. 상세 설명 / 생태 도감 스토리 -->
+        <div class="fish-detail-desc-box">
+          <div class="desc-box-title">📜 생태 도감 설명</div>
+          <div class="desc-box-content">${species.description}</div>
+        </div>
+      `;
+
+      // Render big fish preview
+      setTimeout(() => {
+        const largeCanvas = document.getElementById('fish-detail-large-canvas');
+        if (largeCanvas) {
+          Fish.drawPreview(largeCanvas, species, true, hasShiny);
+        }
+      }, 30);
+    } else {
+      // Locked Mystery Fish View
+      content.innerHTML = `
+        <div class="fish-detail-hero-box locked-hero">
+          <div class="fish-detail-canvas-wrap locked-canvas-wrap">
+            <canvas id="fish-detail-large-canvas" width="220" height="120"></canvas>
+            <div class="detail-locked-tag">🔒 미발견 신비의 어종</div>
+          </div>
+          <div class="fish-detail-header-info">
+            <div class="detail-badge-pill-row">
+              <span class="detail-zone-pill">${zoneNames[species.zone] || species.zone}</span>
+            </div>
+            <div class="detail-name-large mystery-text">???</div>
+            <div class="detail-eng-large">Mystery Species</div>
+          </div>
+        </div>
+
+        <div class="fish-detail-grid-section">
+          <div class="detail-spec-card" style="width: 100%;">
+            <div class="spec-card-title">🔍 어종 탐사 힌트</div>
+            <div class="spec-card-rows">
+              <div class="spec-row">
+                <span class="spec-label">추정 서식 수심</span>
+                <span class="spec-val highlight-cyan">${species.minDepth}m ~ ${species.maxDepth}m</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">도감 상태</span>
+                <span class="spec-val text-muted">아직 낚아올리지 못한 미지의 물고기입니다.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="fish-detail-desc-box locked-hint-box">
+          <div class="desc-box-title">💡 낚시 힌트</div>
+          <div class="desc-box-content">
+            ${zoneNames[species.zone] || species.zone} 수심대에서 적절한 미끼를 끼우고 찌를 깊숙이 내려 탐사해 보세요!
+          </div>
+        </div>
+      `;
+
+      setTimeout(() => {
+        const largeCanvas = document.getElementById('fish-detail-large-canvas');
+        if (largeCanvas) {
+          Fish.drawPreview(largeCanvas, species, false, false);
+        }
+      }, 30);
+    }
+
+    this.fishDetailModal.classList.add('visible');
   }
 }

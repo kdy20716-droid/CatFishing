@@ -694,6 +694,13 @@ export class Economy {
         this.currentBoatId = data.currentBoatId || 'boat_raft';
         this.ownedBoats = data.ownedBoats || ['boat_raft'];
         this.currentHatId = data.currentHatId || 'hat_none';
+        this.ownedHats = Array.isArray(data.ownedHats) && data.ownedHats.length > 0
+          ? Array.from(new Set(['hat_none', ...data.ownedHats]))
+          : ['hat_none'];
+        if (!this.ownedHats.includes(this.currentHatId)) {
+          this.ownedHats.push(this.currentHatId);
+        }
+
         this.catSkinId = data.catSkinId || 'skin_orange';
         const allSkinIds = CAT_SKINS.map(s => s.id);
         this.ownedSkins = Array.isArray(data.ownedSkins)

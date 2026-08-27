@@ -334,6 +334,17 @@ class Game {
       chosen = rarityCandidates.length > 0
         ? rarityCandidates[Math.floor(Math.random() * rarityCandidates.length)]
         : candidates[Math.floor(Math.random() * candidates.length)];
+
+      // 🏛️ 아틀란티스 고대 유물: 초희귀 유물이므로 스폰율 대폭 축소 (동시 최대 1개 제한 및 15% 확률로만 생성)
+      if (chosen && (chosen.id === 'ancient_relic' || chosen.drawType === 'relic')) {
+        const activeRelics = this.fishList.filter(f => f.data && (f.data.id === 'ancient_relic' || f.data.drawType === 'relic')).length;
+        if (activeRelics >= 1 || Math.random() > 0.15) {
+          const otherCandidates = candidates.filter(f => f.id !== 'ancient_relic');
+          if (otherCandidates.length > 0) {
+            chosen = otherCandidates[Math.floor(Math.random() * otherCandidates.length)];
+          }
+        }
+      }
     }
 
     // 🌊 가로 스폰 범위: 플레이어 활동/탐험 영역에 65% 집중 배치하여 부두막 밑과 어디서든 빽빽하게 밀집!
@@ -465,7 +476,7 @@ class Game {
       if (this.aquarium.isOpen || this.isCruiseTraveling) return;
 
       // 📱 On Mobile / Touch screen, canvas tap should NOT cast (only dedicated #btn-mobile-action casts!)
-      const isMobile = window.innerWidth <= 1200 || window.innerHeight <= 800 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      const isMobile = window.innerWidth <= 920 || window.innerHeight <= 520;
       if (isMobile) return;
 
       if (this.rod.state === 'READY') {
@@ -484,7 +495,7 @@ class Game {
       if (this.aquarium.isOpen || this.isCruiseTraveling) return;
 
       // 📱 On Mobile / Touch screen, canvas tap should NOT cast
-      const isMobile = window.innerWidth <= 1200 || window.innerHeight <= 800 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      const isMobile = window.innerWidth <= 920 || window.innerHeight <= 520;
       if (isMobile) return;
 
       if (this.rod.state === 'CHARGING') {
@@ -840,7 +851,7 @@ class Game {
           }
 
           if (rotateOverlay) rotateOverlay.classList.add('hidden');
-          this.hud.showNotification('📱 가로 전체화면 모드로 전환되었습니다냥!', '✨');
+          this.hud.showNotification('🖥️ 전체화면 모드로 전환되었습니다냥!', '✨');
         } else {
           if (document.exitFullscreen) {
             await document.exitFullscreen();
@@ -891,6 +902,9 @@ class Game {
     // Update button text on fullscreen change
     const updateFullscreenState = () => {
       const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
+      if (btnTopbarMobile) {
+        btnTopbarMobile.innerText = isFull ? '📴 화면 축소' : '🖥️ 전체화면';
+      }
       if (btnMobileLandscape) {
         const iconEl = btnMobileLandscape.querySelector('.mobile-btn-icon');
         const textEl = btnMobileLandscape.querySelector('.mobile-btn-text');
@@ -912,7 +926,7 @@ class Game {
     // Orientation & Mobile Controls overlay sync
     const controlsOverlay = document.getElementById('mobile-controls-overlay');
     const checkOrientation = () => {
-      const isMobileSize = window.innerWidth <= 1200 || window.innerHeight <= 800 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      const isMobileSize = window.innerWidth <= 920 || window.innerHeight <= 520;
       const isPortrait = window.innerHeight > window.innerWidth;
 
       if (rotateOverlay) {

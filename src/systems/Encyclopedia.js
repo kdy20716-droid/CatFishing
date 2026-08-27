@@ -142,6 +142,65 @@ export const FISH_SPECIES = [
   },
 
   // =========================================================
+  {
+    id: 'emerald_seahorse',
+    name: '에메랄드 아기 해마',
+    engName: 'Emerald Seahorse',
+    zone: 'shallow',
+    minDepth: 2,
+    maxDepth: 20,
+    rarity: 'uncommon',
+    basePrice: 38,
+    baseExp: 28,
+    sizeRange: [6, 14],
+    favBait: ['bread', 'worm', 'golden'],
+    baitSize: 'small',
+    speed: 30,
+    strength: 18,
+    description: '꼬리로 산호초를 감고 휴식을 취하는 귀여운 에메랄드빛 해마. 작은 등지느러미를 앙증맞게 파닥입니다.',
+    colors: { body: '#52b788', belly: '#95d5b2', fin: '#74c69d', pattern: '#d8f3dc' },
+    drawType: 'seahorse'
+  },
+  {
+    id: 'golden_sunfish_fry',
+    name: '꼬마 황금 개복치',
+    engName: 'Golden Baby Sunfish',
+    zone: 'shallow',
+    minDepth: 5,
+    maxDepth: 30,
+    rarity: 'rare',
+    basePrice: 65,
+    baseExp: 50,
+    sizeRange: [18, 35],
+    favBait: ['bread', 'shrimp', 'golden'],
+    baitSize: 'medium',
+    speed: 28,
+    strength: 32,
+    description: '햇살을 쬐며 유유자적 물 표면을 떠다니는 동글동글 꼬마 개복치. 깜짝 놀라면 빠르게 도망칩니다.',
+    colors: { body: '#ffd166', belly: '#fff3b0', fin: '#ffb703', pattern: '#ffffff' },
+    drawType: 'sunfish'
+  },
+  {
+    id: 'striped_lionfish',
+    name: '화려한 쏠배감펭',
+    engName: 'Striped Lionfish',
+    zone: 'shallow',
+    minDepth: 8,
+    maxDepth: 28,
+    rarity: 'rare',
+    basePrice: 72,
+    baseExp: 55,
+    sizeRange: [15, 30],
+    favBait: ['shrimp', 'worm', 'golden'],
+    baitSize: 'small',
+    speed: 48,
+    strength: 38,
+    description: '부채처럼 화려한 줄무늬 지느러미를 활짝 펼치고 산호초 사이를 우아하게 누비는 바다의 패셔니스타.',
+    colors: { body: '#e63946', belly: '#f1faee', fin: '#e76f51', pattern: '#ffffff' },
+    drawType: 'lionfish'
+  },
+
+  // =========================================================
   // --- Zone 2: 중층 바다 (Twilight Zone: 30 ~ 100m) ---
   // =========================================================
   {
@@ -295,6 +354,65 @@ export const FISH_SPECIES = [
     description: '날카로운 검과 거대한 돛 지느러미를 가진 대양의 쾌속 전사!',
     colors: { body: '#03045e', belly: '#0077b6', fin: '#0096c7', beak: '#023e8a' },
     drawType: 'marlin'
+  },
+
+  // =========================================================
+  {
+    id: 'bluefin_tuna',
+    name: '용맹한 참다랑어',
+    engName: 'Bluefin Tuna',
+    zone: 'mid',
+    minDepth: 35,
+    maxDepth: 95,
+    rarity: 'rare',
+    basePrice: 95,
+    baseExp: 75,
+    sizeRange: [50, 120],
+    favBait: ['shrimp', 'squid_bait', 'golden'],
+    baitSize: 'medium',
+    speed: 88,
+    strength: 65,
+    description: '넓은 대양을 시속 70km로 질주하는 푸른 바다의 초고속 탄환! 강한 힘으로 낚싯대를 힘차게 당깁니다.',
+    colors: { body: '#001e3d', belly: '#b0c4de', fin: '#ffcc00', pattern: '#4682b4' },
+    drawType: 'tuna'
+  },
+  {
+    id: 'sailfish',
+    name: '바람의 돛새치',
+    engName: 'Azure Sailfish',
+    zone: 'mid',
+    minDepth: 45,
+    maxDepth: 100,
+    rarity: 'epic',
+    basePrice: 135,
+    baseExp: 105,
+    sizeRange: [70, 150],
+    favBait: ['squid_bait', 'shrimp', 'golden'],
+    baitSize: 'large',
+    speed: 92,
+    strength: 80,
+    description: '거대한 돛 모양의 등지느러미를 펄럭이며 물살을 시원하게 가르는 날렵한 대양의 쾌속 전사.',
+    colors: { body: '#023e8a', belly: '#48cae4', fin: '#0077b6', beak: '#03045e' },
+    drawType: 'sailfish'
+  },
+  {
+    id: 'nautilus',
+    name: '신비한 앵무조개',
+    engName: 'Ancient Nautilus',
+    zone: 'mid',
+    minDepth: 50,
+    maxDepth: 100,
+    rarity: 'rare',
+    basePrice: 88,
+    baseExp: 70,
+    sizeRange: [12, 25],
+    favBait: ['shrimp', 'squid_bait', 'worm'],
+    baitSize: 'small',
+    speed: 32,
+    strength: 40,
+    description: '4억 년 전부터 바다를 둥실둥실 떠돌던 살아있는 조개 화석. 소용돌이치는 줄무늬 껍데기가 아름답습니다.',
+    colors: { body: '#ffffff', stripe: '#d9480f', tentacle: '#ffd8a8', eye: '#1a1a1a' },
+    drawType: 'nautilus'
   },
 
   // =========================================================
@@ -492,6 +610,46 @@ export const FISH_SPECIES = [
   },
 
   // =========================================================
+  {
+    id: 'frilled_shark',
+    name: '고대 주름상어',
+    engName: 'Ancient Frilled Shark',
+    zone: 'deep',
+    minDepth: 110,
+    maxDepth: 240,
+    rarity: 'epic',
+    basePrice: 160,
+    baseExp: 125,
+    sizeRange: [80, 180],
+    favBait: ['squid_bait', 'golden', 'worm'],
+    baitSize: 'large',
+    speed: 55,
+    strength: 78,
+    description: '원시 바다의 모습을 그대로 간직한 뱀장어 형태의 고대 상어. 독특한 6쌍의 주름 아가미를 지녔습니다.',
+    colors: { body: '#2b2d42', belly: '#4a4e69', fin: '#1f2022', pattern: '#8d99ae' },
+    drawType: 'frilled_shark'
+  },
+  {
+    id: 'spotted_chimera',
+    name: '은빛 은상어 키메라',
+    engName: 'Silver Chimaera',
+    zone: 'deep',
+    minDepth: 130,
+    maxDepth: 250,
+    rarity: 'rare',
+    basePrice: 145,
+    baseExp: 115,
+    sizeRange: [40, 90],
+    favBait: ['squid_bait', 'worm', 'shrimp'],
+    baitSize: 'medium',
+    speed: 48,
+    strength: 68,
+    description: '반짝이는 유백색 은빛 비늘과 커다란 토끼 같은 신비로운 눈망울을 가진 깊은 바다의 신사.',
+    colors: { body: '#e0e1dd', belly: '#f8f9fa', fin: '#778da9', eye: '#38bdf8' },
+    drawType: 'chimaera'
+  },
+
+  // =========================================================
   // --- Zone 4: 심연의 해구 (Abyssal Trench: 250 ~ 400m) ---
   // =========================================================
   {
@@ -667,6 +825,46 @@ export const FISH_SPECIES = [
   },
 
   // =========================================================
+  {
+    id: 'jewel_squid',
+    name: '심연의 보석오징어',
+    engName: 'Abyssal Jewel Squid',
+    zone: 'abyss',
+    minDepth: 260,
+    maxDepth: 395,
+    rarity: 'epic',
+    basePrice: 220,
+    baseExp: 175,
+    sizeRange: [20, 45],
+    favBait: ['squid_bait', 'golden', 'shrimp'],
+    baitSize: 'medium',
+    speed: 58,
+    strength: 82,
+    description: '어두운 심연에서 오색 보석처럼 스스로 무지개 빛을 뿜어내는 환상적인 발광 오징어.',
+    colors: { body: '#5a189a', tentacle: '#7b2cbf', glow: '#00f5d4', jewel: '#ff007f' },
+    drawType: 'squid'
+  },
+  {
+    id: 'tripod_fish',
+    name: '심해 세발치',
+    engName: 'Abyssal Tripod Fish',
+    zone: 'abyss',
+    minDepth: 280,
+    maxDepth: 400,
+    rarity: 'rare',
+    basePrice: 190,
+    baseExp: 150,
+    sizeRange: [25, 50],
+    favBait: ['worm', 'shrimp', 'golden'],
+    baitSize: 'medium',
+    speed: 32,
+    strength: 72,
+    description: '길게 뻗은 세 개의 지느러미 발로 해저 바닥에 의젓하게 서서 해류를 기다리는 지혜로운 심해어.',
+    colors: { body: '#b8c0ff', belly: '#e7c6ff', fin: '#c8b6ff', stilt: '#ffd6ff' },
+    drawType: 'tripod_fish'
+  },
+
+  // =========================================================
   // --- Zone 5: 미지의 초심연 (Hadal Outer Abyss: 400 ~ 520m+) ---
   // =========================================================
   {
@@ -820,6 +1018,46 @@ export const FISH_SPECIES = [
     description: '심연의 어둠 속에서 성운의 은하수 빛을 뿜어내며 춤추는 신비로운 초심해 거대 해파리.',
     colors: { body: '#7209b7', glow: '#f72585', tentacle: '#4cc9f0' },
     drawType: 'gold_jelly'
+  },
+
+  // =========================================================
+  {
+    id: 'moonlight_moray',
+    name: '달빛 유령 곰치',
+    engName: 'Moonlight Ghost Moray',
+    zone: 'hadal',
+    minDepth: 430,
+    maxDepth: 700,
+    rarity: 'epic',
+    basePrice: 310,
+    baseExp: 240,
+    sizeRange: [90, 220],
+    favBait: ['squid_bait', 'golden'],
+    baitSize: 'large',
+    speed: 62,
+    strength: 95,
+    description: '칠흑 같은 해구 속에서 달빛처럼 은은한 푸른 오라를 뿜어내며 헤엄치는 환상적인 유령 곰치.',
+    colors: { body: '#03045e', belly: '#0077b6', glow: '#90e0ef', pattern: '#caf0f8' },
+    drawType: 'moray'
+  },
+  {
+    id: 'supernova_angler',
+    name: '초신성 스타 아귀',
+    engName: 'Supernova Star Angler',
+    zone: 'hadal',
+    minDepth: 450,
+    maxDepth: 740,
+    rarity: 'legendary',
+    basePrice: 420,
+    baseExp: 330,
+    sizeRange: [35, 75],
+    favBait: ['golden', 'squid_bait'],
+    baitSize: 'large',
+    speed: 40,
+    strength: 105,
+    description: '머리 위의 빛나는 작은 별빛 촉수를 흔들어 플랑크톤을 부르는 초희귀 심해 전설의 아귀.',
+    colors: { body: '#10002b', belly: '#240046', glow: '#ffd166', star: '#ff007f' },
+    drawType: 'angler'
   },
 
   // =========================================================

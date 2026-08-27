@@ -296,6 +296,8 @@ export class CloudSave {
         ownedBoats: Array.isArray(this.economy?.ownedBoats) ? this.economy.ownedBoats : ['boat_raft'],
         currentHatId: this.economy?.currentHatId || 'hat_none',
         ownedHats: Array.isArray(this.economy?.ownedHats) ? this.economy.ownedHats : ['hat_none'],
+        catSkinId: this.economy?.catSkinId || 'skin_orange',
+        ownedSkins: Array.isArray(this.economy?.ownedSkins) ? this.economy.ownedSkins : ['skin_orange'],
         currentBaitId: this.economy?.currentBaitId || 'bread',
         useRocket: Boolean(this.economy?.useRocket),
         hookCount: Number(this.economy?.hookCount || 1),
