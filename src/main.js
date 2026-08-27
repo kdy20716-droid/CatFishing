@@ -464,6 +464,10 @@ class Game {
     this.input.on('pointerdown', () => {
       if (this.aquarium.isOpen || this.isCruiseTraveling) return;
 
+      // 📱 On Mobile / Touch screen, canvas tap should NOT cast (only dedicated #btn-mobile-action casts!)
+      const isMobile = window.innerWidth <= 1200 || window.innerHeight <= 800 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      if (isMobile) return;
+
       if (this.rod.state === 'READY') {
         this.rod.startCharging();
         this.cat.state = 'CHARGE';
@@ -478,6 +482,10 @@ class Game {
 
     this.input.on('pointerup', () => {
       if (this.aquarium.isOpen || this.isCruiseTraveling) return;
+
+      // 📱 On Mobile / Touch screen, canvas tap should NOT cast
+      const isMobile = window.innerWidth <= 1200 || window.innerHeight <= 800 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      if (isMobile) return;
 
       if (this.rod.state === 'CHARGING') {
         this.rod.cast(this.cat);

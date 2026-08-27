@@ -18,12 +18,15 @@
 
     <!-- Top Floating HUD -->
     <header id="hud-top">
-      <!-- 🐾 Left HUD Panel (클릭 시 발바닥만 남기고 스르륵 접힘) -->
+      <!-- 🐾 Left HUD Panel (화살표 또는 로고 클릭 시 스르륵 접힘) -->
       <div class="hud-left" id="hud-left-panel">
         <div class="game-logo" id="btn-toggle-left-panel" title="클릭하여 UI 접기/펼치기">
           <span class="logo-icon">🐾</span>
           <span class="logo-text">냥이의 낚시 여행</span>
         </div>
+        <!-- 왼쪽 패널 접기/펼치기 화살표 버튼 (모바일용) -->
+        <button id="btn-collapse-left" class="hud-panel-arrow-btn hud-left-arrow-btn" title="정보 접기">‹</button>
+        <button id="btn-expand-left" class="hud-panel-arrow-btn hud-left-arrow-btn hidden" title="정보 펼치기">›</button>
         <div class="hud-stat-pill" title="보유 골드">
           <span class="pill-icon">💰</span>
           <span id="hud-gold" class="pill-val">50 G</span>

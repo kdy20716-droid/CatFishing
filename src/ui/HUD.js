@@ -778,14 +778,31 @@ export class HUD {
   }
 
   initPanelToggles() {
-    // Left panel: click logo to toggle collapse
+    // Left panel: logo click & left arrow buttons to toggle collapse
     const leftPanel = document.getElementById('hud-left-panel');
     const leftToggleBtn = document.getElementById('btn-toggle-left-panel');
-    if (leftToggleBtn && leftPanel) {
-      leftToggleBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        leftPanel.classList.toggle('collapsed');
-      });
+    const leftCollapseBtn = document.getElementById('btn-collapse-left');
+    const leftExpandBtn = document.getElementById('btn-expand-left');
+
+    if (leftPanel) {
+      if (leftToggleBtn) {
+        leftToggleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          leftPanel.classList.toggle('collapsed');
+        });
+      }
+      if (leftCollapseBtn) {
+        leftCollapseBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          leftPanel.classList.add('collapsed');
+        });
+      }
+      if (leftExpandBtn) {
+        leftExpandBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          leftPanel.classList.remove('collapsed');
+        });
+      }
     }
 
     // Right panel: collapse / expand buttons
@@ -801,6 +818,13 @@ export class HUD {
         e.stopPropagation();
         rightPanel.classList.remove('collapsed');
       });
+    }
+
+    // 📱 Default Collapsed State on Mobile
+    const isMobile = window.innerWidth <= 1200 || window.innerHeight <= 800 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (isMobile) {
+      if (leftPanel) leftPanel.classList.add('collapsed');
+      if (rightPanel) rightPanel.classList.add('collapsed');
     }
 
     // Clock widgets: click to toggle docked/undocked on top center
