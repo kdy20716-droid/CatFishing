@@ -1846,18 +1846,48 @@ export class Modals {
       vaultBar.style.width = `${pct}%`;
     }
 
-    // Feed Badge
-    const feedBadge = document.getElementById('aqua-feed-badge');
-    if (feedBadge) {
-      if (this.aquarium.canGetFeedReward()) {
-        feedBadge.className = 'feed-badge ready';
-        feedBadge.innerText = '💰 골드 가능!';
+    // Feed Reward Cooldown Gauge
+    const feedStatusBadge = document.getElementById('aqua-feed-status-badge');
+    const feedProgressBar = document.getElementById('aqua-feed-progress-bar');
+    const feedTimerText = document.getElementById('aqua-feed-timer-text');
+    const feedEquippedName = document.getElementById('aqua-feed-equipped-name');
+
+    if (this.aquarium) {
+      const food = this.aquarium.getCurrentFoodTier();
+      const foodLv = this.aquarium.getFoodLevel();
+      if (feedEquippedName) {
+        feedEquippedName.innerText = `${food.icon} ${food.name} Lv.${foodLv}`;
+      }
+
+      const canFeed = this.aquarium.canGetFeedReward();
+      const totalCooldownMs = this.aquarium.getFeedCooldownMs();
+      const remMs = this.aquarium.getFeedRewardRemainingMs();
+
+      if (canFeed) {
+        if (feedStatusBadge) {
+          feedStatusBadge.innerText = '✨ 준비 완료!';
+          feedStatusBadge.className = 'feed-status-badge ready';
+        }
+        if (feedProgressBar) {
+          feedProgressBar.style.width = '100%';
+        }
+        if (feedTimerText) {
+          feedTimerText.innerText = '수조를 클릭하여 골드 보너스 획득!';
+        }
       } else {
-        const remMs = this.aquarium.getFeedRewardRemainingMs();
         const mins = Math.floor(remMs / 60000);
         const secs = Math.floor((remMs % 60000) / 1000);
-        feedBadge.className = 'feed-badge cooldown';
-        feedBadge.innerText = `⏳ ${mins}분 ${secs}초`;
+        if (feedStatusBadge) {
+          feedStatusBadge.innerText = `⏳ ${mins}분 ${secs < 10 ? '0' : ''}${secs}초`;
+          feedStatusBadge.className = 'feed-status-badge charging';
+        }
+        if (feedProgressBar) {
+          const pct = Math.max(0, Math.min(100, ((totalCooldownMs - remMs) / Math.max(1, totalCooldownMs)) * 100));
+          feedProgressBar.style.width = `${pct}%`;
+        }
+        if (feedTimerText) {
+          feedTimerText.innerText = `다음 보상까지 ${mins > 0 ? mins + '분 ' : ''}${secs}초`;
+        }
       }
     }
   }
