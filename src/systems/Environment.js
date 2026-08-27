@@ -23,12 +23,14 @@ export class Environment {
     this.shootingStars = [];
     this.clouds = [];
     this.smokeParticles = [];
+    this.stars = [];
 
     // Load persisted time progress
     this.loadTimeState();
 
     this.initClouds();
     this.initPlankton();
+    this.initStars();
 
     // Auto-save on page unload/refresh
     window.addEventListener('beforeunload', () => {
@@ -99,6 +101,19 @@ export class Environment {
         speed: 10 + Math.random() * 18,
         width: 120 + Math.random() * 160,
         height: 40 + Math.random() * 35
+      });
+    }
+  }
+
+  initStars() {
+    this.stars = [];
+    for (let i = 0; i < 80; i++) {
+      this.stars.push({
+        x: -1200 + Math.random() * 34000,
+        y: -400 + Math.random() * 320,
+        size: 1.0 + Math.random() * 1.8,
+        twinkleSpeed: 1.5 + Math.random() * 2.5,
+        phase: Math.random() * Math.PI * 2
       });
     }
   }
@@ -315,17 +330,16 @@ export class Environment {
       ctx.fill();
 
     } else {
-      // Twinkling Stars & Crescent Moon
-      // Twinkling stars
-      for (let i = 0; i < 40; i++) {
-        const starX = bounds.left + ((i * 137.5) % (bounds.right - bounds.left));
-        const starY = skyTop + ((i * 83.2) % (skyBottom - skyTop - 80));
-        const twinkle = 0.5 + Math.sin(this.animTime * 4 + i) * 0.4;
-        ctx.fillStyle = `rgba(255, 255, 255, ${twinkle})`;
-        ctx.beginPath();
-        ctx.arc(starX, starY, 1.5 + (i % 3) * 0.8, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      // Natural Twinkling Stars (Soft, Organic Distribution)
+      this.stars.forEach(s => {
+        if (s.x >= bounds.left - 50 && s.x <= bounds.right + 50) {
+          const twinkle = 0.35 + 0.45 * Math.sin(this.animTime * s.twinkleSpeed + s.phase);
+          ctx.fillStyle = `rgba(255, 255, 255, ${twinkle})`;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
 
       // Aurora Borealis Ribbon
       ctx.save();
@@ -861,16 +875,19 @@ export class Environment {
     });
     ctx.restore();
 
-    // Plankton / Deep Bioluminescent Stardust
+    // Plankton / Deep Bioluminescent Stardust (Soft & Only in Deep Sea)
     ctx.save();
     this.plankton.forEach(p => {
-      const pulse = Math.abs(Math.sin(this.animTime * p.pulseSpeed));
-      ctx.fillStyle = this.timeOfDay === 'night' 
-        ? `rgba(76, 201, 240, ${pulse})` 
-        : `rgba(255, 255, 255, ${pulse})`;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fill();
+      // Avoid surface clutter (only in deep water y > 350)
+      if (p.y > 350 && p.x >= bounds.left - 100 && p.x <= bounds.right + 100 && p.y >= bounds.top - 50 && p.y <= bounds.bottom + 50) {
+        const pulse = 0.2 + 0.35 * Math.abs(Math.sin(this.animTime * p.pulseSpeed));
+        ctx.fillStyle = this.timeOfDay === 'night' 
+          ? `rgba(76, 201, 240, ${pulse})` 
+          : `rgba(255, 255, 255, ${pulse * 0.7})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * 0.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
     });
     ctx.restore();
 

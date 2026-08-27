@@ -6675,7 +6675,7 @@ html, body {
 /* Mobile & Small Screen Breakpoint (Strictly for mobile/tablets, hidden on PC) */
 @media (max-width: 920px), (max-height: 520px), ((hover: none) and (pointer: coarse) and (max-width: 1200px)) {
   .mobile-landscape-btn {
-    display: flex !important;
+    display: none !important;
   }
 
   /* Mobile Settings Button right under User Profile */

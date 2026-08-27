@@ -430,13 +430,25 @@ class Game {
     const btnGuide = document.getElementById('btn-open-guide');
     if (btnGuide) btnGuide.addEventListener('click', () => this.modals.openGuide());
 
-    // Canvas click in Aquarium mode to drop food
+    // Canvas click handling (Merchant Cat NPC Click & Aquarium Feeding)
     this.canvas.addEventListener('click', (e) => {
-      if (this.aquarium.isOpen) {
-        const rect = this.canvas.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const clickY = e.clientY - rect.top;
+      const rect = this.canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
 
+      // 🐱 Check Click / Tap on Merchant Cat NPC or Speech Bubble on Pier (World X: 110~280, Y: -130~25)
+      if (!this.aquarium.isOpen && !this.isCruiseTraveling) {
+        const mouseWorld = this.camera.screenToWorld(clickX, clickY);
+        const isNearMerchant = (this.cat.pos.x <= 380);
+        const clickedMerchant = (mouseWorld.x >= 100 && mouseWorld.x <= 280 && mouseWorld.y >= -140 && mouseWorld.y <= 25);
+        if (clickedMerchant || (isNearMerchant && mouseWorld.x < 300 && mouseWorld.y < 30)) {
+          if (this.sound) this.sound.playClick();
+          this.modals.openDockMerchantModal();
+          return;
+        }
+      }
+
+      if (this.aquarium.isOpen) {
         const startX = (this.canvas.width - this.aquarium.tankWidth) / 2;
         const startY = (this.canvas.height - this.aquarium.tankHeight) / 2;
 
