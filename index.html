@@ -6,7 +6,7 @@
   <title>🐾 냥이의 바다 낚시 힐링 여행 (Cozy Cat Fishing)</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="shortcut icon" href="assets/favicon.svg">
-  <link rel="stylesheet" href="style.css?v=7.5.5">
+  <link rel="stylesheet" href="style.css?v=7.8.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Gothic:wght@400;700;800&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
@@ -380,23 +380,111 @@
       </form>
     </div>
 
-    <!-- Aquarium Control Overlay (Visible during Aquarium Mode) -->
-    <div id="aquarium-controls-ui" class="overlay-panel">
-      <div class="aqua-header">
-        <div class="aqua-title">🏠 냥이의 힐링 아쿠아리움</div>
-        <div class="aqua-actions">
-          <select id="aqua-theme-select" class="aqua-select">
-            <option value="coral">🪸 산호초 파라다이스 테마</option>
-            <option value="night_glow">🌌 심해 야광 오로라 테마</option>
-            <option value="ancient">🏛️ 고대 아틀란티스 신전 테마</option>
-          </select>
-          <button id="btn-aqua-manage" class="btn-aqua-manage">🐠 수조 물고기 관리 / 판매 (<span id="aqua-fish-count">0</span>/20)</button>
-          <button id="btn-aqua-feed" class="btn-aqua">🥐 밥주기 <span id="aqua-feed-badge" class="feed-badge ready">💰 골드 보상</span></button>
-          <button id="btn-aqua-collect" class="btn-aqua-gold">💰 코인 모두 수거</button>
-          <button id="btn-aqua-exit" class="btn-aqua-exit">🌊 낚시터로 돌아가기</button>
+    <!-- Aquarium Idle Tycoon Overlay (Visible during Aquarium Mode) -->
+    <div id="aquarium-controls-ui" class="overlay-panel aqua-idle-layout">
+      <!-- 📍 Left HUD: Brand, Capped Vault Box & Exit Button -->
+      <div class="aqua-left-hud">
+        <div class="aqua-brand-card">
+          <div class="aqua-brand-icon">🫧</div>
+          <div class="aqua-brand-info">
+            <div class="aqua-title">냥이의 힐링 아쿠아리움</div>
+            <div class="aqua-theme-tag" id="aqua-current-theme-tag">🪸 산호초 파라다이스</div>
+          </div>
+        </div>
+
+        <!-- 🏦 Coin Vault Card (1분 단위 정산 저금통) -->
+        <div class="aqua-vault-card">
+          <div class="vault-header">
+            <span class="vault-title">💰 코인 금고 (1분 정산)</span>
+            <span id="aqua-gps-val" class="vault-gps">+0 G/분</span>
+          </div>
+          <div class="vault-progress-bg">
+            <div id="aqua-vault-bar" class="vault-progress-fill" style="width: 0%;"></div>
+          </div>
+          <div class="vault-info-row">
+            <span id="aqua-vault-text" class="vault-amount">0 / 1,000 G</span>
+            <button id="btn-aqua-claim-vault" class="btn-vault-claim">🪙 금고 비우기</button>
+          </div>
+        </div>
+
+        <!-- 🚪 낚시터로 복귀 버튼 -->
+        <button id="btn-aqua-exit" class="btn-aqua-exit-action" title="아쿠아리움에서 나가 낚시터로 돌아갑니다.">
+          <span class="exit-icon">🚪</span> 낚시터로 돌아가기
+        </button>
+
+        <!-- 모바일 전용 업그레이드 패널 토글 버튼 -->
+        <button id="btn-aqua-mobile-toggle" class="btn-aqua-mobile-toggle">
+          <span class="toggle-icon">🎮</span> 시설 & 사료 업그레이드 열기
+        </button>
+      </div>
+
+      <!-- 🎮 Right Idle Tycoon Upgrade Panel (모바일 방치형 업그레이드 패널) -->
+      <div class="aqua-right-panel">
+        <div class="aqua-tabs-bar">
+          <button class="aqua-tab-btn active" data-tab="tank">🏛️ 수조/금고</button>
+          <button class="aqua-tab-btn" data-tab="food">🥐 사료</button>
+          <button class="aqua-tab-btn" data-tab="fish">🐟 물고기 (<span id="aqua-fish-count">0</span>/<span id="aqua-max-count">20</span>)</button>
+          <button class="aqua-tab-btn" data-tab="themes">🎨 테마 상점</button>
+        </div>
+
+        <div class="aqua-tab-content-area">
+          <!-- Tab 1: Tank & 8 Facility Upgrades -->
+          <div id="aqua-tab-tank" class="aqua-tab-pane active">
+            <div id="aqua-facility-upgrade-list" class="aqua-upgrade-list">
+              <!-- Injected dynamically via Modals.js -->
+            </div>
+          </div>
+
+          <!-- Tab 2: Food Tier Upgrades -->
+          <div id="aqua-tab-food" class="aqua-tab-pane">
+            <div id="aqua-food-tier-list" class="aqua-food-list">
+              <!-- Injected dynamically -->
+            </div>
+          </div>
+
+          <!-- Tab 3: Fish Level Up & Manage -->
+          <div id="aqua-tab-fish" class="aqua-tab-pane">
+            <div class="aqua-fish-top-bar">
+              <span class="fish-pane-tip">물고기 개별 육성(Lv업)으로 생산량을 극대화하세요!</span>
+              <button id="btn-aqua-sell-all-tab" class="btn-sell-all-sm">💰 모두 판매</button>
+            </div>
+            <div id="aqua-fish-cards-list" class="aqua-fish-scroll-list">
+              <!-- Injected dynamically -->
+            </div>
+          </div>
+
+          <!-- Tab 4: Theme Shop -->
+          <div id="aqua-tab-themes" class="aqua-tab-pane">
+            <div id="aqua-theme-cards-list" class="aqua-theme-scroll-list">
+              <!-- Injected dynamically -->
+            </div>
+          </div>
         </div>
       </div>
-      <div class="aqua-subtext">✨ 화면을 클릭하여 먹이를 줄 수 있습니다. <strong>(💰 골드 보상은 10분에 1회 지급)</strong></div>
+    </div>
+
+    <!-- 🎁 Aquarium Offline Earnings Modal (오프라인 방치 정산 팝업) -->
+    <div id="aquarium-offline-modal" class="modal-backdrop">
+      <div class="modal-window aqua-offline-window" style="max-width: 460px; width: 90%; text-align: center;">
+        <div class="aqua-offline-header">
+          <div class="aqua-offline-icon">🎁</div>
+          <h2>냥이 집사 수족관 오프라인 정산!</h2>
+          <p class="aqua-offline-desc">낚시꾼님이 자리를 비운 동안, 수조의 물고기들이 열심히 골드를 모아두었습니다!</p>
+        </div>
+        <div class="aqua-offline-stats">
+          <div class="aqua-stat-box">
+            <span class="stat-lbl">💤 누적 방치 시간</span>
+            <span id="aqua-offline-time" class="stat-val">0분</span>
+          </div>
+          <div class="aqua-stat-box highlight">
+            <span class="stat-lbl">💰 누적 방치 수익</span>
+            <span id="aqua-offline-gold" class="stat-val gold">+0 G</span>
+          </div>
+        </div>
+        <div class="aqua-offline-footer">
+          <button id="btn-claim-aqua-offline" class="btn-primary btn-claim-offline">🎉 골드 모두 수령하기</button>
+        </div>
+      </div>
     </div>
 
     <!-- Aquarium Fish Management & Instant Sell Modal (수조 물고기 확인 및 즉시 판매) -->
@@ -1390,6 +1478,6 @@
   </div>
 
   <!-- Entry Script (with cache-busting query) -->
-  <script type="module" src="src/main.js?v=7.5.5"></script>
+  <script type="module" src="src/main.js?v=7.8.0"></script>
 </body>
 </html>

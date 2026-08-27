@@ -1,10 +1,11 @@
 /**
  * Interactive Modals (Shop, Fish Encyclopedia, Aquarium Controls, Settings, Guide)
  */
-import { RODS, BOATS, BAITS, HATS, PASSIVE_UPGRADES, CAT_SKINS } from '../systems/Economy.js?v=7.3.0';
-import { FISH_SPECIES } from '../systems/Encyclopedia.js?v=7.3.0';
-import { Fish } from '../entities/Fish.js?v=7.3.0';
-import { getBaitIconSvg } from './BaitIcons.js?v=7.3.0';
+import { RODS, BOATS, BAITS, HATS, PASSIVE_UPGRADES, CAT_SKINS } from '../systems/Economy.js?v=7.7.0';
+import { FISH_SPECIES } from '../systems/Encyclopedia.js?v=7.7.0';
+import { Fish } from '../entities/Fish.js?v=7.7.0';
+import { getBaitIconSvg } from './BaitIcons.js?v=7.7.0';
+import { AQUARIUM_THEMES_INFO, FACILITY_UPGRADES, FOOD_TIERS } from '../systems/Aquarium.js?v=7.8.0';
 
 export class Modals {
   constructor(economy, encyclopedia, aquarium, soundEngine, hud, cloudSave = null) {
@@ -20,6 +21,8 @@ export class Modals {
     this.fishDetailModal = document.getElementById('fish-detail-modal');
     this.aquariumUI = document.getElementById('aquarium-controls-ui');
     this.aquariumManageModal = document.getElementById('aquarium-manage-modal');
+    this.aquariumThemeModal = document.getElementById('aquarium-theme-modal');
+    this.aquariumOfflineModal = document.getElementById('aquarium-offline-modal');
     this.soundModal = document.getElementById('sound-modal');
     this.guideModal = document.getElementById('guide-modal');
     this.authModal = document.getElementById('auth-modal');
@@ -519,51 +522,101 @@ export class Modals {
       });
     });
 
-    // Aquarium Controls
+    // Aquarium Idle Tycoon Controls
     const btnFeed = document.getElementById('btn-aqua-feed');
     if (btnFeed) {
       btnFeed.addEventListener('click', () => {
         const cx = 150 + Math.random() * (this.aquarium.tankWidth - 300);
         const res = this.aquarium.dropFood(cx, 30);
-        if (res && res.rewardGranted) {
-          this.hud.showNotification('💰 10분 밥주기 보상: 물고기들이 기뻐하며 힐링 골드를 선물했습니다!', '✨');
+        if (res && res.givesReward) {
+          this.hud.showNotification('💰 밥주기 보상: 물고기들이 기뻐하며 힐링 골드를 선물했습니다!', '✨');
         } else if (res) {
-          const mins = Math.floor(res.remainingMs / 60000);
-          const secs = Math.floor((res.remainingMs % 60000) / 1000);
+          const remMs = this.aquarium.getFeedRewardRemainingMs();
+          const mins = Math.floor(remMs / 60000);
+          const secs = Math.floor((remMs % 60000) / 1000);
           this.hud.showNotification(`🥐 냠냠 먹이를 주었습니다! (다음 골드 보상까지: ${mins}분 ${secs}초)`, '🐟');
         }
         this.updateAquariumBadge();
       });
     }
 
-    const btnManageAqua = document.getElementById('btn-aqua-manage');
-    if (btnManageAqua) {
-      btnManageAqua.addEventListener('click', () => {
-        this.sound.playClick();
-        this.openAquariumManageModal();
-      });
-    }
-
-    const btnCollect = document.getElementById('btn-aqua-collect');
-    if (btnCollect) {
-      btnCollect.addEventListener('click', () => {
-        const earned = this.aquarium.collectAllCoins();
+    // Vault Claim
+    const btnClaimVault = document.getElementById('btn-aqua-claim-vault');
+    if (btnClaimVault) {
+      btnClaimVault.addEventListener('click', () => {
+        const earned = this.aquarium.claimVaultGold();
         if (earned > 0) {
-          this.hud.showNotification(`아쿠아리움 힐링 골드 +${earned}G 수거 완료!`, '💰');
+          this.hud.showNotification(`💰 코인 금고에서 +${earned.toLocaleString()} G 수령 완료!`, '🪙');
         } else {
-          this.hud.showNotification('수거할 코인이 아직 없습니다.', '🫧');
+          this.hud.showNotification('금고에 보관된 골드가 없습니다.', '🫧');
         }
+        this.updateAquariumBadge();
       });
     }
 
-    const btnTheme = document.getElementById('aqua-theme-select');
-    if (btnTheme) {
-      btnTheme.addEventListener('change', (e) => {
+    // Tabs Switcher
+    const tabBtns = document.querySelectorAll('.aqua-tab-btn');
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
         this.sound.playClick();
-        this.aquarium.setTheme(e.target.value);
+        tabBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const tabKey = btn.dataset.tab;
+        document.querySelectorAll('.aqua-tab-pane').forEach(p => p.classList.remove('active'));
+        const activePane = document.getElementById(`aqua-tab-${tabKey}`);
+        if (activePane) activePane.classList.add('active');
+        this.renderAquariumPanels();
+      });
+    });
+
+    // Vault Upgrade Button
+    const btnUpVault = document.getElementById('btn-up-vault');
+    if (btnUpVault) {
+      btnUpVault.addEventListener('click', () => {
+        const res = this.aquarium.upgradeVault();
+        this.hud.showNotification(res.message, res.success ? '🏦' : '⚠️');
+        this.renderAquariumPanels();
       });
     }
 
+    // Filter Upgrade Button
+    const btnUpFilter = document.getElementById('btn-up-filter');
+    if (btnUpFilter) {
+      btnUpFilter.addEventListener('click', () => {
+        const res = this.aquarium.upgradeFilter();
+        this.hud.showNotification(res.message, res.success ? '💧' : '⚠️');
+        this.renderAquariumPanels();
+      });
+    }
+
+    // Sell All Tab Button
+    const btnSellAllTab = document.getElementById('btn-aqua-sell-all-tab');
+    if (btnSellAllTab) {
+      btnSellAllTab.addEventListener('click', () => {
+        const res = this.aquarium.sellAllFishFromAquarium();
+        if (res.count > 0) {
+          this.hud.showNotification(`🐟 수조 물고기 ${res.count}마리 판매 (+ ${res.totalGold.toLocaleString()} G)`, '💰');
+        } else {
+          this.hud.showNotification('수조에 판매할 물고기가 없습니다.', '🫧');
+        }
+        this.renderAquariumPanels();
+      });
+    }
+
+    // Offline Claim Modal Button
+    const btnClaimOffline = document.getElementById('btn-claim-aqua-offline');
+    if (btnClaimOffline) {
+      btnClaimOffline.addEventListener('click', () => {
+        const res = this.aquarium.claimOfflineEarnings();
+        if (this.aquariumOfflineModal) this.aquariumOfflineModal.classList.remove('visible');
+        if (res.earnings > 0) {
+          this.hud.showNotification(`🎉 오프라인 방치 수익 +${res.earnings.toLocaleString()} G 수령 완료!`, '💰');
+        }
+        this.updateAquariumBadge();
+      });
+    }
+
+    // Exit Button
     const btnExitAqua = document.getElementById('btn-aqua-exit');
     if (btnExitAqua) {
       btnExitAqua.addEventListener('click', () => {
@@ -774,6 +827,8 @@ export class Modals {
     if (this.inventoryModal) this.inventoryModal.classList.remove('visible');
     if (this.pauseModal) this.pauseModal.classList.remove('visible');
     if (this.aquariumManageModal) this.aquariumManageModal.classList.remove('visible');
+    if (this.aquariumThemeModal) this.aquariumThemeModal.classList.remove('visible');
+    if (this.aquariumOfflineModal) this.aquariumOfflineModal.classList.remove('visible');
     if (this.soundModal) this.soundModal.classList.remove('visible');
     if (this.userDropdownMenu) this.userDropdownMenu.classList.add('hidden');
     if (this.aquariumUI && !this.aquarium.isOpen) this.aquariumUI.classList.remove('visible');
@@ -1202,8 +1257,9 @@ export class Modals {
         this.sound.playClick();
         this.closeAll();
         this.aquarium.open();
-        this.updateAquariumBadge();
+        this.renderAquariumPanels();
         if (this.aquariumUI) this.aquariumUI.classList.add('visible');
+        this.checkAquariumOfflineReward();
       });
     }
 
@@ -1755,13 +1811,44 @@ export class Modals {
   }
 
   updateAquariumBadge() {
-    const countEl = document.getElementById('aqua-fish-count');
-    if (countEl && this.aquarium) {
-      countEl.innerText = this.aquarium.placedFish.length;
+    if (!this.aquarium) return;
+
+    // Theme Tag
+    const themeTag = document.getElementById('aqua-current-theme-tag');
+    if (themeTag) {
+      const tInfo = this.aquarium.getThemeInfo();
+      themeTag.innerText = `${tInfo.icon} ${tInfo.name}`;
     }
 
+    // Fish Count
+    const countEl = document.getElementById('aqua-fish-count');
+    const maxCountEl = document.getElementById('aqua-max-count');
+    if (countEl) countEl.innerText = this.aquarium.placedFish.length;
+    if (maxCountEl) maxCountEl.innerText = this.aquarium.getMaxCapacity();
+
+    // GPS Rate
+    const gpsEl = document.getElementById('aqua-gps-val');
+    if (gpsEl) {
+      const gpm = this.aquarium.getGPM();
+      gpsEl.innerText = `+${gpm.toLocaleString()} G/분`;
+    }
+
+    // Vault Progress & Text
+    const vaultText = document.getElementById('aqua-vault-text');
+    const vaultBar = document.getElementById('aqua-vault-bar');
+    const maxVault = this.aquarium.getVaultMaxCapacity();
+    const curVault = Math.round(this.aquarium.vaultGold);
+    if (vaultText) {
+      vaultText.innerText = `${curVault.toLocaleString()} / ${maxVault.toLocaleString()} G`;
+    }
+    if (vaultBar) {
+      const pct = Math.min(100, Math.max(0, (curVault / Math.max(1, maxVault)) * 100));
+      vaultBar.style.width = `${pct}%`;
+    }
+
+    // Feed Badge
     const feedBadge = document.getElementById('aqua-feed-badge');
-    if (feedBadge && this.aquarium) {
+    if (feedBadge) {
       if (this.aquarium.canGetFeedReward()) {
         feedBadge.className = 'feed-badge ready';
         feedBadge.innerText = '💰 골드 가능!';
@@ -1772,6 +1859,280 @@ export class Modals {
         feedBadge.className = 'feed-badge cooldown';
         feedBadge.innerText = `⏳ ${mins}분 ${secs}초`;
       }
+    }
+  }
+
+  renderAquariumPanels() {
+    if (!this.aquarium) return;
+    this.updateAquariumBadge();
+
+    // 1. Render Tab 1: 8 Facility Upgrades (수조 & 시설 업그레이드)
+    const facilityContainer = document.getElementById('aqua-facility-upgrade-list');
+    if (facilityContainer) {
+      facilityContainer.innerHTML = '';
+      FACILITY_UPGRADES.forEach(fac => {
+        const curLv = this.aquarium.facilityLevels[fac.id] || (fac.id === 'auto_feeder' ? 0 : 1);
+        const isMax = curLv >= fac.maxLevel;
+        const costIdx = curLv - (fac.id === 'auto_feeder' ? 0 : 1);
+        const cost = isMax ? 0 : fac.costs[costIdx];
+        const canAfford = this.economy.gold >= cost;
+
+        let curVal, nextVal;
+        if (fac.caps) {
+          curVal = fac.caps[curLv - 1];
+          nextVal = isMax ? null : fac.caps[curLv];
+        } else {
+          curVal = fac.bonuses[curLv - (fac.id === 'auto_feeder' ? 0 : 1)];
+          nextVal = isMax ? undefined : fac.bonuses[curLv - (fac.id === 'auto_feeder' ? 0 : 1) + 1];
+        }
+
+        const descText = fac.desc(curVal, nextVal);
+
+        const card = document.createElement('div');
+        card.className = 'aqua-up-card';
+        card.innerHTML = `
+          <div class="up-card-icon">${fac.icon}</div>
+          <div class="up-card-details">
+            <div class="up-card-title">${fac.name} <span class="up-lv">Lv.${curLv}</span></div>
+            <div class="up-card-desc">${descText}</div>
+          </div>
+          <button class="btn-primary btn-upgrade-action ${isMax ? 'disabled' : !canAfford ? 'disabled' : ''}" data-fac="${fac.id}">
+            ${isMax ? 'MAX' : '💰 ' + cost.toLocaleString() + ' G'}
+          </button>
+        `;
+
+        const btnUp = card.querySelector('.btn-upgrade-action');
+        if (btnUp && !isMax) {
+          btnUp.addEventListener('click', () => {
+            const res = this.aquarium.upgradeFacility(fac.id);
+            this.hud.showNotification(res.message, res.success ? fac.icon : '⚠️');
+            this.renderAquariumPanels();
+          });
+        }
+
+        facilityContainer.appendChild(card);
+      });
+    }
+
+    // 2. Render Tab 2: Food Tiers & Progressive Leveling (사료 육성 및 해금)
+    const foodContainer = document.getElementById('aqua-food-tier-list');
+    if (foodContainer) {
+      foodContainer.innerHTML = '';
+      FOOD_TIERS.forEach(food => {
+        const isEquipped = this.aquarium.foodTier === food.tier;
+        const isOwned = this.aquarium.ownedFoodTiers.includes(food.tier);
+        const foodLv = this.aquarium.getFoodLevel(food.tier);
+        const lvCost = this.aquarium.getFoodUpgradeCost(food.tier);
+        const canAffordLv = this.economy.gold >= lvCost;
+        const canAffordBuy = this.economy.gold >= food.price;
+
+        let lockMsg = '';
+        let isLocked = false;
+        if (!isOwned && food.reqTier) {
+          const reqLv = this.aquarium.getFoodLevel(food.reqTier);
+          if (reqLv < food.reqLevel) {
+            isLocked = true;
+            lockMsg = `🔒 ${food.reqTierName} 달성 시 해금 (현재: Lv.${reqLv})`;
+          }
+        }
+
+        const card = document.createElement('div');
+        card.className = `aqua-food-card ${isEquipped ? 'equipped' : ''}`;
+        card.innerHTML = `
+          <div class="food-card-icon">${food.icon}</div>
+          <div class="food-card-body">
+            <div class="food-card-title-row">
+              <span class="food-card-title">${food.name}</span>
+              ${isOwned ? `<span class="up-lv">Lv.${foodLv}</span>` : ''}
+            </div>
+            <div class="food-card-desc">${food.desc}</div>
+            ${isLocked ? `<div class="food-card-lock">${lockMsg}</div>` : ''}
+          </div>
+          <div class="food-card-actions">
+            ${isOwned ? `
+              <button class="btn-food-lvup ${!canAffordLv ? 'disabled' : ''}" data-tier="${food.tier}">
+                ⬆️ Lv업 (${lvCost.toLocaleString()}G)
+              </button>
+              ${isEquipped
+                ? '<span class="badge-equipped">사용 중</span>'
+                : `<button class="btn-secondary btn-select-food" data-tier="${food.tier}">장착</button>`}
+            ` : isLocked ? `
+              <button class="btn-primary btn-buy-food disabled">
+                🔒 잠김
+              </button>
+            ` : `
+              <button class="btn-primary btn-buy-food ${!canAffordBuy ? 'disabled' : ''}" data-tier="${food.tier}">
+                💰 ${food.price.toLocaleString()} G 구매
+              </button>
+            `}
+          </div>
+        `;
+
+        const btnLv = card.querySelector('.btn-food-lvup');
+        if (btnLv) {
+          btnLv.addEventListener('click', () => {
+            const res = this.aquarium.levelUpFood(food.tier);
+            this.hud.showNotification(res.message, res.success ? '✨' : '⚠️');
+            this.renderAquariumPanels();
+          });
+        }
+
+        const btnSel = card.querySelector('.btn-select-food');
+        if (btnSel) {
+          btnSel.addEventListener('click', () => {
+            this.sound.playClick();
+            this.aquarium.foodTier = food.tier;
+            this.aquarium.saveToStorage();
+            this.renderAquariumPanels();
+            this.hud.showNotification(`${food.name} 사료를 장착했습니다.`, food.icon);
+          });
+        }
+
+        const btnBuy = card.querySelector('.btn-buy-food');
+        if (btnBuy && !isLocked) {
+          btnBuy.addEventListener('click', () => {
+            const res = this.aquarium.buyFoodTier(food.tier);
+            this.hud.showNotification(res.message, res.success ? food.icon : '⚠️');
+            this.renderAquariumPanels();
+          });
+        }
+
+        foodContainer.appendChild(card);
+      });
+    }
+
+    // 3. Render Tab 3: Fish Level Up & Manage
+    const fishContainer = document.getElementById('aqua-fish-cards-list');
+    if (fishContainer) {
+      fishContainer.innerHTML = '';
+      if (this.aquarium.placedFish.length === 0) {
+        fishContainer.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px; font-size:12px;">수조에 물고기가 없습니다.<br>낚시터에서 물고기를 잡아 수조에 넣어보세요!</div>';
+      } else {
+        this.aquarium.placedFish.forEach(fishItem => {
+          const species = this.encyclopedia.getFishData(fishItem.speciesId);
+          const lv = fishItem.level || 1;
+          const gps = Math.round(this.aquarium.calculateFishGPS(fishItem) * 10) / 10;
+          const cost = this.aquarium.getFishUpgradeCost(fishItem);
+          const canAfford = this.economy.gold >= cost;
+
+          const card = document.createElement('div');
+          card.className = 'aqua-fish-item-card';
+          card.innerHTML = `
+            <div class="fish-item-info">
+              <div class="fish-item-name">${fishItem.isShiny ? '✨ ' : ''}${fishItem.name} <span class="up-lv">Lv.${lv}</span></div>
+              <div class="fish-item-stats">⚡ +${this.aquarium.calculateFishGPM(fishItem).toLocaleString()} G/분 (${fishItem.sizeCm}cm)</div>
+            </div>
+            <div class="fish-item-actions">
+              <button class="btn-fish-lvup ${!canAfford ? 'disabled' : ''}" data-id="${fishItem.instanceId}">
+                ⬆️ Lv업 (${cost.toLocaleString()}G)
+              </button>
+              <button class="btn-fish-sell" data-id="${fishItem.instanceId}">
+                판매
+              </button>
+            </div>
+          `;
+
+          const btnLv = card.querySelector('.btn-fish-lvup');
+          if (btnLv) {
+            btnLv.addEventListener('click', () => {
+              const res = this.aquarium.levelUpFish(fishItem.instanceId);
+              this.hud.showNotification(res.message, res.success ? '✨' : '⚠️');
+              this.renderAquariumPanels();
+            });
+          }
+
+          const btnSell = card.querySelector('.btn-fish-sell');
+          if (btnSell) {
+            btnSell.addEventListener('click', () => {
+              const removed = this.aquarium.sellFishFromAquarium(fishItem.instanceId);
+              if (removed) {
+                this.sound.playCoin();
+                this.hud.showNotification(`${removed.name}을(를) 판매했습니다.`, '💰');
+              }
+              this.renderAquariumPanels();
+            });
+          }
+
+          fishContainer.appendChild(card);
+        });
+      }
+    }
+
+    // 4. Render Tab 4: Theme Shop
+    const themesContainer = document.getElementById('aqua-theme-cards-list');
+    if (themesContainer) {
+      themesContainer.innerHTML = '';
+      AQUARIUM_THEMES_INFO.forEach(theme => {
+        const isOwned = this.aquarium.ownedThemes.includes(theme.id);
+        const isEquipped = this.aquarium.theme === theme.id;
+        const canAfford = this.economy.gold >= theme.price;
+
+        const card = document.createElement('div');
+        card.className = `aqua-theme-item-card ${isEquipped ? 'equipped' : ''}`;
+        card.innerHTML = `
+          <img class="theme-item-preview" src="${theme.image}" alt="${theme.name}" onerror="this.style.display='none'">
+          <div class="theme-item-body">
+            <div class="theme-item-title-row">
+              <span class="theme-item-title">${theme.icon} ${theme.name}</span>
+              <span class="theme-card-badge">${theme.badge}</span>
+            </div>
+            <div class="theme-item-perk">✨ ${theme.perk}</div>
+            <div class="theme-item-footer">
+              <span class="theme-card-capacity">🏠 수용: ${theme.capacity}마리</span>
+              <div>
+                ${isEquipped
+                  ? '<span class="badge-equipped">적용 중</span>'
+                  : isOwned
+                  ? `<button class="btn-secondary btn-apply-theme" data-id="${theme.id}">적용하기</button>`
+                  : `<button class="btn-primary btn-buy-theme ${!canAfford ? 'disabled' : ''}" data-id="${theme.id}">
+                      💰 ${theme.price.toLocaleString()} G
+                     </button>`}
+              </div>
+            </div>
+          </div>
+        `;
+
+        const btnApply = card.querySelector('.btn-apply-theme');
+        if (btnApply) {
+          btnApply.addEventListener('click', () => {
+            this.sound.playClick();
+            this.aquarium.setTheme(theme.id);
+            this.renderAquariumPanels();
+            this.hud.showNotification(`${theme.name} 테마가 적용되었습니다!`, theme.icon);
+          });
+        }
+
+        const btnBuy = card.querySelector('.btn-buy-theme');
+        if (btnBuy) {
+          btnBuy.addEventListener('click', () => {
+            const res = this.aquarium.buyTheme(theme.id);
+            this.hud.showNotification(res.message, res.success ? theme.icon : '⚠️');
+            this.renderAquariumPanels();
+          });
+        }
+
+        themesContainer.appendChild(card);
+      });
+    }
+  }
+
+  checkAquariumOfflineReward() {
+    if (!this.aquarium || !this.aquariumOfflineModal) return;
+    const off = this.aquarium.calculateOfflineEarnings();
+    if (off.earnings > 0 && off.elapsedSeconds >= 60) {
+      const timeEl = document.getElementById('aqua-offline-time');
+      const goldEl = document.getElementById('aqua-offline-gold');
+      if (timeEl) {
+        if (off.hours > 0) {
+          timeEl.innerText = `${off.hours}시간 ${off.minutes}분`;
+        } else {
+          timeEl.innerText = `${off.minutes}분`;
+        }
+      }
+      if (goldEl) {
+        goldEl.innerText = `+${off.earnings.toLocaleString()} G`;
+      }
+      this.aquariumOfflineModal.classList.add('visible');
     }
   }
 
@@ -1823,43 +2184,48 @@ export class Modals {
 
     fishList.forEach(item => {
       const species = this.encyclopedia.getFishData(item.speciesId);
-      const price = species ? Math.round(species.basePrice * (item.isShiny ? 3.0 : 1.0)) : 100;
+      const lv = item.level || 1;
+      const gpm = this.aquarium.calculateFishGPM(item);
+      let basePrice = species ? species.basePrice : 50;
+      if (item.isShiny) basePrice = Math.round(basePrice * 2.5);
+      const price = Math.round(basePrice * (1 + (lv - 1) * 0.25));
+
       const card = document.createElement('div');
       card.className = `aqua-fish-card ${item.isShiny ? 'is-shiny' : ''}`;
       card.innerHTML = `
         <div class="aqua-card-preview-box">
-          <canvas class="aqua-card-preview" width="90" height="60"></canvas>
-          ${item.isShiny ? '<span class="shiny-tag">✨ 이로치</span>' : ''}
+          <canvas class="aqua-card-preview" width="64" height="42"></canvas>
+          ${item.isShiny ? '<span class="shiny-tag">✨</span>' : ''}
         </div>
         <div class="aqua-card-info">
-          <div class="aqua-card-name">${item.name}</div>
-          <div class="aqua-card-size">크기: <strong>${item.sizeCm.toFixed(1)} cm</strong></div>
-          <div class="aqua-card-rarity">${species ? species.rarity.toUpperCase() : 'FISH'}</div>
-          <div class="aqua-card-price">판매가: <strong>+${price.toLocaleString()} G</strong></div>
+          <div class="aqua-card-title-row">
+            <span class="aqua-card-name">${item.name}</span>
+            <span class="up-lv">Lv.${lv}</span>
+          </div>
+          <div class="aqua-card-sub">${item.sizeCm.toFixed(1)} cm • ⚡ +${gpm.toLocaleString()} G/분</div>
         </div>
         <div class="aqua-card-actions">
-          <button class="btn-aqua-sell-fish" data-instance-id="${item.instanceId}" title="수조에서 이 물고기를 즉시 판매하여 골드를 획득합니다.">
-            💰 바로 판매 (+${price.toLocaleString()} G)
+          <button class="btn-aqua-sell-fish" data-instance-id="${item.instanceId}">
+            💰 +${price.toLocaleString()} G 판매
           </button>
         </div>
       `;
 
-      // Draw fish preview canvas
       const canvas = card.querySelector('.aqua-card-preview');
       if (canvas && species) {
         Fish.drawPreview(canvas, species, true, item.isShiny);
       }
 
-      // Sell Fish Button
       const btnSell = card.querySelector('.btn-aqua-sell-fish');
       if (btnSell) {
         btnSell.addEventListener('click', () => {
           this.sound.playCoin();
           const result = this.aquarium.sellFishFromAquarium(item.instanceId);
-          if (result) {
-            this.hud.showNotification(`💰 [${result.fish.name}]을(를) 즉시 판매하여 +${result.price.toLocaleString()} G를 획득했습니다!`, '🪙');
-            this.renderAquariumManageContent();
+          if (result && result.fish) {
+            this.hud.showNotification(`💰 [${result.fish.name}] 판매 완료 (+ ${result.price.toLocaleString()} G)`, '🪙');
           }
+          this.renderAquariumManageContent();
+          this.renderAquariumPanels();
         });
       }
 

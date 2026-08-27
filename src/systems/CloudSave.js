@@ -310,7 +310,14 @@ export class CloudSave {
       },
       aquarium: {
         placedFish: Array.isArray(this.aquarium?.placedFish) ? this.aquarium.placedFish : [],
-        theme: this.aquarium?.theme || 'coral'
+        theme: this.aquarium?.theme || 'coral',
+        ownedThemes: Array.isArray(this.aquarium?.ownedThemes) ? this.aquarium.ownedThemes : ['coral'],
+        vaultGold: typeof this.aquarium?.vaultGold === 'number' ? Math.round(this.aquarium.vaultGold) : 0,
+        facilityLevels: this.aquarium?.facilityLevels ? { ...this.aquarium.facilityLevels } : {},
+        foodTier: typeof this.aquarium?.foodTier === 'number' ? this.aquarium.foodTier : 1,
+        foodLevels: this.aquarium?.foodLevels ? { ...this.aquarium.foodLevels } : {},
+        ownedFoodTiers: Array.isArray(this.aquarium?.ownedFoodTiers) ? this.aquarium.ownedFoodTiers : [1],
+        lastOfflineTime: typeof this.aquarium?.lastOfflineTime === 'number' ? this.aquarium.lastOfflineTime : Date.now()
       }
     };
   }
@@ -568,7 +575,34 @@ export class CloudSave {
       }
       if (data.aquarium && this.aquarium) {
         if (data.aquarium.theme) this.aquarium.theme = data.aquarium.theme;
-        if (Array.isArray(data.aquarium.placedFish)) this.aquarium.placedFish = data.aquarium.placedFish;
+        if (Array.isArray(data.aquarium.ownedThemes)) {
+          this.aquarium.ownedThemes = Array.from(new Set([...this.aquarium.ownedThemes, ...data.aquarium.ownedThemes]));
+        }
+        if (Array.isArray(data.aquarium.placedFish) && data.aquarium.placedFish.length >= this.aquarium.placedFish.length) {
+          this.aquarium.placedFish = data.aquarium.placedFish;
+        }
+        if (typeof data.aquarium.vaultGold === 'number') {
+          this.aquarium.vaultGold = Math.max(this.aquarium.vaultGold, data.aquarium.vaultGold);
+        }
+        if (data.aquarium.facilityLevels && typeof data.aquarium.facilityLevels === 'object') {
+          for (const [k, v] of Object.entries(data.aquarium.facilityLevels)) {
+            this.aquarium.facilityLevels[k] = Math.max(this.aquarium.facilityLevels[k] || 1, v);
+          }
+        }
+        if (typeof data.aquarium.foodTier === 'number') {
+          this.aquarium.foodTier = Math.max(this.aquarium.foodTier, data.aquarium.foodTier);
+        }
+        if (data.aquarium.foodLevels && typeof data.aquarium.foodLevels === 'object') {
+          for (const [k, v] of Object.entries(data.aquarium.foodLevels)) {
+            this.aquarium.foodLevels[k] = Math.max(this.aquarium.foodLevels[k] || 1, v);
+          }
+        }
+        if (Array.isArray(data.aquarium.ownedFoodTiers)) {
+          this.aquarium.ownedFoodTiers = Array.from(new Set([...this.aquarium.ownedFoodTiers, ...data.aquarium.ownedFoodTiers]));
+        }
+        if (typeof data.aquarium.lastOfflineTime === 'number') {
+          this.aquarium.lastOfflineTime = data.aquarium.lastOfflineTime;
+        }
         this.aquarium.saveToStorage();
       }
 
