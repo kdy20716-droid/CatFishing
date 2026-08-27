@@ -1354,38 +1354,260 @@ html, body {
 /* =========================================================
    📱 Mobile Responsive Aquarium Tycoon Layout
    ========================================================= */
-@media (max-width: 1024px) {
+/* =========================================================
+   📱 Mobile & Tablet Responsive Layout (Shops & Aquarium)
+   ========================================================= */
+@media (max-width: 1024px), (max-height: 600px) {
+  /* 1. All Modal Windows Full Scroll & Mobile Responsiveness */
+  .modal-window,
+  .shop-window,
+  .dock-merchant-window,
+  .wardrobe-window,
+  .encyclo-window,
+  .fish-market-window,
+  .conflict-window {
+    width: 96vw !important;
+    max-width: 96vw !important;
+    height: 94vh !important;
+    max-height: 94vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    border-radius: 20px !important;
+  }
+
+  .shop-grid,
+  .encyclo-grid,
+  .wardrobe-grid,
+  .fish-market-grid,
+  .dock-merchant-content,
+  .conflict-content {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    padding: 10px 12px !important;
+  }
+
+  .shop-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .shop-card {
+    min-height: auto !important;
+    padding: 10px 12px !important;
+    gap: 6px !important;
+  }
+
+  .shop-tabs, .wardrobe-tabs, .encyclo-tabs {
+    padding: 6px 8px !important;
+    gap: 4px !important;
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .shop-tab-btn, .wardrobe-tab-btn {
+    padding: 6px 10px !important;
+    font-size: 11.5px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  .dock-cards-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* 2. Aquarium Mobile Layout: Clean Left HUD & Right Panel (Never covers center tank) */
   #aquarium-controls-ui.aqua-idle-layout {
-    padding: 68px 12px 14px 12px;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 10px;
-    overflow-y: auto;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    padding: 66px 10px 10px 10px !important;
+    overflow: visible !important;
+    pointer-events: none !important;
   }
 
   .aqua-left-hud {
-    width: 100%;
-    max-width: 440px;
-    gap: 8px;
+    width: clamp(150px, 24vw, 240px) !important;
+    max-width: 28vw !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    pointer-events: auto !important;
+  }
+
+  .aqua-brand-card {
+    padding: 8px 10px !important;
+    border-radius: 14px !important;
+    gap: 6px !important;
+  }
+
+  .aqua-brand-icon {
+    font-size: 20px !important;
+  }
+
+  .aqua-title {
+    font-size: 13.5px !important;
+  }
+
+  .aqua-theme-tag {
+    font-size: 9px !important;
+    padding: 1px 5px !important;
+  }
+
+  .aqua-vault-card {
+    padding: 8px 10px !important;
+    border-radius: 14px !important;
+    gap: 5px !important;
+  }
+
+  .vault-title {
+    font-size: 11.5px !important;
+  }
+
+  .vault-gps {
+    font-size: 9.5px !important;
+    padding: 1px 5px !important;
+  }
+
+  .vault-amount {
+    font-size: 10.5px !important;
+  }
+
+  .btn-vault-claim {
+    padding: 4px 8px !important;
+    font-size: 10.5px !important;
+    border-radius: 8px !important;
+  }
+
+  .aqua-feed-gauge-card {
+    padding: 8px 10px !important;
+    border-radius: 14px !important;
+    gap: 4px !important;
+  }
+
+  .feed-gauge-title {
+    font-size: 11px !important;
+  }
+
+  .feed-status-badge {
+    font-size: 9.5px !important;
+    padding: 1px 5px !important;
+  }
+
+  .feed-timer-text {
+    font-size: 9.5px !important;
+  }
+
+  .feed-equipped-name {
+    font-size: 9px !important;
+    padding: 1px 4px !important;
+  }
+
+  .btn-aqua-exit-action {
+    padding: 7px 10px !important;
+    font-size: 11px !important;
+    border-radius: 12px !important;
   }
 
   .btn-aqua-mobile-toggle {
-    display: flex;
+    display: none !important;
   }
 
   .aqua-right-panel {
-    display: none;
-    width: 100%;
-    max-width: 440px;
-    height: auto;
-    max-height: 480px;
-    margin-top: 6px;
-    animation: modal-pop 0.25s ease-out;
+    display: flex !important;
+    width: clamp(170px, 30vw, 300px) !important;
+    max-width: 32vw !important;
+    height: calc(100vh - 78px) !important;
+    max-height: calc(100vh - 78px) !important;
+    border-radius: 18px !important;
+    pointer-events: auto !important;
   }
 
-  .aqua-right-panel.mobile-open {
-    display: flex;
+  .aqua-tabs-bar {
+    padding: 4px 4px !important;
+    gap: 2px !important;
+  }
+
+  .aqua-tab-btn {
+    padding: 5px 2px !important;
+    font-size: 9.5px !important;
+    border-radius: 8px !important;
+  }
+
+  .aqua-tab-content-area {
+    padding: 8px 8px !important;
+  }
+
+  .aqua-up-card {
+    padding: 8px 10px !important;
+    border-radius: 12px !important;
+    gap: 6px !important;
+  }
+
+  .up-card-icon {
+    font-size: 18px !important;
+  }
+
+  .up-card-title {
+    font-size: 11px !important;
+  }
+
+  .up-card-desc {
+    font-size: 9.5px !important;
+  }
+
+  .btn-upgrade-action {
+    padding: 5px 8px !important;
+    font-size: 10px !important;
+    border-radius: 8px !important;
+  }
+
+  .aqua-food-card {
+    padding: 8px 10px !important;
+    border-radius: 12px !important;
+    gap: 6px !important;
+  }
+
+  .food-card-icon {
+    font-size: 20px !important;
+  }
+
+  .food-card-title {
+    font-size: 11px !important;
+  }
+
+  .food-card-desc {
+    font-size: 9.5px !important;
+  }
+
+  .btn-food-lvup, .btn-buy-food, .btn-select-food {
+    padding: 4px 6px !important;
+    font-size: 9.5px !important;
+    border-radius: 8px !important;
+  }
+
+  .aqua-fish-item-card {
+    padding: 6px 8px !important;
+    border-radius: 10px !important;
+  }
+
+  .fish-item-name {
+    font-size: 11px !important;
+  }
+
+  .fish-item-stats {
+    font-size: 9.5px !important;
+  }
+
+  .btn-fish-lvup, .btn-fish-sell {
+    padding: 4px 6px !important;
+    font-size: 9.5px !important;
+    border-radius: 8px !important;
   }
 }
 

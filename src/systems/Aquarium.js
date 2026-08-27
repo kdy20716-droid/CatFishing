@@ -919,22 +919,15 @@ export class Aquarium {
 
     ctx.save();
 
-    let leftMargin = 320;
-    let rightMargin = 390;
+    // Responsive Left and Right Side Margins (Zero Overlap on PC & Mobile)
+    let leftMargin = screenW <= 920 ? Math.max(160, screenW * 0.24) : 310;
+    let rightMargin = screenW <= 920 ? Math.max(180, screenW * 0.30) : 380;
     let availableW = screenW - leftMargin - rightMargin;
-    let availableH = screenH - 60;
+    let availableH = screenH - 75;
 
-    let scale = 1.0;
-    let centerX = 0;
-    let centerY = screenH / 2;
-
-    if (screenW >= 1180 && availableW > 450) {
-      scale = Math.min(1.0, Math.max(0.65, Math.min(availableW / this.tankWidth, availableH / this.tankHeight)));
-      centerX = leftMargin + availableW / 2;
-    } else {
-      scale = Math.min(1.0, Math.max(0.5, Math.min((screenW - 40) / this.tankWidth, (screenH - 120) / this.tankHeight)));
-      centerX = screenW / 2;
-    }
+    let scale = Math.min(1.0, Math.max(0.35, Math.min(availableW / this.tankWidth, availableH / this.tankHeight)));
+    let centerX = leftMargin + availableW / 2;
+    let centerY = 35 + availableH / 2;
 
     const scaledW = this.tankWidth * scale;
     const scaledH = this.tankHeight * scale;
