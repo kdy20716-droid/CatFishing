@@ -619,12 +619,14 @@ export class HUD {
 
     this.catchModal.classList.add('visible');
 
+    const handleCloseCatch = () => {
+      this.sound?.playClick?.();
+      this._processNextCatchPopup();
+    };
+
     const okBtn = document.getElementById('btn-catch-ok');
     if (okBtn) {
-      okBtn.addEventListener('click', () => {
-        this.sound?.playClick?.();
-        this._processNextCatchPopup();
-      });
+      okBtn.addEventListener('click', handleCloseCatch);
     }
   }
 

@@ -3064,24 +3064,140 @@ html, body {
    Catch Celebration Modal (Dark Translucent Showcase)
    ========================================================= */
 .catch-modal-content {
-  background: rgba(15, 23, 42, 0.90) !important;
+  background: rgba(15, 23, 42, 0.92) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
-  border-radius: var(--radius-lg);
-  padding: 26px 32px;
+  border-radius: 24px;
+  padding: 22px 28px;
   text-align: center;
-  max-width: 480px;
+  max-width: 460px;
   width: 92%;
-  border: 2.5px solid rgba(255, 255, 255, 0.18) !important;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(56, 189, 248, 0.25);
+  max-height: 92vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 2.5px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 35px rgba(56, 189, 248, 0.3);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   position: relative;
-  overflow: hidden;
   animation: catch-bounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
   color: #f8fafc;
+  box-sizing: border-box;
+}
+
+/* 📱 Mobile & Small Screen Catch Modal Optimization */
+@media (max-width: 768px), (max-height: 650px) {
+  .catch-modal-content {
+    padding: 12px 16px !important;
+    gap: 4px !important;
+    max-height: 94vh !important;
+    max-width: 94vw !important;
+    border-radius: 18px !important;
+  }
+
+  .shiny-celebration-banner {
+    font-size: 14px !important;
+  }
+
+  .catch-badge {
+    font-size: 10.5px !important;
+    padding: 2px 10px !important;
+  }
+
+  .catch-title {
+    font-size: 20px !important;
+    margin: 0 !important;
+  }
+
+  .catch-eng {
+    font-size: 11px !important;
+  }
+
+  .catch-showcase-box {
+    height: 95px !important;
+    margin: 2px 0 4px 0 !important;
+  }
+
+  .catch-showcase-canvas {
+    width: 170px !important;
+    height: 90px !important;
+  }
+
+  .catch-stats {
+    padding: 6px 8px !important;
+    margin: 2px 0 !important;
+  }
+
+  .stat-box .label {
+    font-size: 9.5px !important;
+  }
+
+  .stat-box .val {
+    font-size: 13.5px !important;
+  }
+
+  .catch-desc {
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+    margin: 1px 0 !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .rhythm-bonus-badge,
+  .basket-stored-banner,
+  .first-caught-banner {
+    font-size: 10.5px !important;
+    padding: 3px 8px !important;
+    margin: 1px 0 !important;
+  }
+
+  .catch-actions {
+    margin-top: 4px !important;
+  }
+
+  .catch-actions button {
+    padding: 9px 12px !important;
+    font-size: 13.5px !important;
+    border-radius: 12px !important;
+  }
+}
+
+/* 📱 Landscape Smartphone Catch Modal Optimization (Ultra low height) */
+@media (max-height: 480px) {
+  .catch-modal-content {
+    padding: 8px 14px !important;
+    gap: 3px !important;
+    max-height: 96vh !important;
+    max-width: 440px !important;
+  }
+
+  .catch-showcase-box {
+    height: 65px !important;
+    margin: 1px 0 2px 0 !important;
+  }
+
+  .catch-showcase-canvas {
+    width: 130px !important;
+    height: 60px !important;
+  }
+
+  .catch-title {
+    font-size: 16px !important;
+  }
+
+  .catch-desc {
+    display: none !important;
+  }
+
+  .catch-actions button {
+    padding: 7px 10px !important;
+    font-size: 12px !important;
+  }
 }
 
 @keyframes catch-bounce {
@@ -7292,4 +7408,202 @@ html, body {
   background: #e0f2fe;
   padding: 1px 6px;
   border-radius: 6px;
+}
+/* =========================================================
+   📱 Universal Mobile & Tablet Responsive Modals & Windows
+   ========================================================= */
+@media (max-width: 1024px), (max-height: 600px) {
+  /* 1. All Modal Windows Uniform Responsive Sizing */
+  .modal-window,
+  .shop-window,
+  .dock-merchant-window,
+  .wardrobe-window,
+  .encyclo-window,
+  .market-window,
+  .inventory-window,
+  .fish-detail-window,
+  .guide-window,
+  .auth-window,
+  .conflict-window,
+  .multi-window,
+  .pause-window,
+  .sound-window,
+  .aqua-manage-window {
+    width: 96vw !important;
+    max-width: 96vw !important;
+    height: 94vh !important;
+    max-height: 94vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    border-radius: 20px !important;
+  }
+
+  .aqua-offline-window {
+    width: 92vw !important;
+    max-width: 440px !important;
+    height: auto !important;
+    max-height: 94vh !important;
+    padding: 16px 18px !important;
+    border-radius: 20px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .modal-header {
+    padding: 10px 14px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .modal-header h2 {
+    font-size: 15px !important;
+  }
+
+  .modal-close-btn,
+  .fish-detail-close-btn {
+    font-size: 22px !important;
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  /* 2. Content Areas & Touch Inertial Scrolling */
+  .modal-content,
+  .shop-grid,
+  .encyclo-grid,
+  .wardrobe-grid,
+  .inventory-content,
+  .inv-fish-grid,
+  .inv-catches-grid,
+  .inv-rod-grid,
+  .inv-bait-grid,
+  .market-content,
+  .market-list,
+  .guide-content,
+  .guide-content-cozy,
+  .multi-content,
+  .pause-content,
+  .sound-content,
+  .dock-merchant-content,
+  .conflict-content,
+  .fish-detail-content,
+  .aqua-offline-content {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    padding: 10px 12px !important;
+  }
+
+  /* 3. Horizontal Scrollable Tabs */
+  .shop-tabs,
+  .wardrobe-tabs,
+  .encyclo-tabs,
+  .inventory-tabs,
+  .market-tabs {
+    padding: 6px 8px !important;
+    gap: 4px !important;
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    flex-shrink: 0 !important;
+  }
+
+  .shop-tab-btn,
+  .wardrobe-tab-btn,
+  .encyclo-tab-btn,
+  .inv-tab-btn,
+  .market-tab-btn {
+    padding: 6px 10px !important;
+    font-size: 11.5px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 4. Compact Item Grids & Cards */
+  .shop-grid,
+  .wardrobe-grid,
+  .inv-fish-grid,
+  .inv-catches-grid,
+  .inv-rod-grid,
+  .inv-bait-grid,
+  .market-list {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .shop-card,
+  .wardrobe-card,
+  .inv-card {
+    min-height: auto !important;
+    padding: 9px 11px !important;
+    gap: 5px !important;
+  }
+
+  .encyclo-grid {
+    grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .encyclo-card {
+    padding: 8px 10px !important;
+  }
+
+  .fish-detail-visual-box {
+    height: 110px !important;
+  }
+
+  .fish-detail-grid-section {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .detail-spec-card {
+    padding: 8px 10px !important;
+  }
+
+  .dock-cards-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .dock-card {
+    padding: 10px 12px !important;
+  }
+
+  /* 5. Compact Menus & Sliders */
+  .pause-window {
+    width: 92vw !important;
+    max-width: 380px !important;
+    height: auto !important;
+    max-height: 94vh !important;
+    padding: 10px 14px !important;
+  }
+
+  .pause-menu-list {
+    gap: 6px !important;
+  }
+
+  .pause-menu-btn {
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+  }
+
+  .sound-window {
+    width: 92vw !important;
+    max-width: 420px !important;
+    height: auto !important;
+    max-height: 94vh !important;
+    padding: 12px 14px !important;
+  }
+
+  .sound-slider-group {
+    gap: 6px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .guide-article {
+    padding: 10px 12px !important;
+    margin-bottom: 8px !important;
+  }
 }
