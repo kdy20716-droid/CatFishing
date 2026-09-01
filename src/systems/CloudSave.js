@@ -363,20 +363,36 @@ export class CloudSave {
 
     // Evaluate local progress
     const localCaughtCount = Object.values(currentLocalData.encyclopedia.records || {}).filter(r => r.caughtCount > 0).length;
+    const localFacilityTotal = Object.values(currentLocalData.aquarium?.facilityLevels || {}).reduce((a, b) => a + b, 0);
+    const localFoodTotal = Object.values(currentLocalData.aquarium?.foodLevels || {}).reduce((a, b) => a + b, 0);
+    const localThemeCount = (currentLocalData.aquarium?.ownedThemes || []).length;
     const hasLocalProgress = (
       currentLocalData.economy.level > 1 || 
       currentLocalData.economy.gold > 50 || 
       localCaughtCount > 0 || 
-      currentLocalData.economy.ownedRods.length > 1
+      currentLocalData.economy.ownedRods.length > 1 ||
+      (currentLocalData.aquarium?.vaultGold || 0) > 0 ||
+      localFacilityTotal > 7 ||
+      localFoodTotal > 4 ||
+      localThemeCount > 1 ||
+      (currentLocalData.aquarium?.placedFish || []).length > 0
     );
 
     // Evaluate cloud progress
     const cloudCaughtCount = cloudData ? Object.values(cloudData.encyclopedia?.records || {}).filter(r => r.caughtCount > 0).length : 0;
+    const cloudFacilityTotal = cloudData?.aquarium?.facilityLevels ? Object.values(cloudData.aquarium.facilityLevels).reduce((a, b) => a + b, 0) : 0;
+    const cloudFoodTotal = cloudData?.aquarium?.foodLevels ? Object.values(cloudData.aquarium.foodLevels).reduce((a, b) => a + b, 0) : 0;
+    const cloudThemeCount = (cloudData?.aquarium?.ownedThemes || []).length;
     const hasCloudProgress = cloudData && (
       (cloudData.economy?.level && cloudData.economy.level > 1) || 
       (cloudData.economy?.gold && cloudData.economy.gold > 50) || 
       cloudCaughtCount > 0 || 
-      (cloudData.economy?.ownedRods && cloudData.economy.ownedRods.length > 1)
+      (cloudData.economy?.ownedRods && cloudData.economy.ownedRods.length > 1) ||
+      (cloudData.aquarium?.vaultGold && cloudData.aquarium.vaultGold > 0) ||
+      cloudFacilityTotal > 7 ||
+      cloudFoodTotal > 4 ||
+      cloudThemeCount > 1 ||
+      (cloudData.aquarium?.placedFish && cloudData.aquarium.placedFish.length > 0)
     );
 
     console.log(`🐾 Sync On Login - hasLocalProgress: ${hasLocalProgress}, hasCloudProgress: ${hasCloudProgress}`);
@@ -395,23 +411,27 @@ export class CloudSave {
     } else if (hasCloudProgress) {
       // Local is brand new, cloud has existing record -> Load cloud data directly (READ only)
       this.applySaveData(cloudData);
-      if (this.hud) this.hud.showNotification('📥 클라우드 계정의 기존 낚시 기록을 불러왔습니다!', '☁️');
+      if (this.hud) this.hud.showNotification('📥 클라우드 계정의 기존 낚시 및 아쿠아리움 기록을 불러왔습니다!', '☁️');
       this.updateSyncBadge('☁️ 자동 동기화됨');
     } else if (hasLocalProgress && !cloudData) {
       // Brand new account with initial local progress -> save once
       await this.saveToCloud(true);
-      if (this.hud) this.hud.showNotification('🎉 지금까지의 플레이 기록이 계정에 자동 연동되었습니다!', '☁️');
+      if (this.hud) this.hud.showNotification('🎉 지금까지의 플레이 및 아쿠아리움 기록이 계정에 자동 연동되었습니다!', '☁️');
       this.updateSyncBadge('☁️ 자동 동기화됨');
     } else {
       this.updateSyncBadge('☁️ 자동 동기화됨');
     }
   }
 
+  setModals(modals) {
+    this.modals = modals;
+  }
+
   openConflictModal(localData, cloudData) {
     const modal = document.getElementById('cloud-conflict-modal');
     if (!modal) {
       // Fallback if modal DOM is missing: prompt confirm
-      const useLocal = confirm('클라우드 계정에 이미 저장된 낚시 기록이 있습니다!\n\n[확인]을 누르면 현재 기기 데이터로 덮어쓰고, [취소]를 누르면 클라우드 데이터를 불러옵니다.');
+      const useLocal = confirm('클라우드 계정에 이미 저장된 낚시 및 아쿠아리움 기록이 있습니다!\n\n[확인]을 누르면 현재 기기 데이터로 덮어쓰고, [취소]를 누르면 클라우드 데이터를 불러옵니다.');
       if (useLocal) {
         this.saveToCloud(true);
       } else {
@@ -574,36 +594,65 @@ export class CloudSave {
         this.encyclopedia.saveToStorage();
       }
       if (data.aquarium && this.aquarium) {
-        if (data.aquarium.theme) this.aquarium.theme = data.aquarium.theme;
-        if (Array.isArray(data.aquarium.ownedThemes)) {
-          this.aquarium.ownedThemes = Array.from(new Set([...this.aquarium.ownedThemes, ...data.aquarium.ownedThemes]));
+        if (data.aquarium.theme) {
+          this.aquarium.theme = data.aquarium.theme;
         }
-        if (Array.isArray(data.aquarium.placedFish) && data.aquarium.placedFish.length >= this.aquarium.placedFish.length) {
-          this.aquarium.placedFish = data.aquarium.placedFish;
+        if (Array.isArray(data.aquarium.ownedThemes)) {
+          this.aquarium.ownedThemes = Array.from(new Set(['coral', ...data.aquarium.ownedThemes]));
+        }
+        if (Array.isArray(data.aquarium.placedFish)) {
+          this.aquarium.placedFish = data.aquarium.placedFish.map(f => ({
+            ...f,
+            level: typeof f.level === 'number' ? f.level : 1
+          }));
+          // Sync visual tank swimming fish
+          if (typeof this.aquarium.syncTankFish === 'function') {
+            this.aquarium.syncTankFish();
+          }
         }
         if (typeof data.aquarium.vaultGold === 'number') {
-          this.aquarium.vaultGold = Math.max(this.aquarium.vaultGold, data.aquarium.vaultGold);
+          this.aquarium.vaultGold = data.aquarium.vaultGold;
         }
         if (data.aquarium.facilityLevels && typeof data.aquarium.facilityLevels === 'object') {
-          for (const [k, v] of Object.entries(data.aquarium.facilityLevels)) {
-            this.aquarium.facilityLevels[k] = Math.max(this.aquarium.facilityLevels[k] || 1, v);
-          }
+          this.aquarium.facilityLevels = {
+            vault_cap: 1,
+            purifier: 1,
+            led_light: 1,
+            coral_decor: 1,
+            music_box: 1,
+            vitamin_booster: 1,
+            magnetic_fan: 1,
+            auto_feeder: 0,
+            ...data.aquarium.facilityLevels
+          };
         }
         if (typeof data.aquarium.foodTier === 'number') {
-          this.aquarium.foodTier = Math.max(this.aquarium.foodTier, data.aquarium.foodTier);
+          this.aquarium.foodTier = data.aquarium.foodTier;
         }
         if (data.aquarium.foodLevels && typeof data.aquarium.foodLevels === 'object') {
-          for (const [k, v] of Object.entries(data.aquarium.foodLevels)) {
-            this.aquarium.foodLevels[k] = Math.max(this.aquarium.foodLevels[k] || 1, v);
-          }
+          this.aquarium.foodLevels = {
+            1: 1, 2: 1, 3: 1, 4: 1,
+            ...data.aquarium.foodLevels
+          };
         }
         if (Array.isArray(data.aquarium.ownedFoodTiers)) {
-          this.aquarium.ownedFoodTiers = Array.from(new Set([...this.aquarium.ownedFoodTiers, ...data.aquarium.ownedFoodTiers]));
+          this.aquarium.ownedFoodTiers = Array.from(new Set([1, ...data.aquarium.ownedFoodTiers]));
         }
         if (typeof data.aquarium.lastOfflineTime === 'number') {
           this.aquarium.lastOfflineTime = data.aquarium.lastOfflineTime;
         }
+
         this.aquarium.saveToStorage();
+
+        // Refresh UI panels if modals instance is present
+        if (this.modals) {
+          if (typeof this.modals.renderAquariumPanels === 'function') {
+            this.modals.renderAquariumPanels();
+          }
+          if (typeof this.modals.updateAquariumBadge === 'function') {
+            this.modals.updateAquariumBadge();
+          }
+        }
       }
 
       if (this.hud) {
