@@ -1509,6 +1509,10 @@ body.in-aquarium .mobile-action-btn {
 
   /* 2. Aquarium Mobile Layout: Clean Full-Screen Tank with Slide-in Drawers */
   #aquarium-controls-ui.aqua-idle-layout {
+    display: none;
+  }
+
+  #aquarium-controls-ui.aqua-idle-layout.visible {
     display: flex !important;
     padding: 0 !important;
     overflow: visible !important;
