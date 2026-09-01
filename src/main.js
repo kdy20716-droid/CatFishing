@@ -908,9 +908,23 @@ class Game {
       });
     }
 
+    const btnRotateContinuePortrait = document.getElementById('btn-rotate-continue-portrait');
+    this.allowPortraitPlay = false;
+
+    if (btnRotateContinuePortrait) {
+      btnRotateContinuePortrait.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.sound.playClick();
+        this.allowPortraitPlay = true;
+        if (rotateOverlay) rotateOverlay.classList.add('hidden');
+        this.hud.showNotification('📱 세로 모드로 플레이를 시작합니다냥!', '✨');
+      });
+    }
+
     if (btnRotateForce) {
       btnRotateForce.addEventListener('click', (e) => {
         e.stopPropagation();
+        this.allowPortraitPlay = false;
         toggleFullscreenLandscape();
       });
     }
@@ -945,8 +959,13 @@ class Game {
       const isMobileSize = window.innerWidth <= 920 || window.innerHeight <= 520;
       const isPortrait = window.innerHeight > window.innerWidth;
 
+      if (!isPortrait) {
+        // If user rotated to landscape, reset allowPortraitPlay so they see recommendation if they rotate back later
+        this.allowPortraitPlay = false;
+      }
+
       if (rotateOverlay) {
-        if (isMobileSize && isPortrait && window.innerWidth <= 920) {
+        if (isMobileSize && isPortrait && window.innerWidth <= 920 && !this.allowPortraitPlay) {
           rotateOverlay.classList.remove('hidden');
         } else {
           rotateOverlay.classList.add('hidden');
