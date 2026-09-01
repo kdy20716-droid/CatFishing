@@ -1,22 +1,22 @@
 /**
  * Master Game Controller & Loop
  */
-import { Vector2 } from './engine/Vector.js?v=7.7.0';
-import { Camera } from './engine/Camera.js?v=7.7.0';
-import { Input } from './engine/Input.js?v=7.7.0';
-import { SoundEngine } from './audio.js?v=7.7.0';
-import { Economy } from './systems/Economy.js?v=7.7.0';
-import { Encyclopedia, FISH_SPECIES } from './systems/Encyclopedia.js?v=7.7.0';
-import { Environment } from './systems/Environment.js?v=7.7.0';
-import { Aquarium } from './systems/Aquarium.js?v=7.7.0';
-import { Cat } from './entities/Cat.js?v=7.7.0';
-import { Rod } from './entities/Rod.js?v=7.7.0';
-import { Fish } from './entities/Fish.js?v=7.7.0';
-import { HUD } from './ui/HUD.js?v=7.7.0';
-import { Modals } from './ui/Modals.js?v=7.7.0';
-import { CloudSave } from './systems/CloudSave.js?v=7.7.0';
-import { Multiplayer } from './systems/Multiplayer.js?v=7.7.0';
-import { StarCatchMinigame } from './systems/StarCatchMinigame.js?v=7.7.0';
+import { Vector2 } from './engine/Vector.js?v=7.9.0';
+import { Camera } from './engine/Camera.js?v=7.9.0';
+import { Input } from './engine/Input.js?v=7.9.0';
+import { SoundEngine } from './audio.js?v=7.9.0';
+import { Economy } from './systems/Economy.js?v=7.9.0';
+import { Encyclopedia, FISH_SPECIES } from './systems/Encyclopedia.js?v=7.9.0';
+import { Environment } from './systems/Environment.js?v=7.9.0';
+import { Aquarium } from './systems/Aquarium.js?v=7.9.0';
+import { Cat } from './entities/Cat.js?v=7.9.0';
+import { Rod } from './entities/Rod.js?v=7.9.0';
+import { Fish } from './entities/Fish.js?v=7.9.0';
+import { HUD } from './ui/HUD.js?v=7.9.0';
+import { Modals } from './ui/Modals.js?v=7.9.0';
+import { CloudSave } from './systems/CloudSave.js?v=7.9.0';
+import { Multiplayer } from './systems/Multiplayer.js?v=7.9.0';
+import { StarCatchMinigame } from './systems/StarCatchMinigame.js?v=7.9.0';
 
 class Game {
   constructor() {
@@ -449,19 +449,15 @@ class Game {
       }
 
       if (this.aquarium.isOpen) {
-        const startX = (this.canvas.width - this.aquarium.tankWidth) / 2;
-        const startY = (this.canvas.height - this.aquarium.tankHeight) / 2;
+        const { relX, relY, isInside } = this.aquarium.screenToTank(clickX, clickY, this.canvas.width, this.canvas.height);
 
-        const relX = clickX - startX;
-        const relY = clickY - startY;
-
-        if (relX >= 0 && relX <= this.aquarium.tankWidth && relY >= 0 && relY <= this.aquarium.tankHeight) {
+        if (isInside) {
           // Check if clicked coin bubble
           let clickedBubble = false;
           for (let i = 0; i < this.aquarium.coinBubbles.length; i++) {
             const b = this.aquarium.coinBubbles[i];
             const dist = Math.hypot(b.pos.x - relX, b.pos.y - relY);
-            if (dist < b.size + 10) {
+            if (dist < b.size + 15) {
               this.aquarium.collectCoinBubble(i);
               clickedBubble = true;
               break;
@@ -469,7 +465,10 @@ class Game {
           }
 
           if (!clickedBubble) {
-            this.aquarium.dropFood(relX, relY);
+            const res = this.aquarium.dropFood(relX, relY);
+            if (res && res.givesReward && this.modals) {
+              this.modals.updateAquariumBadge();
+            }
           }
         }
       }
@@ -720,9 +719,14 @@ class Game {
 
       if (this.aquarium.isOpen) {
         if (code === 'Escape' || code === 'KeyE' || code === 'KeyU' || code === 'KeyI' || code === 'KeyR') {
-          this.aquarium.close();
-          const aquaUI = document.getElementById('aquarium-controls-ui');
-          if (aquaUI) aquaUI.classList.remove('visible');
+          if (this.modals) {
+            this.modals.closeAquarium();
+          } else {
+            this.aquarium.close();
+            const aquaUI = document.getElementById('aquarium-controls-ui');
+            if (aquaUI) aquaUI.classList.remove('visible');
+            document.body.classList.remove('in-aquarium');
+          }
         }
         return;
       }

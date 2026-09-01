@@ -616,14 +616,86 @@ export class Modals {
       });
     }
 
-    // Exit Button
-    const btnExitAqua = document.getElementById('btn-aqua-exit');
-    if (btnExitAqua) {
-      btnExitAqua.addEventListener('click', () => {
+    // All Exit / Close Buttons for Aquarium
+    const exitIds = ['btn-aqua-exit', 'btn-aqua-top-exit', 'btn-aqua-mobile-exit'];
+    exitIds.forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.closeAquarium();
+        });
+        btn.addEventListener('touchend', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          this.closeAquarium();
+        });
+      }
+    });
+
+    // Mobile Panel Toggle & Close Buttons
+    const btnMobileToggle = document.getElementById('btn-aqua-mobile-toggle');
+    const btnMobileUpgrades = document.getElementById('btn-aqua-mobile-upgrades');
+    const btnPanelClose = document.getElementById('btn-aqua-panel-close');
+    const rightPanel = document.getElementById('aqua-right-panel');
+
+    const togglePanel = (e) => {
+      if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+      if (this.sound && typeof this.sound.playClick === 'function') {
         this.sound.playClick();
-        this.aquarium.close();
-        if (this.aquariumUI) this.aquariumUI.classList.remove('visible');
-      });
+      }
+      if (rightPanel) {
+        rightPanel.classList.toggle('mobile-open');
+      }
+    };
+
+    if (btnMobileToggle) {
+      btnMobileToggle.addEventListener('click', togglePanel);
+      btnMobileToggle.addEventListener('touchend', togglePanel);
+    }
+    if (btnMobileUpgrades) {
+      btnMobileUpgrades.addEventListener('click', togglePanel);
+      btnMobileUpgrades.addEventListener('touchend', togglePanel);
+    }
+    if (btnPanelClose) {
+      const closePanel = (e) => {
+        if (e) {
+          e.stopPropagation();
+          e.preventDefault();
+        }
+        if (this.sound && typeof this.sound.playClick === 'function') {
+          this.sound.playClick();
+        }
+        if (rightPanel) {
+          rightPanel.classList.remove('mobile-open');
+        }
+      };
+      btnPanelClose.addEventListener('click', closePanel);
+      btnPanelClose.addEventListener('touchend', closePanel);
+    }
+
+    // Mobile Quick Feed Button
+    const btnMobileFeed = document.getElementById('btn-aqua-mobile-feed');
+    if (btnMobileFeed) {
+      const handleFeed = (e) => {
+        if (e) {
+          e.stopPropagation();
+          e.preventDefault();
+        }
+        if (this.aquarium) {
+          const randX = 120 + Math.random() * (this.aquarium.tankWidth - 240);
+          const res = this.aquarium.dropFood(randX, 30);
+          if (res && res.givesReward) {
+            this.hud.showNotification('🎉 밥주기 보너스 골드 획득!', '💰');
+          }
+          this.updateAquariumBadge();
+        }
+      };
+      btnMobileFeed.addEventListener('click', handleFeed);
+      btnMobileFeed.addEventListener('touchend', handleFeed);
     }
   }
 
@@ -1255,11 +1327,7 @@ export class Modals {
     if (btnAqua) {
       btnAqua.addEventListener('click', () => {
         this.sound.playClick();
-        this.closeAll();
-        this.aquarium.open();
-        this.renderAquariumPanels();
-        if (this.aquariumUI) this.aquariumUI.classList.add('visible');
-        this.checkAquariumOfflineReward();
+        this.openAquarium();
       });
     }
 
@@ -1800,6 +1868,36 @@ export class Modals {
 
         container.appendChild(card);
       });
+    }
+  }
+
+  openAquarium() {
+    this.closeAll();
+    if (this.aquarium) {
+      this.aquarium.open();
+    }
+    this.renderAquariumPanels();
+    if (this.aquariumUI) {
+      this.aquariumUI.classList.add('visible');
+    }
+    document.body.classList.add('in-aquarium');
+    this.checkAquariumOfflineReward();
+  }
+
+  closeAquarium() {
+    if (this.sound && typeof this.sound.playClick === 'function') {
+      this.sound.playClick();
+    }
+    if (this.aquarium) {
+      this.aquarium.close();
+    }
+    if (this.aquariumUI) {
+      this.aquariumUI.classList.remove('visible');
+    }
+    document.body.classList.remove('in-aquarium');
+    const rightPanel = document.getElementById('aqua-right-panel');
+    if (rightPanel) {
+      rightPanel.classList.remove('mobile-open');
     }
   }
 

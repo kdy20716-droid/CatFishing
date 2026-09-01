@@ -2,8 +2,8 @@
  * Cozy Personal Aquarium Simulation - Mobile Idle Tycoon Edition
  * 1/10 Rebalanced GPS Rate, Progressive Food Leveling & Sequential Unlocks, 8 Facility Upgrades, Individual Fish Leveling
  */
-import { Fish } from '../entities/Fish.js?v=7.7.0';
-import { Vector2 } from '../engine/Vector.js?v=7.7.0';
+import { Fish } from '../entities/Fish.js?v=7.9.0';
+import { Vector2 } from '../engine/Vector.js?v=7.9.0';
 
 export const AQUARIUM_THEMES_INFO = [
   {
@@ -918,28 +918,45 @@ export class Aquarium {
     });
   }
 
-  draw(ctx, screenW, screenH) {
-    if (!this.isOpen) return;
+  getTankTransform(screenW, screenH) {
+    const isPortrait = screenW <= 768;
+    const isMobile = screenW <= 920;
 
-    ctx.save();
+    let leftMargin = isPortrait ? 10 : (isMobile ? Math.max(140, screenW * 0.22) : 310);
+    let rightMargin = isPortrait ? 10 : (isMobile ? Math.max(160, screenW * 0.26) : 380);
+    let topMargin = isPortrait ? 60 : 35;
+    let bottomMargin = isPortrait ? 70 : 40;
 
-    // Responsive Left and Right Side Margins (Zero Overlap on PC & Mobile)
-    let leftMargin = screenW <= 920 ? Math.max(160, screenW * 0.24) : 310;
-    let rightMargin = screenW <= 920 ? Math.max(180, screenW * 0.30) : 380;
-    let availableW = screenW - leftMargin - rightMargin;
-    let availableH = screenH - 75;
+    let availableW = Math.max(100, screenW - leftMargin - rightMargin);
+    let availableH = Math.max(100, screenH - topMargin - bottomMargin);
 
-    let scale = Math.min(1.0, Math.max(0.35, Math.min(availableW / this.tankWidth, availableH / this.tankHeight)));
+    let scale = Math.min(1.0, Math.max(0.32, Math.min(availableW / this.tankWidth, availableH / this.tankHeight)));
     let centerX = leftMargin + availableW / 2;
-    let centerY = 35 + availableH / 2;
+    let centerY = topMargin + availableH / 2;
 
     const scaledW = this.tankWidth * scale;
     const scaledH = this.tankHeight * scale;
     const startX = centerX - scaledW / 2;
     const startY = centerY - scaledH / 2;
 
-    ctx.translate(startX, startY);
-    ctx.scale(scale, scale);
+    return { scale, startX, startY, scaledW, scaledH };
+  }
+
+  screenToTank(screenX, screenY, screenW, screenH) {
+    const t = this.getTankTransform(screenW, screenH);
+    const relX = (screenX - t.startX) / t.scale;
+    const relY = (screenY - t.startY) / t.scale;
+    const isInside = relX >= 0 && relX <= this.tankWidth && relY >= 0 && relY <= this.tankHeight;
+    return { relX, relY, isInside, scale: t.scale };
+  }
+
+  draw(ctx, screenW, screenH) {
+    if (!this.isOpen) return;
+
+    ctx.save();
+    const t = this.getTankTransform(screenW, screenH);
+    ctx.translate(t.startX, t.startY);
+    ctx.scale(t.scale, t.scale);
 
     // 1. Tank Glass Frame Outer
     ctx.fillStyle = '#2b2d42';
