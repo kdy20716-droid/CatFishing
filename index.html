@@ -379,7 +379,13 @@
     <!-- Aquarium Idle Tycoon Overlay (Visible during Aquarium Mode) -->
     <div id="aquarium-controls-ui" class="overlay-panel aqua-idle-layout">
       <!-- 📍 Left HUD: Brand, Capped Vault Box & Exit Button -->
-      <div class="aqua-left-hud">
+      <div class="aqua-left-hud" id="aqua-left-hud">
+        <!-- Mobile Left Header -->
+        <div class="aqua-panel-header-mobile">
+          <span class="panel-header-title">📊 수조 정보 & 코인 금고</span>
+          <button id="btn-aqua-left-close" class="btn-aqua-panel-close" title="닫기">✕ 닫기</button>
+        </div>
+
         <div class="aqua-brand-card">
           <div class="aqua-brand-icon">🫧</div>
           <div class="aqua-brand-info">
@@ -490,6 +496,9 @@
         </button>
         <button id="btn-aqua-mobile-feed" class="btn-aqua-m-btn m-btn-feed" title="사료 뿌리기">
           <span>🥐</span> 사료 뿌리기
+        </button>
+        <button id="btn-aqua-mobile-info" class="btn-aqua-m-btn m-btn-info" title="수조 정보 & 금고">
+          <span>📊</span> 수조/금고
         </button>
         <button id="btn-aqua-mobile-upgrades" class="btn-aqua-m-btn m-btn-upgrade" title="업그레이드 열기/닫기">
           <span>🎮</span> 업그레이드

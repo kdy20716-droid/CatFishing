@@ -633,13 +633,35 @@ export class Modals {
       }
     });
 
-    // Mobile Panel Toggle & Close Buttons
+    // Mobile Drawers: Left HUD (Info & Vault) & Right Panel (Upgrades)
+    const leftHud = document.getElementById('aqua-left-hud');
+    const rightPanel = document.getElementById('aqua-right-panel');
+    const btnMobileInfo = document.getElementById('btn-aqua-mobile-info');
+    const btnLeftClose = document.getElementById('btn-aqua-left-close');
     const btnMobileToggle = document.getElementById('btn-aqua-mobile-toggle');
     const btnMobileUpgrades = document.getElementById('btn-aqua-mobile-upgrades');
     const btnPanelClose = document.getElementById('btn-aqua-panel-close');
-    const rightPanel = document.getElementById('aqua-right-panel');
 
-    const togglePanel = (e) => {
+    const toggleLeftHud = (e) => {
+      if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+      if (this.sound && typeof this.sound.playClick === 'function') {
+        this.sound.playClick();
+      }
+      if (leftHud) {
+        const isOpen = leftHud.classList.contains('mobile-open');
+        if (isOpen) {
+          leftHud.classList.remove('mobile-open');
+        } else {
+          leftHud.classList.add('mobile-open');
+          if (rightPanel) rightPanel.classList.remove('mobile-open');
+        }
+      }
+    };
+
+    const toggleRightPanel = (e) => {
       if (e) {
         e.stopPropagation();
         e.preventDefault();
@@ -648,20 +670,22 @@ export class Modals {
         this.sound.playClick();
       }
       if (rightPanel) {
-        rightPanel.classList.toggle('mobile-open');
+        const isOpen = rightPanel.classList.contains('mobile-open');
+        if (isOpen) {
+          rightPanel.classList.remove('mobile-open');
+        } else {
+          rightPanel.classList.add('mobile-open');
+          if (leftHud) leftHud.classList.remove('mobile-open');
+        }
       }
     };
 
-    if (btnMobileToggle) {
-      btnMobileToggle.addEventListener('click', togglePanel);
-      btnMobileToggle.addEventListener('touchend', togglePanel);
+    if (btnMobileInfo) {
+      btnMobileInfo.addEventListener('click', toggleLeftHud);
+      btnMobileInfo.addEventListener('touchend', toggleLeftHud);
     }
-    if (btnMobileUpgrades) {
-      btnMobileUpgrades.addEventListener('click', togglePanel);
-      btnMobileUpgrades.addEventListener('touchend', togglePanel);
-    }
-    if (btnPanelClose) {
-      const closePanel = (e) => {
+    if (btnLeftClose) {
+      const closeLeft = (e) => {
         if (e) {
           e.stopPropagation();
           e.preventDefault();
@@ -669,12 +693,33 @@ export class Modals {
         if (this.sound && typeof this.sound.playClick === 'function') {
           this.sound.playClick();
         }
-        if (rightPanel) {
-          rightPanel.classList.remove('mobile-open');
-        }
+        if (leftHud) leftHud.classList.remove('mobile-open');
       };
-      btnPanelClose.addEventListener('click', closePanel);
-      btnPanelClose.addEventListener('touchend', closePanel);
+      btnLeftClose.addEventListener('click', closeLeft);
+      btnLeftClose.addEventListener('touchend', closeLeft);
+    }
+
+    if (btnMobileToggle) {
+      btnMobileToggle.addEventListener('click', toggleRightPanel);
+      btnMobileToggle.addEventListener('touchend', toggleRightPanel);
+    }
+    if (btnMobileUpgrades) {
+      btnMobileUpgrades.addEventListener('click', toggleRightPanel);
+      btnMobileUpgrades.addEventListener('touchend', toggleRightPanel);
+    }
+    if (btnPanelClose) {
+      const closeRight = (e) => {
+        if (e) {
+          e.stopPropagation();
+          e.preventDefault();
+        }
+        if (this.sound && typeof this.sound.playClick === 'function') {
+          this.sound.playClick();
+        }
+        if (rightPanel) rightPanel.classList.remove('mobile-open');
+      };
+      btnPanelClose.addEventListener('click', closeRight);
+      btnPanelClose.addEventListener('touchend', closeRight);
     }
 
     // Mobile Quick Feed Button
@@ -1881,6 +1926,10 @@ export class Modals {
       this.aquariumUI.classList.add('visible');
     }
     document.body.classList.add('in-aquarium');
+    const leftHud = document.getElementById('aqua-left-hud');
+    if (leftHud) leftHud.classList.remove('mobile-open');
+    const rightPanel = document.getElementById('aqua-right-panel');
+    if (rightPanel) rightPanel.classList.remove('mobile-open');
     this.checkAquariumOfflineReward();
   }
 
@@ -1895,10 +1944,10 @@ export class Modals {
       this.aquariumUI.classList.remove('visible');
     }
     document.body.classList.remove('in-aquarium');
+    const leftHud = document.getElementById('aqua-left-hud');
+    if (leftHud) leftHud.classList.remove('mobile-open');
     const rightPanel = document.getElementById('aqua-right-panel');
-    if (rightPanel) {
-      rightPanel.classList.remove('mobile-open');
-    }
+    if (rightPanel) rightPanel.classList.remove('mobile-open');
   }
 
   openAquariumManageModal() {

@@ -919,13 +919,12 @@ export class Aquarium {
   }
 
   getTankTransform(screenW, screenH) {
-    const isPortrait = screenW <= 768;
-    const isMobile = screenW <= 920;
+    const isMobile = screenW <= 1024 || screenH <= 600;
 
-    let leftMargin = isPortrait ? 10 : (isMobile ? Math.max(140, screenW * 0.22) : 310);
-    let rightMargin = isPortrait ? 10 : (isMobile ? Math.max(160, screenW * 0.26) : 380);
-    let topMargin = isPortrait ? 60 : 35;
-    let bottomMargin = isPortrait ? 70 : 40;
+    let leftMargin = isMobile ? 12 : 310;
+    let rightMargin = isMobile ? 12 : 380;
+    let topMargin = isMobile ? 20 : 35;
+    let bottomMargin = isMobile ? 64 : 40;
 
     let availableW = Math.max(100, screenW - leftMargin - rightMargin);
     let availableH = Math.max(100, screenH - topMargin - bottomMargin);

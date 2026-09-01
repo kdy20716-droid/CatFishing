@@ -1507,29 +1507,42 @@ body.in-aquarium .mobile-action-btn {
     gap: 10px !important;
   }
 
-  /* 2. Aquarium Mobile Layout: Clean Left HUD & Right Panel (Never covers center tank) */
+  /* 2. Aquarium Mobile Layout: Clean Full-Screen Tank with Slide-in Drawers */
   #aquarium-controls-ui.aqua-idle-layout {
     display: flex !important;
-    flex-direction: row !important;
-    justify-content: space-between !important;
-    align-items: flex-start !important;
-    padding: 60px 10px 10px 10px !important;
+    padding: 0 !important;
     overflow: visible !important;
     pointer-events: none !important;
   }
 
+  /* Left HUD: Hidden offscreen by default on mobile, slides in when toggled */
   .aqua-left-hud {
-    width: clamp(160px, 24vw, 240px) !important;
-    max-width: 28vw !important;
-    max-height: calc(100vh - 72px) !important;
+    position: fixed !important;
+    top: 48px !important;
+    left: -110% !important;
+    width: min(340px, 92vw) !important;
+    max-width: 92vw !important;
+    height: calc(100vh - 120px) !important;
+    max-height: calc(100vh - 120px) !important;
+    background: rgba(255, 253, 245, 0.98) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border-radius: 20px !important;
+    border: 2.5px solid rgba(255, 255, 255, 0.95) !important;
+    box-shadow: 8px 0 32px rgba(0,0,0,0.5) !important;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    z-index: 195 !important;
+    pointer-events: auto !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
-    scrollbar-width: thin !important;
     display: flex !important;
     flex-direction: column !important;
-    gap: 6px !important;
-    pointer-events: auto !important;
-    padding-right: 2px !important;
+    gap: 8px !important;
+    padding: 12px 14px !important;
+  }
+
+  .aqua-left-hud.mobile-open {
+    left: 8px !important;
   }
 
   .aqua-brand-card {
@@ -1607,8 +1620,8 @@ body.in-aquarium .mobile-action-btn {
   }
 
   .btn-aqua-exit-action {
-    padding: 7px 10px !important;
-    font-size: 11px !important;
+    padding: 8px 10px !important;
+    font-size: 11.5px !important;
     border-radius: 12px !important;
   }
 
@@ -1616,14 +1629,36 @@ body.in-aquarium .mobile-action-btn {
     display: none !important;
   }
 
+  /* Right Panel: Hidden offscreen by default on mobile, slides in when toggled */
   .aqua-right-panel {
-    display: flex !important;
-    width: clamp(180px, 30vw, 290px) !important;
-    max-width: 32vw !important;
-    height: calc(100vh - 72px) !important;
-    max-height: calc(100vh - 72px) !important;
-    border-radius: 18px !important;
+    position: fixed !important;
+    top: 48px !important;
+    right: -110% !important;
+    width: min(360px, 92vw) !important;
+    max-width: 92vw !important;
+    height: calc(100vh - 120px) !important;
+    max-height: calc(100vh - 120px) !important;
+    background: rgba(255, 253, 245, 0.98) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border-radius: 20px !important;
+    border: 2.5px solid rgba(255, 255, 255, 0.95) !important;
+    box-shadow: -8px 0 32px rgba(0,0,0,0.5) !important;
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    z-index: 195 !important;
     pointer-events: auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .aqua-right-panel.mobile-open {
+    right: 8px !important;
+  }
+
+  .aqua-panel-header-mobile {
+    display: flex !important;
   }
 
   .aqua-tabs-bar {
@@ -1632,8 +1667,8 @@ body.in-aquarium .mobile-action-btn {
   }
 
   .aqua-tab-btn {
-    padding: 5px 2px !important;
-    font-size: 9.5px !important;
+    padding: 6px 3px !important;
+    font-size: 10px !important;
     border-radius: 8px !important;
   }
 
@@ -1707,48 +1742,8 @@ body.in-aquarium .mobile-action-btn {
     font-size: 9.5px !important;
     border-radius: 8px !important;
   }
-}
 
-@media (max-width: 768px) {
-  #aquarium-controls-ui.aqua-idle-layout {
-    padding: 56px 8px 66px 8px !important;
-    flex-direction: column !important;
-    justify-content: flex-start !important;
-  }
-
-  .aqua-left-hud {
-    width: min(290px, 92vw) !important;
-    max-width: 92vw !important;
-    max-height: calc(100vh - 132px) !important;
-    gap: 6px !important;
-  }
-
-  .btn-aqua-mobile-toggle {
-    display: flex !important;
-    margin-top: 4px !important;
-  }
-
-  .aqua-panel-header-mobile {
-    display: flex !important;
-  }
-
-  .aqua-right-panel {
-    position: fixed !important;
-    top: 54px !important;
-    right: -110% !important;
-    width: min(350px, 94vw) !important;
-    max-width: 94vw !important;
-    height: calc(100vh - 126px) !important;
-    max-height: calc(100vh - 126px) !important;
-    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    z-index: 195 !important;
-    box-shadow: -8px 0 32px rgba(0,0,0,0.5) !important;
-  }
-
-  .aqua-right-panel.mobile-open {
-    right: 8px !important;
-  }
-
+  /* Mobile Floating Bottom Action Bar */
   .aqua-mobile-bottom-bar {
     display: flex !important;
     position: fixed;
@@ -1758,13 +1753,13 @@ body.in-aquarium .mobile-action-btn {
     gap: 6px;
     z-index: 185;
     pointer-events: auto;
-    background: rgba(15, 23, 42, 0.9);
+    background: rgba(15, 23, 42, 0.92);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     padding: 5px 8px;
-    border-radius: 20px;
+    border-radius: 22px;
     border: 1.5px solid rgba(255, 255, 255, 0.25);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
     max-width: calc(100vw - 16px);
   }
 
@@ -1774,7 +1769,7 @@ body.in-aquarium .mobile-action-btn {
     gap: 4px;
     padding: 7px 11px;
     border-radius: 12px;
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 800;
     font-family: var(--font-main);
     border: none;
@@ -1782,7 +1777,12 @@ body.in-aquarium .mobile-action-btn {
     touch-action: manipulation;
     user-select: none;
     white-space: nowrap;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    transition: transform 0.1s ease;
+  }
+
+  .btn-aqua-m-btn:active {
+    transform: scale(0.95);
   }
 
   .btn-aqua-m-btn.m-btn-exit {
@@ -1797,6 +1797,12 @@ body.in-aquarium .mobile-action-btn {
     border: 1px solid #ca8a04;
   }
 
+  .btn-aqua-m-btn.m-btn-info {
+    background: linear-gradient(180deg, #e0e7ff 0%, #a5b4fc 100%);
+    color: #312e81;
+    border: 1px solid #818cf8;
+  }
+
   .btn-aqua-m-btn.m-btn-upgrade {
     background: linear-gradient(180deg, #67e8f9 0%, #06b6d4 100%);
     color: #083344;
@@ -1804,30 +1810,7 @@ body.in-aquarium .mobile-action-btn {
   }
 }
 
-@media (max-width: 600px) {
-  .aqua-brand-card {
-    padding: 8px 10px !important;
-  }
-
-  .aqua-title {
-    font-size: 14px !important;
-  }
-
-  .aqua-vault-card {
-    padding: 8px 10px !important;
-  }
-
-  .vault-title {
-    font-size: 12px !important;
-  }
-
-  .btn-aqua-exit-action, .btn-aqua-mobile-toggle {
-    padding: 7px 10px !important;
-    font-size: 11.5px !important;
-  }
-}
-
-/* --- Right Tycoon Upgrade Panel --- */
+/* --- Right Tycoon Upgrade Panel (Desktop Default) --- */
 .aqua-right-panel {
   pointer-events: auto;
   width: 370px;
