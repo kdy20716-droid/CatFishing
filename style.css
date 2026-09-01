@@ -7427,12 +7427,19 @@ body.in-aquarium .mobile-action-btn {
     width: 52px;
     height: 52px;
   }
+/* Global utility class for hiding elements */
+.hidden {
+  display: none !important;
 }
 
 /* 4. Portrait Warning Screen (세로 모드 진입 시 가로 회전 안내) */
+.mobile-rotate-overlay {
+  display: none;
+}
+
 @media (max-width: 920px) and (orientation: portrait) {
-  .mobile-rotate-overlay:not(.hidden) {
-    display: flex !important;
+  .mobile-rotate-overlay {
+    display: flex;
     position: fixed;
     inset: 0;
     z-index: 99999;
@@ -7444,6 +7451,10 @@ body.in-aquarium .mobile-action-btn {
     padding: 24px;
     box-sizing: border-box;
     animation: rotate-overlay-fade 0.3s ease-out;
+  }
+
+  .mobile-rotate-overlay.hidden {
+    display: none !important;
   }
 
   @keyframes rotate-overlay-fade {

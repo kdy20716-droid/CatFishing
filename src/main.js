@@ -912,21 +912,35 @@ class Game {
     this.allowPortraitPlay = false;
 
     if (btnRotateContinuePortrait) {
-      btnRotateContinuePortrait.addEventListener('click', (e) => {
-        e.stopPropagation();
+      const handleContinuePortrait = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
         this.sound.playClick();
         this.allowPortraitPlay = true;
-        if (rotateOverlay) rotateOverlay.classList.add('hidden');
+        if (rotateOverlay) {
+          rotateOverlay.classList.add('hidden');
+          rotateOverlay.style.display = 'none';
+        }
         this.hud.showNotification('📱 세로 모드로 플레이를 시작합니다냥!', '✨');
-      });
+      };
+
+      btnRotateContinuePortrait.addEventListener('click', handleContinuePortrait);
+      btnRotateContinuePortrait.addEventListener('pointerdown', handleContinuePortrait);
     }
 
     if (btnRotateForce) {
-      btnRotateForce.addEventListener('click', (e) => {
-        e.stopPropagation();
+      const handleRotateForce = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
         this.allowPortraitPlay = false;
         toggleFullscreenLandscape();
-      });
+      };
+      btnRotateForce.addEventListener('click', handleRotateForce);
+      btnRotateForce.addEventListener('pointerdown', handleRotateForce);
     }
 
     // Update button text on fullscreen change
