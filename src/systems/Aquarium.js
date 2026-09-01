@@ -760,7 +760,9 @@ export class Aquarium {
       vx: (Math.random() - 0.5) * 10,
       givesReward
     });
-    this.sound.playDrop();
+    if (this.sound && typeof this.sound.playDrop === 'function') {
+      this.sound.playDrop();
+    }
     return { dropped: true, givesReward };
   }
 
@@ -853,7 +855,9 @@ export class Aquarium {
         if (closestDist < 12) {
           const eatenFlake = closestFood.food;
           this.foodFlakes.splice(closestFood.index, 1);
-          this.sound.playBubble();
+          if (this.sound && typeof this.sound.playBubble === 'function') {
+            this.sound.playBubble();
+          }
 
           this.hearts.push({
             pos: fish.pos.clone().add(new Vector2(0, -15)),
