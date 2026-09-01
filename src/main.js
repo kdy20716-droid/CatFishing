@@ -61,6 +61,7 @@ class Game {
     this.hud.setRod(this.rod);
     this.modals.setRod(this.rod);
     this.modals.setMultiplayer(this.multiplayer);
+    this.cloudSave.setModals(this.modals);
     this.isPaused = false;
     this.modals.onPauseChange = (paused) => {
       this.isPaused = paused;
