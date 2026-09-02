@@ -70,6 +70,19 @@ export class HUD {
       });
     }
 
+    const gamblerDistEl = document.getElementById('gambler-distance-indicator');
+    if (gamblerDistEl) {
+      gamblerDistEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.sound?.playClick?.();
+        if (this.gamblingSystem && this.gamblingSystem.boat && this.gamblingSystem.boat.isActive) {
+          if (this.onGamblerTrigger) {
+            this.onGamblerTrigger();
+          }
+        }
+      });
+    }
+
     // Floating notifications
     this.notifications = [];
     this.notifContainer = document.getElementById('floating-notifications');
@@ -441,6 +454,28 @@ export class HUD {
         if (textEl) textEl.innerHTML = `부두막 <b>${distM.toLocaleString()}m</b>`;
       } else {
         dockDistEl.classList.add('hidden');
+      }
+    }
+
+    // 🎲 Update Gambler Boat Distance Indicator (도박 어선 방향 & 거리 알림)
+    const gamblerDistEl = document.getElementById('gambler-distance-indicator');
+    if (gamblerDistEl && cat) {
+      if (this.gamblingSystem && this.gamblingSystem.boat && this.gamblingSystem.boat.isActive) {
+        const boatX = this.gamblingSystem.boat.pos.x;
+        const dx = boatX - cat.pos.x;
+        const distM = Math.max(0, Math.round(Math.abs(dx) / 20));
+
+        if (distM > 10) {
+          gamblerDistEl.classList.remove('hidden');
+          const arrowEl = gamblerDistEl.querySelector('.gambler-dist-arrow');
+          const textEl = gamblerDistEl.querySelector('.gambler-dist-text');
+          if (arrowEl) arrowEl.innerText = (dx >= 0) ? '➡️' : '⬅️';
+          if (textEl) textEl.innerHTML = `도박 어선 <b>${distM.toLocaleString()}m</b>`;
+        } else {
+          gamblerDistEl.classList.add('hidden');
+        }
+      } else {
+        gamblerDistEl.classList.add('hidden');
       }
     }
 

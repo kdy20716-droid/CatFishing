@@ -6,6 +6,7 @@ import { FISH_SPECIES } from '../systems/Encyclopedia.js?v=7.7.0';
 import { Fish } from '../entities/Fish.js?v=7.7.0';
 import { getBaitIconSvg } from './BaitIcons.js?v=7.7.0';
 import { AQUARIUM_THEMES_INFO, FACILITY_UPGRADES, FOOD_TIERS } from '../systems/Aquarium.js?v=7.8.0';
+import { RoulettePhysics } from '../systems/RoulettePhysics.js?v=8.0.0';
 
 export class Modals {
   constructor(economy, encyclopedia, aquarium, soundEngine, hud, cloudSave = null) {
@@ -37,6 +38,7 @@ export class Modals {
     this.couponResultModal = document.getElementById('coupon-result-modal');
     this.inventoryModal = document.getElementById('inventory-modal');
     this.pauseModal = document.getElementById('pause-modal');
+    this.gamblerModal = document.getElementById('gambler-modal');
     this.userDropdownMenu = document.getElementById('user-dropdown-menu');
 
     this.currentShopTab = 'rods';
@@ -47,7 +49,19 @@ export class Modals {
     this.multiTab = 'create'; // 'create' or 'join'
     this.rod = null;
     this.multiplayer = null;
+    this.gamblingSystem = null;
     this.onPauseChange = null;
+
+    // 🎲 Gambler Roulette State
+    this.rouletteCanvas = document.getElementById('roulette-wheel-canvas');
+    this.roulettePhysics = null;
+    this.selectedWagerType = null; // 'fish' or 'gold'
+    this.selectedWagerFishId = null;
+    this.selectedWagerGold = 0;
+    this.selectedBetColor = null; // 'red', 'black', 'green'
+    this.isRouletteSpinning = false;
+    this.rouletteAnimFrame = null;
+    this.lastRouletteTime = performance.now();
 
     this.initEventListeners();
     this.initSoundModalEvents();
@@ -57,6 +71,11 @@ export class Modals {
     this.initInventoryEvents();
     this.initFishMarketEvents();
     this.initPauseEvents();
+    this.initGamblerEvents();
+  }
+
+  setGamblingSystem(gamblingSystem) {
+    this.gamblingSystem = gamblingSystem;
   }
 
   setRod(rod) {
@@ -943,6 +962,7 @@ export class Modals {
     if (this.couponModal) this.couponModal.classList.remove('visible');
     if (this.inventoryModal) this.inventoryModal.classList.remove('visible');
     if (this.pauseModal) this.pauseModal.classList.remove('visible');
+    if (this.gamblerModal) this.gamblerModal.classList.remove('visible');
     if (this.aquariumManageModal) this.aquariumManageModal.classList.remove('visible');
     if (this.aquariumThemeModal) this.aquariumThemeModal.classList.remove('visible');
     if (this.aquariumOfflineModal) this.aquariumOfflineModal.classList.remove('visible');
@@ -969,6 +989,7 @@ export class Modals {
       (this.couponModal && this.couponModal.classList.contains('visible')) ||
       (this.inventoryModal && this.inventoryModal.classList.contains('visible')) ||
       (this.pauseModal && this.pauseModal.classList.contains('visible')) ||
+      (this.gamblerModal && this.gamblerModal.classList.contains('visible')) ||
       (this.aquariumManageModal && this.aquariumManageModal.classList.contains('visible')) ||
       (this.soundModal && this.soundModal.classList.contains('visible')) ||
       (this.userDropdownMenu && !this.userDropdownMenu.classList.contains('hidden'))
@@ -1108,6 +1129,10 @@ export class Modals {
     return this.multiplayerModal && this.multiplayerModal.classList.contains('visible');
   }
 
+  isGamblerOpen() {
+    return this.gamblerModal && this.gamblerModal.classList.contains('visible');
+  }
+
   toggleEncyclopedia() {
     if (this.isEncyclopediaOpen()) {
       this.closeAll();
@@ -1138,6 +1163,429 @@ export class Modals {
     } else {
       this.openMultiplayerModal();
     }
+  }
+
+  toggleGamblerModal() {
+    if (this.isGamblerOpen()) {
+      this.closeAll();
+    } else {
+      this.openGamblerModal();
+    }
+  }
+
+  openGamblerModal() {
+    this.closeAll();
+    if (!this.gamblerModal) return;
+
+    if (this.sound) {
+      if (typeof this.sound.playCatMeow === 'function') this.sound.playCatMeow();
+      else if (typeof this.sound.playMeow === 'function') this.sound.playMeow();
+    }
+
+    // Update gold balance display in header
+    const gEl = document.getElementById('gambler-header-gold');
+    if (gEl && this.economy) {
+      gEl.innerText = this.economy.gold.toLocaleString() + ' G';
+    }
+
+    // Initialize Roulette physics engine on canvas if not done
+    const canvas = document.getElementById('roulette-wheel-canvas');
+    if (canvas) {
+      if (!this.roulettePhysics) {
+        this.roulettePhysics = new RoulettePhysics(canvas);
+        this.roulettePhysics.resize(350, 350);
+
+        this.roulettePhysics.onBallFretHit = (intensity) => {
+          if (this.sound && typeof this.sound.playClick === 'function') {
+            this.sound.playClick();
+          }
+        };
+
+        this.roulettePhysics.onSettled = (result) => {
+          this.handleRouletteSettled(result);
+        };
+      } else {
+        this.roulettePhysics.resize(350, 350);
+      }
+    }
+
+    // Reset current selection state
+    this.selectedWagerType = null;
+    this.selectedWagerFishId = null;
+    this.selectedWagerGold = 0;
+    this.selectedBetColor = null;
+    this.isRouletteSpinning = false;
+
+    // Reset UI displays
+    const resPill = document.getElementById('roulette-result-display');
+    if (resPill) resPill.classList.add('hidden');
+
+    document.querySelectorAll('.btn-bet-choice').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('.btn-gold-chip').forEach(b => b.classList.remove('selected'));
+
+    const basket = this.economy ? (this.economy.caughtFishBasket || []) : [];
+    if (basket.length > 0) {
+      this.switchGamblerTab('fish');
+    } else {
+      this.switchGamblerTab('gold');
+    }
+
+    this.renderGamblerFishList();
+    this.updateGamblerWagerSummary();
+
+    this.gamblerModal.classList.add('visible');
+
+    // Draw initial static wheel immediately
+    if (this.roulettePhysics) {
+      this.roulettePhysics.draw();
+    }
+
+    // Start animation loop for roulette canvas
+    this.startRouletteLoop();
+  }
+
+  switchGamblerTab(tab) {
+    document.querySelectorAll('.gambler-tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+    const paneFish = document.getElementById('gambler-pane-fish');
+    const paneGold = document.getElementById('gambler-pane-gold');
+    if (paneFish) paneFish.classList.toggle('active', tab === 'fish');
+    if (paneGold) paneGold.classList.toggle('active', tab === 'gold');
+  }
+
+  startRouletteLoop() {
+    if (this.rouletteAnimFrame) {
+      cancelAnimationFrame(this.rouletteAnimFrame);
+    }
+    this.lastRouletteTime = performance.now();
+
+    const loop = (now) => {
+      const dt = Math.min(0.1, (now - this.lastRouletteTime) / 1000);
+      this.lastRouletteTime = now;
+
+      if (this.roulettePhysics) {
+        this.roulettePhysics.update(dt);
+        this.roulettePhysics.draw();
+      }
+
+      if (this.isGamblerOpen()) {
+        this.rouletteAnimFrame = requestAnimationFrame(loop);
+      } else {
+        this.rouletteAnimFrame = null;
+      }
+    };
+
+    this.rouletteAnimFrame = requestAnimationFrame(loop);
+  }
+
+  initGamblerEvents() {
+    // 1. Tab buttons (Fish vs Gold)
+    document.querySelectorAll('.gambler-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (this.isRouletteSpinning) return;
+        this.sound?.playClick?.();
+        this.switchGamblerTab(btn.dataset.tab);
+      });
+    });
+
+    // 2. Bet Color Choice Buttons
+    ['red', 'green', 'black'].forEach(color => {
+      const btn = document.getElementById(`btn-bet-${color}`);
+      if (btn) {
+        btn.addEventListener('click', () => {
+          if (this.isRouletteSpinning) return;
+          this.sound?.playClick?.();
+          this.selectedBetColor = color;
+          document.querySelectorAll('.btn-bet-choice').forEach(b => {
+            b.classList.toggle('selected', b.dataset.color === color);
+          });
+          this.updateGamblerWagerSummary();
+        });
+      }
+    });
+
+    // 3. Gold Fallback Chips
+    document.querySelectorAll('.btn-gold-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (this.isRouletteSpinning) return;
+        let goldVal = 0;
+        if (btn.dataset.gold === 'all') {
+          goldVal = this.economy ? this.economy.gold : 0;
+        } else {
+          goldVal = parseInt(btn.dataset.gold, 10) || 500;
+        }
+
+        if (goldVal <= 0 || (this.economy && this.economy.gold < goldVal)) {
+          this.hud?.showNotification?.('소지 골드가 부족합니다냥!', '⚠️');
+          return;
+        }
+        this.sound?.playClick?.();
+        this.selectedWagerType = 'gold';
+        this.selectedWagerGold = goldVal;
+        this.selectedWagerFishId = null;
+
+        document.querySelectorAll('.btn-gold-chip').forEach(b => b.classList.toggle('selected', b === btn));
+        document.querySelectorAll('.gambler-fish-card').forEach(c => c.classList.remove('selected'));
+
+        this.updateGamblerWagerSummary();
+      });
+    });
+
+    // 4. Custom Gold Apply Button
+    const btnApplyCustom = document.getElementById('btn-apply-custom-gold');
+    const inputCustom = document.getElementById('gambler-custom-gold');
+    if (btnApplyCustom && inputCustom) {
+      btnApplyCustom.addEventListener('click', () => {
+        if (this.isRouletteSpinning) return;
+        const val = parseInt(inputCustom.value, 10);
+        if (isNaN(val) || val < 100) {
+          this.hud?.showNotification?.('최소 100 G 이상 입력해주세요냥!', '⚠️');
+          return;
+        }
+        if (this.economy && this.economy.gold < val) {
+          this.hud?.showNotification?.('소지 골드가 부족합니다냥!', '⚠️');
+          return;
+        }
+        this.sound?.playClick?.();
+        this.selectedWagerType = 'gold';
+        this.selectedWagerGold = val;
+        this.selectedWagerFishId = null;
+
+        document.querySelectorAll('.btn-gold-chip').forEach(b => b.classList.remove('selected'));
+        document.querySelectorAll('.gambler-fish-card').forEach(c => c.classList.remove('selected'));
+
+        this.updateGamblerWagerSummary();
+      });
+    }
+
+    // 5. SPIN Button
+    const btnSpin = document.getElementById('btn-spin-roulette');
+    if (btnSpin) {
+      btnSpin.addEventListener('click', () => {
+        this.handleStartRouletteSpin();
+      });
+    }
+  }
+
+  renderGamblerFishList() {
+    const listEl = document.getElementById('gambler-fish-list');
+    const countEl = document.getElementById('gambler-basket-count');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+
+    const basket = this.economy ? (this.economy.caughtFishBasket || []) : [];
+    if (countEl) countEl.innerText = `${basket.length}`;
+
+    if (basket.length === 0) {
+      listEl.innerHTML = `
+        <div style="text-align: center; color: #94a3b8; padding: 30px 10px; font-size: 12.5px; line-height: 1.6;">
+          🧺 어획 바구니가 비어있습니다냥!<br>
+          상단의 <strong>[🪙 골드 칩]</strong> 탭을 눌러 골드로 베팅하거나<br>
+          바다에서 물고기를 낚아오라냥! 🎣
+        </div>
+      `;
+      return;
+    }
+
+    basket.forEach(fish => {
+      const card = document.createElement('div');
+      card.className = `gambler-fish-card ${this.selectedWagerFishId === fish.basketId ? 'selected' : ''}`;
+      card.innerHTML = `
+        <div class="gambler-fish-info">
+          <span style="font-size: 20px;">${fish.isShiny ? '✨' : '🐟'}</span>
+          <div>
+            <div class="gambler-fish-name">${fish.isShiny ? '✨ ' : ''}${fish.name}</div>
+            <div class="gambler-fish-sub">${fish.sizeCm}cm</div>
+          </div>
+        </div>
+        <div class="gambler-fish-val">💰 ${fish.price.toLocaleString()} G</div>
+      `;
+
+      card.addEventListener('click', () => {
+        if (this.isRouletteSpinning) return;
+        this.sound?.playClick?.();
+        this.selectedWagerType = 'fish';
+        this.selectedWagerFishId = fish.basketId;
+        this.selectedWagerGold = 0;
+
+        document.querySelectorAll('.gambler-fish-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        document.querySelectorAll('.btn-gold-chip').forEach(b => b.classList.remove('selected'));
+
+        this.updateGamblerWagerSummary();
+      });
+
+      listEl.appendChild(card);
+    });
+  }
+
+  updateGamblerWagerSummary() {
+    const wagerTextEl = document.getElementById('gambler-selected-wager-text');
+    const colorTextEl = document.getElementById('gambler-selected-color-text');
+    const payoutEl = document.getElementById('gambler-estimated-payout');
+    const btnSpin = document.getElementById('btn-spin-roulette');
+
+    let betAmountG = 0;
+
+    // 1. Wager text
+    if (wagerTextEl) {
+      if (this.selectedWagerType === 'fish' && this.selectedWagerFishId) {
+        const fish = this.economy?.caughtFishBasket?.find(f => f.basketId === this.selectedWagerFishId);
+        if (fish) {
+          betAmountG = fish.price;
+          wagerTextEl.innerHTML = `🐟 <span style="color:#fde047;">${fish.name}</span> (${fish.price.toLocaleString()} G)`;
+        } else {
+          wagerTextEl.innerText = '선택 없음';
+        }
+      } else if (this.selectedWagerType === 'gold' && this.selectedWagerGold > 0) {
+        betAmountG = this.selectedWagerGold;
+        wagerTextEl.innerHTML = `🪙 <span style="color:#fde047;">${this.selectedWagerGold.toLocaleString()} G</span>`;
+      } else {
+        wagerTextEl.innerText = '선택 없음';
+      }
+    }
+
+    // 2. Color text
+    let multiplier = 0;
+    if (colorTextEl) {
+      if (this.selectedBetColor === 'red') {
+        multiplier = 2;
+        colorTextEl.innerHTML = '<span style="color: #ef4444; font-weight:800;">🔴 RED (2배)</span>';
+      } else if (this.selectedBetColor === 'green') {
+        multiplier = 30;
+        colorTextEl.innerHTML = '<span style="color: #10b981; font-weight:800;">🟢 GREEN 0 (30배!)</span>';
+      } else if (this.selectedBetColor === 'black') {
+        multiplier = 2;
+        colorTextEl.innerHTML = '<span style="color: #cbd5e1; font-weight:800;">⚫ BLACK (2배)</span>';
+      } else {
+        colorTextEl.innerText = '-';
+      }
+    }
+
+    // 3. Estimated Payout
+    if (payoutEl) {
+      if (betAmountG > 0 && multiplier > 0) {
+        const totalWin = betAmountG * multiplier;
+        payoutEl.innerHTML = `+${totalWin.toLocaleString()} G ${multiplier === 30 ? '👑' : '✨'}`;
+      } else {
+        payoutEl.innerText = '+0 G';
+      }
+    }
+
+    // 4. Can spin?
+    const hasWager = (this.selectedWagerType === 'fish' && this.selectedWagerFishId) ||
+                     (this.selectedWagerType === 'gold' && this.selectedWagerGold > 0);
+    const hasColor = !!this.selectedBetColor;
+
+    if (btnSpin) {
+      btnSpin.disabled = !(hasWager && hasColor) || this.isRouletteSpinning;
+      btnSpin.innerText = this.isRouletteSpinning ? '🎲 룰렛 회전 중...' : '🎰 룰렛 돌리기 (SPIN!)';
+    }
+  }
+
+  handleStartRouletteSpin() {
+    if (this.isRouletteSpinning || !this.roulettePhysics) return;
+
+    const hasWager = (this.selectedWagerType === 'fish' && this.selectedWagerFishId) ||
+                     (this.selectedWagerType === 'gold' && this.selectedWagerGold > 0);
+    if (!hasWager || !this.selectedBetColor) {
+      this.hud?.showNotification?.('베팅할 물고기/골드와 색상을 선택해주세요!', '⚠️');
+      return;
+    }
+
+    this.isRouletteSpinning = true;
+    this.sound?.playCoin?.();
+
+    const resPill = document.getElementById('roulette-result-display');
+    if (resPill) resPill.classList.add('hidden');
+
+    this.updateGamblerWagerSummary();
+
+    // Spin physics simulation
+    this.roulettePhysics.spin();
+  }
+
+  handleRouletteSettled(result) {
+    this.isRouletteSpinning = false;
+
+    // Show result pill on center of wheel
+    const resPill = document.getElementById('roulette-result-display');
+    const numEl = document.getElementById('roulette-result-num');
+    const colEl = document.getElementById('roulette-result-color');
+
+    if (resPill && numEl && colEl) {
+      numEl.innerText = result.number;
+      colEl.innerText = result.color.toUpperCase();
+      colEl.className = `res-col ${result.color}`;
+      resPill.classList.remove('hidden');
+    }
+
+    // Add to history chips
+    const histList = document.getElementById('roulette-history-list');
+    if (histList) {
+      const chip = document.createElement('span');
+      chip.className = `history-chip ${result.color}`;
+      chip.innerText = result.number;
+      histList.prepend(chip);
+      while (histList.children.length > 7) {
+        histList.removeChild(histList.lastChild);
+      }
+    }
+
+    let wagerOutcome = null;
+
+    if (this.selectedWagerType === 'fish' && this.gamblingSystem) {
+      wagerOutcome = this.gamblingSystem.resolveFishWager(
+        this.selectedWagerFishId,
+        this.selectedBetColor,
+        result
+      );
+    } else if (this.selectedWagerType === 'gold' && this.gamblingSystem) {
+      wagerOutcome = this.gamblingSystem.resolveGoldWager(
+        this.selectedWagerGold,
+        this.selectedBetColor,
+        result
+      );
+    }
+
+    if (wagerOutcome && wagerOutcome.success) {
+      if (wagerOutcome.isWin) {
+        this.sound?.playLevelUp?.();
+        if (wagerOutcome.isJackpot) {
+          this.hud?.showNotification?.(
+            `👑 [30배 잭팟 대박!!] 초록색 0번 적중! +${wagerOutcome.winGold.toLocaleString()} G 획득!! 🎉🎉`,
+            '✨'
+          );
+        } else {
+          this.hud?.showNotification?.(
+            `🎉 [도박 승리!] ${result.color.toUpperCase()} 적중! +${wagerOutcome.winGold.toLocaleString()} G 획득! 🪙`,
+            '💰'
+          );
+        }
+      } else {
+        this.sound?.playSplash?.();
+        this.hud?.showNotification?.(
+          `😭 [도박 패배...] ${result.color.toUpperCase()}번 ${result.number}에 안착하여 베팅을 잃었습니다냥...`,
+          '💀'
+        );
+      }
+    }
+
+    // Update gold display in header
+    const gEl = document.getElementById('gambler-header-gold');
+    if (gEl && this.economy) {
+      gEl.innerText = this.economy.gold.toLocaleString() + ' G';
+    }
+
+    // Reset wager selection
+    this.selectedWagerFishId = null;
+    this.selectedWagerGold = 0;
+    this.selectedWagerType = null;
+
+    document.querySelectorAll('.btn-gold-chip').forEach(b => b.classList.remove('selected'));
+    this.renderGamblerFishList();
+    this.updateGamblerWagerSummary();
   }
 
   initSoundModalEvents() {

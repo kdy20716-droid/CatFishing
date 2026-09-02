@@ -17,6 +17,7 @@ import { Modals } from './ui/Modals.js?v=7.9.0';
 import { CloudSave } from './systems/CloudSave.js?v=7.9.0';
 import { Multiplayer } from './systems/Multiplayer.js?v=7.9.0';
 import { StarCatchMinigame } from './systems/StarCatchMinigame.js?v=7.9.0';
+import { GamblingSystem } from './systems/GamblingSystem.js?v=8.0.0';
 
 class Game {
   constructor() {
@@ -57,10 +58,18 @@ class Game {
     this.multiplayer = new Multiplayer(this.economy, this.sound, this.hud, this.cloudSave);
     this.modals = new Modals(this.economy, this.encyclopedia, this.aquarium, this.sound, this.hud, this.cloudSave);
     this.starCatchMinigame = new StarCatchMinigame();
+    this.gamblingSystem = new GamblingSystem(this.economy, this.sound, this.hud);
 
     this.hud.setRod(this.rod);
+    this.hud.gamblingSystem = this.gamblingSystem;
+    this.hud.onGamblerTrigger = () => {
+      if (this.gamblingSystem && this.gamblingSystem.boat && this.gamblingSystem.boat.isActive) {
+        this.modals.openGamblerModal();
+      }
+    };
     this.modals.setRod(this.rod);
     this.modals.setMultiplayer(this.multiplayer);
+    this.modals.setGamblingSystem(this.gamblingSystem);
     this.cloudSave.setModals(this.modals);
     this.isPaused = false;
     this.modals.onPauseChange = (paused) => {
@@ -81,12 +90,19 @@ class Game {
     if (this.multiplayer) {
       // 1. Host exports ocean world state when creating room or periodic sync
       this.multiplayer.getOceanWorldState = (envOnly = false) => {
+        const gamblerData = (this.gamblingSystem && this.gamblingSystem.boat) ? {
+          isActive: this.gamblingSystem.boat.isActive,
+          x: Math.round(this.gamblingSystem.boat.pos.x),
+          remainingTime: Math.round(this.gamblingSystem.boat.remainingTime)
+        } : null;
+
         if (envOnly) {
           return {
             timeOfDay: this.environment.timeOfDay,
             timeProgress: this.environment.timeProgress,
             season: this.environment.season,
-            seasonProgress: this.environment.seasonProgress
+            seasonProgress: this.environment.seasonProgress,
+            gamblerBoat: gamblerData
           };
         }
         return {
@@ -105,12 +121,25 @@ class Game {
           timeOfDay: this.environment.timeOfDay,
           timeProgress: this.environment.timeProgress,
           season: this.environment.season,
-          seasonProgress: this.environment.seasonProgress
+          seasonProgress: this.environment.seasonProgress,
+          gamblerBoat: gamblerData
         };
       };
 
       // 2. Guest receives and loads Host's shared ocean fish population & atmosphere
       this.multiplayer.onSyncOceanWorld = (sharedFishList, worldData) => {
+        if (worldData && worldData.gamblerBoat && this.gamblingSystem) {
+          if (worldData.gamblerBoat.isActive) {
+            if (!this.gamblingSystem.boat.isActive) {
+              this.gamblingSystem.boat.spawn(worldData.gamblerBoat.x, worldData.gamblerBoat.remainingTime);
+            } else {
+              this.gamblingSystem.boat.pos.x = worldData.gamblerBoat.x;
+              this.gamblingSystem.boat.remainingTime = worldData.gamblerBoat.remainingTime;
+            }
+          } else {
+            this.gamblingSystem.boat.despawn();
+          }
+        }
         if (Array.isArray(sharedFishList) && sharedFishList.length > 0) {
           if (this.fishList.length === 0) {
             // First time loading: instantiate entire shared fish population
@@ -842,6 +871,17 @@ class Game {
         }
       }
 
+      // 🎲 [G] 키: 도박 어선이 활성화되어 있을 때 언제든지 도박 모달 열기 / 닫기 토글
+      if (code === 'KeyG') {
+        if (this.gamblingSystem && this.gamblingSystem.boat && this.gamblingSystem.boat.isActive) {
+          this.modals.toggleGamblerModal();
+        } else if (this.modals.isGamblerOpen()) {
+          this.modals.closeAll();
+        } else {
+          this.hud.showNotification('지금은 바다에 도박 어선이 출현하지 않았습니다냥! (주기적으로 출현한다냥) ⛵', '🎲');
+        }
+      }
+
       // 🎭 [X] 키: 원형 이모트 휠 열기 (누르고 있을 때)
       if (code === 'KeyX' && !this.isEmoteWheelOpen) {
         this.openEmoteWheel();
@@ -870,6 +910,31 @@ class Game {
     window.addEventListener('blur', () => {
       if (this.isEmoteWheelOpen) {
         this.closeEmoteWheel(true);
+      }
+    });
+
+    // Canvas click detection for clickable world entities (Merchant Cabin & Gambler Boat)
+    this.canvas.addEventListener('click', (e) => {
+      if (this.modals.hasAnyModalOpen() || this.aquarium.isOpen) return;
+      const rect = this.canvas.getBoundingClientRect();
+      const screenX = e.clientX - rect.left;
+      const screenY = e.clientY - rect.top;
+      const world = this.camera.screenToWorld(screenX, screenY);
+
+      // 1. Click on Gambler Pirate Boat
+      if (this.gamblingSystem && this.gamblingSystem.boat && this.gamblingSystem.boat.isActive) {
+        const boatPos = this.gamblingSystem.boat.pos;
+        if (Math.hypot(world.x - boatPos.x, world.y - boatPos.y) < 140) {
+          this.sound.playClick();
+          this.modals.openGamblerModal();
+          return;
+        }
+      }
+
+      // 2. Click on Dock Merchant Cabin
+      if (world.x <= 320 && Math.abs(world.y - this.environment.waterSurfaceY) < 160) {
+        this.sound.playClick();
+        this.modals.openDockMerchantModal();
       }
     });
   }
@@ -1496,6 +1561,11 @@ class Game {
 
     this.camera.update(dt);
 
+    // Update Gambling Pirate Boat System
+    if (this.gamblingSystem) {
+      this.gamblingSystem.update(dt, this.environment.waterSurfaceY, this.cat.pos);
+    }
+
     // Update HUD elements
     this.hud.update(dt, this.rod, this.cat, this.environment);
 
@@ -1530,6 +1600,11 @@ class Game {
 
     // 3. 🏡 Draw Far Left Wooden Pier, Cabin Shack, & Merchant Cat NPC (with [R] interact badge)
     this.environment.drawPierAndCabin(this.ctx, bounds, this.cat.pos.x);
+
+    // 3.5 🏴‍☠️ Draw Gambler Pirate Boat & Cat NPC (with [G] interact badge)
+    if (this.gamblingSystem && this.gamblingSystem.boat) {
+      this.gamblingSystem.boat.draw(this.ctx);
+    }
 
     // 4. Draw Ocean Fish (Viewport frustum culled with 180px buffer for ultra-smooth 60 FPS)
     const margin = 180;

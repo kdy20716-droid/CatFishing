@@ -50,7 +50,19 @@ export class SoundEngine {
       [116.54, 146.83, 174.61, 233.08, 293.66, 440.00] // Bb9
     ];
 
+    this.isWavesPlaying = false;
+
     this.initContext();
+    this.initAutoplayUnlock();
+  }
+
+  initAutoplayUnlock() {
+    const unlockAudio = () => {
+      this.ensureRunning();
+    };
+    window.addEventListener('pointerdown', unlockAudio, { once: true, passive: true });
+    window.addEventListener('keydown', unlockAudio, { once: true, passive: true });
+    window.addEventListener('touchstart', unlockAudio, { once: true, passive: true });
   }
 
   loadSettings() {
@@ -110,8 +122,10 @@ export class SoundEngine {
       this.ambientGain.gain.setValueAtTime(this.ambientVolume, this.ctx.currentTime);
       this.ambientGain.connect(this.masterGain);
 
-      // Start gentle ambient ocean waves
-      this.startOceanWaves();
+      // Start gentle ambient ocean waves only if context is already active (user gesture previously granted)
+      if (this.ctx.state === 'running') {
+        this.startOceanWaves();
+      }
     } catch (e) {
       console.warn("AudioContext could not be initialized yet:", e);
     }
@@ -122,7 +136,15 @@ export class SoundEngine {
       this.initContext();
     }
     if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume();
+      this.ctx.resume().then(() => {
+        if (!this.isWavesPlaying) {
+          this.startOceanWaves();
+        }
+      }).catch(() => {});
+    } else if (this.ctx && this.ctx.state === 'running') {
+      if (!this.isWavesPlaying) {
+        this.startOceanWaves();
+      }
     }
   }
 
@@ -178,7 +200,9 @@ export class SoundEngine {
 
   // --- Ocean Wave Ambience Synthesizer ---
   startOceanWaves() {
-    if (!this.ctx) return;
+    if (!this.ctx || this.isWavesPlaying) return;
+    if (this.ctx.state !== 'running') return;
+    this.isWavesPlaying = true;
     try {
       // Pink/Brown noise generator for rolling waves
       const bufferSize = 2 * this.ctx.sampleRate;
