@@ -63,9 +63,29 @@ export class Fish {
     this.isInspecting = false;
     this.inspectTimer = 0;
     this.inspectDuration = 1.0;
+
+    // 🌊 Multiplayer Network Sync Properties
+    this.targetPos = null;       // Smooth lerp target for multiplayer synchronization
+    this.remoteHookPos = null;   // Attached remote hook position
+    this.remoteHookFacing = 1;
+    this.wanderStep = 0;
+    this._seed = undefined;
   }
 
-  update(dt, hook, waterBounds, cat) {
+  getSeed() {
+    if (this._seed === undefined) {
+      let s = 0;
+      const str = this.uid || 'fish_' + this.data.id;
+      for (let i = 0; i < str.length; i++) {
+        s = ((s << 5) - s) + str.charCodeAt(i);
+        s |= 0;
+      }
+      this._seed = Math.abs(s) || 12345;
+    }
+    return this._seed;
+  }
+
+  update(dt, hookOrHooks, waterBounds, cat) {
     this.animTime += dt;
     if (this.ignoreCooldown > 0) {
       this.ignoreCooldown -= dt;
@@ -92,15 +112,18 @@ export class Fish {
       }
     }
 
+    // Handle primary local hook or first hook in array for state logic
+    const primaryHook = Array.isArray(hookOrHooks) ? hookOrHooks[0] : hookOrHooks;
+
     if (this.state === 'WANDER') {
       this.updateWander(dt, waterBounds);
-      this.checkBaitInterest(hook);
+      this.checkBaitInterest(hookOrHooks);
 
     } else if (this.state === 'CURIOUS') {
-      this.updateCurious(dt, hook);
+      this.updateCurious(dt, this.target || primaryHook);
 
     } else if (this.state === 'HOOKED') {
-      this.updateHooked(dt, hook, cat);
+      this.updateHooked(dt, this.target || primaryHook, cat);
 
     } else if (this.state === 'FLEE') {
       this.updateFlee(dt, waterBounds);
@@ -127,10 +150,26 @@ export class Fish {
       return;
     }
 
+    // Smooth multiplayer interpolation if targetPos is assigned from host
+    if (this.targetPos) {
+      this.pos.x += (this.targetPos.x - this.pos.x) * 0.16;
+      this.pos.y += (this.targetPos.y - this.pos.y) * 0.16;
+      if (Math.hypot(this.targetPos.x - this.pos.x, this.targetPos.y - this.pos.y) < 2) {
+        this.targetPos = null;
+      }
+    }
+
     this.wanderTimer -= dt;
     if (this.wanderTimer <= 0) {
-      this.wanderTimer = 3 + Math.random() * 4;
-      const angleDelta = (Math.random() - 0.5) * 0.8;
+      this.wanderStep = (this.wanderStep || 0) + 1;
+      const s = this.getSeed();
+      const r1 = Math.sin(s * 997.13 + this.wanderStep * 1013.77) * 10000;
+      const frac1 = r1 - Math.floor(r1);
+      const r2 = Math.sin(s * 433.89 + this.wanderStep * 811.23) * 10000;
+      const frac2 = r2 - Math.floor(r2);
+
+      this.wanderTimer = 3 + frac1 * 4;
+      const angleDelta = (frac2 - 0.5) * 0.8;
       this.wanderAngle += angleDelta;
       this.facing = Math.cos(this.wanderAngle) >= 0 ? 1 : -1;
     }
@@ -184,134 +223,137 @@ export class Fish {
     );
   }
 
-  checkBaitInterest(hook) {
-    if (!hook || !hook.isSubmerged) return;
+  checkBaitInterest(hookOrHooks) {
+    if (!hookOrHooks) return;
+    if (this.ignoreCooldown > 0) return;
 
-    const isLiveBait = hook.isLiveBait;
-    const currentBaitId = hook.currentBaitId;
-    const liveBaitData = hook.liveBaitFish ? hook.liveBaitFish.data : null;
+    const hooks = Array.isArray(hookOrHooks) ? hookOrHooks : [hookOrHooks];
+    let bestHook = null;
+    let bestSlot = null;
+    let bestDist = Infinity;
 
-    // 🎁 0. 무생물 오브젝트(보물상자, 유리병 편지, 아틀란티스 고대 유물) 특수 처리
-    if (this.isNonLiving) {
-      // 아틀란티스 고대 유물은 오직 황금 지렁이(golden)에만 반응!
-      if (this.data.id === 'ancient_relic' || this.data.drawType === 'relic') {
-        if (currentBaitId !== 'golden') {
-          return;
+    for (const hook of hooks) {
+      if (!hook || !hook.isSubmerged) continue;
+
+      const isLiveBait = hook.isLiveBait;
+      const currentBaitId = hook.currentBaitId;
+      const liveBaitData = hook.liveBaitFish ? hook.liveBaitFish.data : null;
+
+      // 🎁 0. 무생물 오브젝트(보물상자, 유리병 편지, 아틀란티스 고대 유물) 특수 처리
+      if (this.isNonLiving) {
+        if ((this.data.id === 'ancient_relic' || this.data.drawType === 'relic') && currentBaitId !== 'golden') {
+          continue;
+        }
+
+        let freeSlot = null;
+        if (hook.hooks && hook.hooks.length > 0) {
+          const emptySlots = hook.hooks.filter(h => !h.hookedFish);
+          if (emptySlots.length === 0) continue;
+          freeSlot = emptySlots.reduce((closest, slot) => {
+            const slotPos = slot.pos || hook.hookPos;
+            const d = this.pos.dist(slotPos);
+            return (!closest || d < closest.dist) ? { slot, dist: d } : closest;
+          }, null)?.slot;
+        } else {
+          freeSlot = (!hook.hookedFish && !hook.hookedFishUid) ? { pos: hook.hookPos || hook.pos } : null;
+        }
+        if (!freeSlot) continue;
+
+        const targetPos = freeSlot.pos || hook.hookPos || hook.pos;
+        if (!targetPos) continue;
+
+        const dist = this.pos.dist(targetPos);
+        if (dist < 46 && dist < bestDist) {
+          bestDist = dist;
+          bestHook = hook;
+          bestSlot = freeSlot;
+        }
+        continue;
+      }
+
+      let isAttractive = false;
+
+      if (hook.isAllureActive) {
+        isAttractive = true;
+      } else if (isLiveBait && liveBaitData) {
+        if (this.data.favBait && this.data.favBait.includes('live_small') && liveBaitData.baitSize === 'small') {
+          isAttractive = true;
+        }
+      } else if (this.isBoss) {
+        if (currentBaitId === 'golden') {
+          isAttractive = true;
+        } else {
+          continue;
+        }
+      } else {
+        const zone = this.data.zone || 'shallow';
+        const isDeepSea = (zone === 'deep' || zone === 'abyss' || zone === 'hadal');
+
+        if (currentBaitId === 'bread') {
+          if (zone === 'shallow' && !isDeepSea) isAttractive = true;
+        } else if (currentBaitId === 'worm') {
+          if ((zone === 'shallow' || zone === 'mid') && !isDeepSea) isAttractive = true;
+        } else if (currentBaitId === 'shrimp') {
+          if ((zone === 'shallow' || zone === 'mid') && !isDeepSea) isAttractive = true;
+        } else if (currentBaitId === 'lure') {
+          if (zone === 'deep' || zone === 'mid' || zone === 'shallow') isAttractive = true;
+        } else if (currentBaitId === 'jelly') {
+          if (zone !== 'hadal') isAttractive = true;
+        } else if (currentBaitId === 'pearl' || currentBaitId === 'golden') {
+          isAttractive = true;
         }
       }
 
-      // 미끼를 가져다 대기만 하면 입질/지연/줄다리기 없이 즉시 낚아 올림!
+      if (!isAttractive) continue;
+
+      const isFastSinking = !hook.isDepthLocked && hook.hookVel && hook.hookVel.y > 35;
+      if (isFastSinking && !hook.isAllureActive && !this.isNonLiving) {
+        continue;
+      }
+
       let freeSlot = null;
       if (hook.hooks && hook.hooks.length > 0) {
         const emptySlots = hook.hooks.filter(h => !h.hookedFish);
-        if (emptySlots.length === 0) return;
+        if (emptySlots.length === 0) continue;
         freeSlot = emptySlots.reduce((closest, slot) => {
           const slotPos = slot.pos || hook.hookPos;
           const d = this.pos.dist(slotPos);
           return (!closest || d < closest.dist) ? { slot, dist: d } : closest;
         }, null)?.slot;
       } else {
-        freeSlot = !hook.hookedFish ? { pos: hook.hookPos } : null;
+        freeSlot = (!hook.hookedFish && !hook.hookedFishUid) ? { pos: hook.hookPos || hook.pos } : null;
       }
-      if (!freeSlot) return;
+      if (!freeSlot) continue;
 
       const targetPos = freeSlot.pos || hook.hookPos || hook.pos;
-      if (!targetPos) return;
+      if (!targetPos) continue;
 
       const dist = this.pos.dist(targetPos);
-      if (dist < 46) {
-        const attached = hook.attachFish(this, freeSlot);
+      const detectRadius = (hook.isAllureActive ? 600 : 150) * (hook.attractionBonus || 1.0);
+
+      if (dist < detectRadius && dist < bestDist) {
+        bestDist = dist;
+        bestHook = hook;
+        bestSlot = freeSlot;
+      }
+    }
+
+    if (bestHook) {
+      if (this.isNonLiving && bestDist < 46) {
+        const attached = bestHook.attachFish(this, bestSlot);
         if (attached) {
           this.state = 'HOOKED';
+          this.target = bestHook;
+          this.targetSlot = bestSlot;
           this.isInspecting = false;
+          return;
         }
       }
-      return;
-    }
 
-    let isAttractive = false;
-
-    if (hook.isAllureActive) {
-      // 💖 1. 환상의 현혹 페로몬 활성화 시 반경 내 모든 물고기 즉시 매혹
-      isAttractive = true;
-    } else if (isLiveBait && liveBaitData) {
-      if (this.data.favBait.includes('live_small') && liveBaitData.baitSize === 'small') {
-        isAttractive = true;
-      }
-    } else {
-      // 👑 2. 10대 전설 신화 보스 물고기: 오직 '황금 크릴 엑기스(golden)'에만 반응!
-      if (this.isBoss) {
-        if (currentBaitId === 'golden') {
-          isAttractive = true;
-        } else {
-          return; // 보스는 일반 미끼는 거들떠보지도 않음
-        }
-      } else {
-        // 🎯 일반 어종 Depth-based Bait Coverage Tier System
-        const zone = this.data.zone || 'shallow';
-        const isDeepSea = (zone === 'deep' || zone === 'abyss' || zone === 'hadal');
-
-        if (currentBaitId === 'bread') {
-          // 🍞 식빵: 표층(0~35m) 연안 어종만 유혹
-          if (zone === 'shallow' && !isDeepSea) isAttractive = true;
-        } else if (currentBaitId === 'worm') {
-          // 🪱 갯지렁이: 표층 및 중층(0~80m) 어종 유혹
-          if ((zone === 'shallow' || zone === 'mid') && !isDeepSea) isAttractive = true;
-        } else if (currentBaitId === 'shrimp') {
-          // 🦐 생새우: 표층 및 중층(0~180m) 어종 유혹
-          if ((zone === 'shallow' || zone === 'mid') && !isDeepSea) isAttractive = true;
-        } else if (currentBaitId === 'lure') {
-          // ✨ 반짝 야광 루어: 심해 어둠층(0~350m) 어종 유혹
-          if (zone === 'deep' || zone === 'mid' || zone === 'shallow') isAttractive = true;
-        } else if (currentBaitId === 'jelly') {
-          // 🔮 발광 플랑크톤 젤리: 심연층(0~520m) 초심해 어종 유혹
-          if (zone !== 'hadal') isAttractive = true;
-        } else if (currentBaitId === 'pearl') {
-          // 🌌 심연의 오로라 펄: 해저 초심연(0~750m) 모든 일반/전설 어종 유혹
-          isAttractive = true;
-        } else if (currentBaitId === 'golden') {
-          // 👑 황금 크릴 엑기스: 모든 물고기 유혹
-          isAttractive = true;
-        }
-      }
-    }
-
-    if (!isAttractive) return;
-    if (this.ignoreCooldown > 0) return;
-
-    // 🛑 찌가 빠르게 아래로 가라앉는 중이면 입질 시도 안 함 (우클릭 STOP 수심 고정 시에만 입질!)
-    const isFastSinking = !hook.isDepthLocked && hook.hookVel && hook.hookVel.y > 35;
-    if (isFastSinking && !hook.isAllureActive && !this.isNonLiving) {
-      return;
-    }
-
-    let freeSlot = null;
-    if (hook.hooks && hook.hooks.length > 0) {
-      // Find all empty hook slots
-      const emptySlots = hook.hooks.filter(h => !h.hookedFish);
-      if (emptySlots.length === 0) return;
-      // Pick the closest empty slot or an unassigned slot
-      freeSlot = emptySlots.reduce((closest, slot) => {
-        const slotPos = slot.pos || hook.hookPos;
-        const d = this.pos.dist(slotPos);
-        return (!closest || d < closest.dist) ? { slot, dist: d } : closest;
-      }, null)?.slot;
-    } else {
-      freeSlot = !hook.hookedFish ? { pos: hook.hookPos } : null;
-    }
-    if (!freeSlot) return;
-
-    const targetPos = freeSlot.pos || hook.hookPos || hook.pos;
-    if (!targetPos) return;
-
-    const dist = this.pos.dist(targetPos);
-    const detectRadius = (hook.isAllureActive ? 600 : 150) * (hook.attractionBonus || 1.0);
-
-    if (dist < detectRadius) {
       this.state = 'CURIOUS';
       this.curiousTimer = 0;
-      this.target = hook;
-      this.targetSlot = freeSlot;
+      this.target = bestHook;
+      this.targetSlot = bestSlot;
       this.isInspecting = false;
       this.inspectTimer = 0;
       this.inspectDuration = 0.8 + Math.random() * 1.4;
@@ -509,6 +551,15 @@ export class Fish {
   }
 
   updateHooked(dt, hook, cat) {
+    // 🌊 Remote player hooked fish support
+    if (this.remoteHookPos) {
+      const mouthOffset = this.getMouthOffset();
+      this.pos.x = this.remoteHookPos.x - (this.remoteHookFacing || this.facing) * mouthOffset;
+      this.pos.y = Math.min(15070, this.remoteHookPos.y + Math.sin(this.animTime * 6) * 2);
+      this.animTime += dt * (this.isNonLiving ? 0.5 : 3);
+      return;
+    }
+
     // 🛡️ 유령 물고기 방지: 낚싯대가 없거나 READY 상태이거나 등록된 물고기 목록에 없으면 즉시 유영 상태로 복귀
     if (!hook || hook.state === 'READY' || (hook.allHookedFishes && !hook.allHookedFishes.includes(this))) {
       this.state = 'WANDER';

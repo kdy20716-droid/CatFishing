@@ -79,8 +79,16 @@ class Game {
 
     // 🌊 Multiplayer Shared Ocean Callbacks
     if (this.multiplayer) {
-      // 1. Host exports ocean world state when creating room
-      this.multiplayer.getOceanWorldState = () => {
+      // 1. Host exports ocean world state when creating room or periodic sync
+      this.multiplayer.getOceanWorldState = (envOnly = false) => {
+        if (envOnly) {
+          return {
+            timeOfDay: this.environment.timeOfDay,
+            timeProgress: this.environment.timeProgress,
+            season: this.environment.season,
+            seasonProgress: this.environment.seasonProgress
+          };
+        }
         return {
           fishList: this.fishList.map(f => ({
             uid: f.uid,
@@ -90,39 +98,86 @@ class Game {
             facing: f.facing,
             sizeCm: f.sizeCm,
             isShiny: !!f.isShiny,
+            state: f.state,
             minSwimX: f.swimBounds?.minX,
             maxSwimX: f.swimBounds?.maxX
           })),
           timeOfDay: this.environment.timeOfDay,
-          timeProgress: this.environment.timeProgress
+          timeProgress: this.environment.timeProgress,
+          season: this.environment.season,
+          seasonProgress: this.environment.seasonProgress
         };
       };
 
       // 2. Guest receives and loads Host's shared ocean fish population & atmosphere
       this.multiplayer.onSyncOceanWorld = (sharedFishList, worldData) => {
         if (Array.isArray(sharedFishList) && sharedFishList.length > 0) {
-          this.fishList = [];
-          sharedFishList.forEach(item => {
-            const species = FISH_SPECIES.find(s => s.id === item.id);
-            if (species) {
-              let bounds = { minX: item.minSwimX || -600, maxX: item.maxSwimX || 32000 };
-              const fish = new Fish(species, new Vector2(item.x, item.y), !!item.isShiny, bounds, item.uid);
-              if (item.facing === 1 || item.facing === -1) fish.facing = item.facing;
-              if (typeof item.sizeCm === 'number') fish.sizeCm = item.sizeCm;
-              fish.onEscapeCallback = (f) => {
-                this.camera.shake(12, 0.5);
-                this.hud.showNotification(`⚠️ 너무 오래 방치하여 ${f.isBoss ? '👑 보스 ' : (f.isShiny ? '✨ 이로치 ' : '')}${f.data.name}이(가) 도망쳤습니다!`, '💨');
-              };
-              this.fishList.push(fish);
+          if (this.fishList.length === 0) {
+            // First time loading: instantiate entire shared fish population
+            this.fishList = [];
+            sharedFishList.forEach(item => {
+              const species = FISH_SPECIES.find(s => s.id === item.id);
+              if (species) {
+                let bounds = { minX: item.minSwimX || -600, maxX: item.maxSwimX || 32000 };
+                const fish = new Fish(species, new Vector2(item.x, item.y), !!item.isShiny, bounds, item.uid);
+                if (item.facing === 1 || item.facing === -1) fish.facing = item.facing;
+                if (typeof item.sizeCm === 'number') fish.sizeCm = item.sizeCm;
+                fish.onEscapeCallback = (f) => {
+                  this.camera.shake(12, 0.5);
+                  this.hud.showNotification(`⚠️ 너무 오래 방치하여 ${f.isBoss ? '👑 보스 ' : (f.isShiny ? '✨ 이로치 ' : '')}${f.data.name}이(가) 도망쳤습니다!`, '💨');
+                };
+                this.fishList.push(fish);
+              }
+            });
+          } else {
+            // Incremental reconciliation: smoothly lerp existing fish, spawn new ones, remove dead ones
+            const sharedMap = new Map();
+            sharedFishList.forEach(item => sharedMap.set(item.uid, item));
+
+            const currentUids = new Set();
+            for (let i = this.fishList.length - 1; i >= 0; i--) {
+              const fish = this.fishList[i];
+              currentUids.add(fish.uid);
+
+              const item = sharedMap.get(fish.uid);
+              if (item) {
+                // If not hooked by local player, interpolate to host position
+                if (fish.state !== 'HOOKED' && fish.state !== 'CURIOUS') {
+                  fish.targetPos = new Vector2(item.x, item.y);
+                  if (item.facing === 1 || item.facing === -1) fish.facing = item.facing;
+                  if (item.state && item.state !== 'HOOKED') fish.state = item.state;
+                }
+              } else {
+                // Fish no longer exists in shared state (e.g. caught by another player)
+                if (fish.state !== 'HOOKED') {
+                  this.fishList.splice(i, 1);
+                }
+              }
             }
-          });
+
+            // Add newly spawned fish
+            sharedFishList.forEach(item => {
+              if (!currentUids.has(item.uid)) {
+                const species = FISH_SPECIES.find(s => s.id === item.id);
+                if (species) {
+                  let bounds = { minX: item.minSwimX || -600, maxX: item.maxSwimX || 32000 };
+                  const fish = new Fish(species, new Vector2(item.x, item.y), !!item.isShiny, bounds, item.uid);
+                  if (item.facing === 1 || item.facing === -1) fish.facing = item.facing;
+                  if (typeof item.sizeCm === 'number') fish.sizeCm = item.sizeCm;
+                  fish.onEscapeCallback = (f) => {
+                    this.camera.shake(12, 0.5);
+                    this.hud.showNotification(`⚠️ 너무 오래 방치하여 ${f.isBoss ? '👑 보스 ' : (f.isShiny ? '✨ 이로치 ' : '')}${f.data.name}이(가) 도망쳤습니다!`, '💨');
+                  };
+                  this.fishList.push(fish);
+                }
+              }
+            });
+          }
           this.saveFishState();
         }
-        if (worldData && worldData.timeOfDay) {
-          this.environment.timeOfDay = worldData.timeOfDay;
-          if (typeof worldData.timeProgress === 'number') {
-            this.environment.timeProgress = worldData.timeProgress;
-          }
+
+        if (worldData) {
+          this.environment.syncEnvironmentState(worldData, this.sound);
         }
       };
 
@@ -1377,9 +1432,41 @@ class Game {
       this.cat.triggerNibble();
     }
 
+    // Gather all active hooks in ocean (local + remote players)
+    const remoteHooks = (this.multiplayer && this.multiplayer.isConnected) ? this.multiplayer.getRemoteHooks() : [];
+    const activeHooks = [ this.rod, ...remoteHooks ];
+
+    // Synchronize remote player hooked fish attachments
+    if (this.multiplayer && this.multiplayer.isConnected) {
+      const activeRemoteHookedUids = new Set();
+      this.multiplayer.otherPlayers.forEach(pEntry => {
+        const p = pEntry.data;
+        const hookedUids = p.allHookedFishUids || (p.hookedFishUid ? [p.hookedFishUid] : []);
+        if (p.hookPos && hookedUids.length > 0) {
+          hookedUids.forEach(uid => {
+            activeRemoteHookedUids.add(uid);
+            const targetFish = this.fishList.find(f => f.uid === uid);
+            if (targetFish && targetFish !== this.rod.hookedFish) {
+              targetFish.state = 'HOOKED';
+              targetFish.remoteHookPos = { x: p.hookPos.x, y: p.hookPos.y };
+              targetFish.remoteHookFacing = p.facing || 1;
+            }
+          });
+        }
+      });
+
+      // Clear remoteHookPos for fish that are no longer hooked by remote players
+      this.fishList.forEach(f => {
+        if (f.remoteHookPos && !activeRemoteHookedUids.has(f.uid) && f.state === 'HOOKED' && f !== this.rod.hookedFish) {
+          f.remoteHookPos = null;
+          f.state = 'WANDER';
+        }
+      });
+    }
+
     // Update Ocean Fish population across 0m ~ 750m+ and -800 ~ 32,000px wide
     const oceanBounds = { left: -800, right: 32000, top: 0, bottom: 15800 };
-    this.fishList.forEach(fish => fish.update(dt, this.rod, oceanBounds, this.cat));
+    this.fishList.forEach(fish => fish.update(dt, activeHooks, oceanBounds, this.cat));
 
     // Maintain lively fish population (Host in multiplayer or Singleplayer spawns new fish)
     const isGuestInMultiplayer = (this.multiplayer && this.multiplayer.isConnected && !this.multiplayer.isHost);

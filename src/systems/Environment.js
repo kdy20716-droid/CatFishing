@@ -71,6 +71,44 @@ export class Environment {
     } catch (e) {}
   }
 
+  /** Sync environment time, day/night cycle, and season from multiplayer room host */
+  syncEnvironmentState(data, soundEngine = null) {
+    if (!data) return;
+
+    if (typeof data.timeProgress === 'number' && !isNaN(data.timeProgress)) {
+      const targetProgress = (data.timeProgress + 1.0) % 1.0;
+      const diff = Math.abs(this.timeProgress - targetProgress);
+      // If large difference (initial join), snap immediately; otherwise smooth lerp
+      if (diff > 0.08 && diff < 0.92) {
+        this.timeProgress = targetProgress;
+      } else {
+        this.timeProgress += (targetProgress - this.timeProgress) * 0.25;
+      }
+      this.timeProgress = (this.timeProgress + 1.0) % 1.0;
+
+      if (this.timeProgress < 0.38) this.timeOfDay = 'day';
+      else if (this.timeProgress < 0.65) this.timeOfDay = 'sunset';
+      else this.timeOfDay = 'night';
+    }
+
+    if (data.timeOfDay && data.timeOfDay !== this.timeOfDay) {
+      this.timeOfDay = data.timeOfDay;
+    }
+
+    if (typeof data.seasonProgress === 'number' && !isNaN(data.seasonProgress)) {
+      this.seasonProgress = (data.seasonProgress + 1.0) % 1.0;
+      this._updateSeason();
+    }
+
+    if (data.season && data.season !== this.season) {
+      this.season = data.season;
+    }
+
+    if (soundEngine && typeof soundEngine.setTimeOfDay === 'function') {
+      soundEngine.setTimeOfDay(this.timeOfDay);
+    }
+  }
+
     /** Sync this.season from this.seasonProgress (30min / 90deg per season) */
   _updateSeason() {
     if (this.seasonProgress < 0.25) this.season = 'spring';

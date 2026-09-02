@@ -49,10 +49,14 @@ export class Multiplayer {
     this.onSyncOceanWorld = null;    // (fishList, envData) => void
     this.onRemoteFishCaught = null;   // (event) => void
     this.onRemoteFishSpawned = null;  // (fishData) => void
-    this.getOceanWorldState = null;   // () => { fishList, timeOfDay, timeProgress }
+    this.getOceanWorldState = null;   // (envOnly) => { fishList, timeOfDay, timeProgress, season, seasonProgress }
 
     this.unsubscribeEvents = null;
     this.unsubscribeWorld = null;
+
+    // Periodic host synchronization timers
+    this.hostWorldSyncTimer = 0;
+    this.hostFirestoreSyncTimer = 0;
 
     // Chat
     this.messages = [];
@@ -488,6 +492,27 @@ export class Multiplayer {
       console.warn("Multiplayer events snapshot error:", error);
     });
 
+    // 4. 🌊 Guest: Real-time Ocean World & Environment Synchronization
+    if (!this.isHost) {
+      try {
+        const worldDocRef = doc(db, 'cozy_fishing_rooms', roomId, 'world', 'ocean');
+        this.unsubscribeWorld = onSnapshot(worldDocRef, (snap) => {
+          if (snap.exists()) {
+            const worldData = snap.data();
+            if (worldData && Array.isArray(worldData.fishList)) {
+              if (typeof this.onSyncOceanWorld === 'function') {
+                this.onSyncOceanWorld(worldData.fishList, worldData);
+              }
+            }
+          }
+        }, (err) => {
+          console.warn("Multiplayer world snapshot error:", err);
+        });
+      } catch (err) {
+        console.warn("Could not attach world listener:", err);
+      }
+    }
+
     // Show Chat Widget UI
     const chatWidget = document.getElementById('ingame-chat-container');
     if (chatWidget) chatWidget.classList.add('visible');
@@ -497,7 +522,25 @@ export class Multiplayer {
     if (!msg || msg.roomId !== this.roomId) return;
     if (msg.senderId === this.playerId || msg.playerId === this.playerId) return;
 
-    if (msg.type === 'CHAT') {
+    if (msg.type === 'PLAYER_JOINED') {
+      // 🌊 Host: Immediately broadcast current ocean fish and atmosphere to newly joined player
+      if (this.isHost && this.broadcastChannel && typeof this.getOceanWorldState === 'function') {
+        const worldData = this.getOceanWorldState();
+        if (worldData) {
+          this.broadcastChannel.postMessage({
+            type: 'OCEAN_SYNC',
+            roomId: this.roomId,
+            senderId: this.playerId,
+            fishList: worldData.fishList,
+            timeOfDay: worldData.timeOfDay,
+            timeProgress: worldData.timeProgress,
+            season: worldData.season,
+            seasonProgress: worldData.seasonProgress,
+            timestamp: Date.now()
+          });
+        }
+      }
+    } else if (msg.type === 'CHAT') {
       this.appendChatMessage(msg.senderName, msg.text, false, true);
       const pEntry = this.otherPlayers.get(msg.senderId);
       if (pEntry) {
@@ -526,6 +569,12 @@ export class Multiplayer {
     } else if (msg.type === 'PLAYER_STATE' && msg.playerData) {
       const pData = msg.playerData;
       if (pData.id === this.playerId) return;
+
+      // Sync master environment from host player state if present
+      if (pData.worldEnv && !this.isHost && typeof this.onSyncOceanWorld === 'function') {
+        this.onSyncOceanWorld(null, pData.worldEnv);
+      }
+
       let pEntry = this.otherPlayers.get(pData.id);
       if (!pEntry) {
         const fakeEconomy = {
@@ -769,10 +818,60 @@ export class Multiplayer {
 
     const now = performance.now() / 1000;
 
-    // Send my state to Firestore throttled
+    // Send my state to Firestore & Broadcast throttled
     if (now - this.lastSyncTime >= this.syncInterval) {
       this.lastSyncTime = now;
       this.syncMyState(cat, rod, economy);
+    }
+
+    // 🌊 Host: Periodic full Ocean World State broadcast
+    if (this.isHost) {
+      // 1. Cross-tab fast broadcast every 0.5s (0ms latency, zero quota)
+      this.hostWorldSyncTimer = (this.hostWorldSyncTimer || 0) + dt;
+      if (this.hostWorldSyncTimer >= 0.5) {
+        this.hostWorldSyncTimer = 0;
+        if (this.broadcastChannel && typeof this.getOceanWorldState === 'function') {
+          const world = this.getOceanWorldState(false);
+          if (world && Array.isArray(world.fishList)) {
+            this.broadcastChannel.postMessage({
+              type: 'OCEAN_SYNC',
+              roomId: this.roomId,
+              senderId: this.playerId,
+              fishList: world.fishList,
+              timeOfDay: world.timeOfDay,
+              timeProgress: world.timeProgress,
+              season: world.season,
+              seasonProgress: world.seasonProgress,
+              timestamp: Date.now()
+            });
+          }
+        }
+      }
+
+      // 2. Firestore cloud room sync every 3.5s (Rate-limited for Spark daily quota)
+      this.hostFirestoreSyncTimer = (this.hostFirestoreSyncTimer || 0) + dt;
+      if (this.hostFirestoreSyncTimer >= 3.5 && !this.isQuotaExhausted) {
+        this.hostFirestoreSyncTimer = 0;
+        const db = this.getDb();
+        if (db && typeof this.getOceanWorldState === 'function') {
+          const world = this.getOceanWorldState(false);
+          if (world && Array.isArray(world.fishList)) {
+            const worldDocRef = doc(db, 'cozy_fishing_rooms', this.roomId, 'world', 'ocean');
+            setDoc(worldDocRef, {
+              fishList: world.fishList,
+              timeOfDay: world.timeOfDay || 'day',
+              timeProgress: world.timeProgress || 0,
+              season: world.season || 'spring',
+              seasonProgress: world.seasonProgress || 0,
+              hostId: this.playerId,
+              hostName: this.playerName,
+              updatedAt: serverTimestamp()
+            }, { merge: true }).catch(e => {
+              if (e.code === 'resource-exhausted') this.isQuotaExhausted = true;
+            });
+          }
+        }
+      }
     }
 
     // Update and interpolate other players
@@ -781,11 +880,15 @@ export class Multiplayer {
       rCat.animTime += dt;
 
       // Smooth lerp positions
-      rCat.pos.x += (pEntry.targetX - rCat.pos.x) * 0.15;
-      rCat.pos.y += (pEntry.targetY - rCat.pos.y) * 0.15;
+      rCat.pos.x += (pEntry.targetX - rCat.pos.x) * 0.18;
+      rCat.pos.y += (pEntry.targetY - rCat.pos.y) * 0.18;
       rCat.waterY = cat.waterY;
       rCat.facing = pEntry.data.facing || 1;
       rCat.state = pEntry.data.state || 'IDLE';
+
+      if (pEntry.data.exclamation === true || pEntry.data.state === 'WAITING') {
+        rCat.exclamationTimer = 0.5;
+      }
 
       // Keep boat floating physics
       const waveFreq = 1.8;
@@ -802,6 +905,12 @@ export class Multiplayer {
   async syncMyState(cat, rod, economy) {
     if (!this.roomId || !this.isConnected) return;
 
+    // Collect all currently hooked fish uids
+    const hookedFishUid = rod.hookedFish ? rod.hookedFish.uid : (rod.hooks && rod.hooks.find(h => h.hookedFish)?.hookedFish?.uid) || null;
+    const allHookedUids = (rod.allHookedFishes && rod.allHookedFishes.length > 0) 
+      ? rod.allHookedFishes.map(f => f.uid) 
+      : (hookedFishUid ? [hookedFishUid] : []);
+
     const payloadObj = {
       id: this.playerId,
       name: this.playerName,
@@ -810,6 +919,7 @@ export class Multiplayer {
       y: Math.round(cat.pos.y * 10) / 10,
       facing: cat.facing,
       state: cat.state,
+      exclamation: (cat.exclamationTimer > 0 || cat.state === 'WAITING'),
       rodId: economy.currentRodId,
       boatId: economy.currentBoatId,
       hatId: economy.currentHatId,
@@ -819,8 +929,23 @@ export class Multiplayer {
       isSubmerged: rod.isSubmerged,
       hookPos: rod.state !== 'READY' ? { x: Math.round(rod.hookPos.x), y: Math.round(rod.hookPos.y) } : null,
       bobberPos: rod.state === 'FISHING' ? { x: Math.round(rod.bobberPos.x), y: Math.round(rod.bobberPos.y) } : null,
-      currentBaitId: rod.currentBaitId
+      currentBaitId: rod.currentBaitId,
+      hookedFishUid: hookedFishUid,
+      allHookedFishUids: allHookedUids
     };
+
+    // Include master environment in state if host
+    if (this.isHost && typeof this.getOceanWorldState === 'function') {
+      const wEnv = this.getOceanWorldState(true);
+      if (wEnv) {
+        payloadObj.worldEnv = {
+          timeOfDay: wEnv.timeOfDay,
+          timeProgress: wEnv.timeProgress,
+          season: wEnv.season,
+          seasonProgress: wEnv.seasonProgress
+        };
+      }
+    }
 
     // Always send over local BroadcastChannel for zero-latency local tabs
     if (this.broadcastChannel) {
@@ -835,7 +960,7 @@ export class Multiplayer {
     if (this.isQuotaExhausted) return;
 
     // Dirty check: only send to Firestore if something meaningful changed
-    const payloadSignature = `${payloadObj.x}_${payloadObj.y}_${payloadObj.state}_${payloadObj.rodState}_${payloadObj.isSubmerged}`;
+    const payloadSignature = `${payloadObj.x}_${payloadObj.y}_${payloadObj.state}_${payloadObj.rodState}_${payloadObj.isSubmerged}_${payloadObj.hookedFishUid}`;
     if (payloadSignature === this.lastSentPayload) return;
     this.lastSentPayload = payloadSignature;
 
@@ -850,6 +975,37 @@ export class Multiplayer {
         this.isQuotaExhausted = true;
       }
     }
+  }
+
+  /** Expose remote player active submerged hooks for ocean fish bait interest */
+  getRemoteHooks() {
+    if (!this.isConnected || !this.roomId) return [];
+    const hooks = [];
+    this.otherPlayers.forEach((pEntry) => {
+      const p = pEntry.data;
+      if (p.rodState && p.rodState !== 'READY' && p.isSubmerged && p.hookPos) {
+        hooks.push({
+          isSubmerged: true,
+          hookPos: { x: p.hookPos.x, y: p.hookPos.y },
+          pos: { x: p.hookPos.x, y: p.hookPos.y },
+          hookVel: { x: 0, y: 0 },
+          isLiveBait: false,
+          currentBaitId: p.currentBaitId || 'bread',
+          isAllureActive: false,
+          attractionBonus: 1.0,
+          playerId: p.id,
+          playerName: p.name,
+          hookedFishUid: p.hookedFishUid || null,
+          attachFish: (fish) => {
+            fish.remoteHookedBy = p.id;
+            fish.remoteHookPos = { x: p.hookPos.x, y: p.hookPos.y };
+            fish.remoteHookFacing = p.facing || 1;
+            return true;
+          }
+        });
+      }
+    });
+    return hooks;
   }
 
   draw(ctx, localCat = null, localRod = null, showMyNametag = false) {
